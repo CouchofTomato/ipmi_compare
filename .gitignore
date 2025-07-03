@@ -35,5 +35,4 @@
 
 # Ignore dotenv environment file
 .env
-.env.development.local
-.env.test.local
+.env*.local
