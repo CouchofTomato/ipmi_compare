@@ -39,7 +39,7 @@ gem "thruster", require: false
 # gem "image_processing", "~> 1.2"
 
 gem "devise", "~> 4.9"
-gem 'devise_invitable', "~> 2.0.0"
+gem "devise_invitable", "~> 2.0.0"
 gem "jsbundling-rails", "~> 1.3"
 
 group :development, :test do
