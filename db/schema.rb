@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_06_190609) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_06_201022) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -19,6 +19,23 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_06_190609) do
     t.string "jurisdiction"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "plans", force: :cascade do |t|
+    t.bigint "insurer_id", null: false
+    t.string "name", null: false
+    t.integer "min_age", default: 0, null: false
+    t.integer "max_age"
+    t.boolean "children_only_allowed", default: false, null: false
+    t.integer "version_year", null: false
+    t.boolean "published", default: false, null: false
+    t.integer "policy_type", null: false
+    t.date "last_reviewed_at"
+    t.date "next_review_due", null: false
+    t.text "review_notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["insurer_id"], name: "index_plans_on_insurer_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -43,4 +60,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_06_190609) do
     t.index ["invited_by_type", "invited_by_id"], name: "index_users_on_invited_by"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
+
+  add_foreign_key "plans", "insurers"
 end
