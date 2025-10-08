@@ -9,4 +9,10 @@ class Plan < ApplicationRecord
   validates :version_year, presence: true
   validates :policy_type, presence: true
   validates :next_review_due, presence: true
+
+  enum :policy_type, {
+    individual: 0,
+    company: 1,
+    corporate: 2
+  }
 end

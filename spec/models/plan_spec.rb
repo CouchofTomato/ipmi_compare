@@ -11,4 +11,5 @@ RSpec.describe Plan, type: :model do
   it { expect(plan).to validate_presence_of :policy_type }
   it { expect(plan).to validate_presence_of :next_review_due  }
   it { expect(plan).to belong_to :insurer }
+  it { should define_enum_for(:policy_type).with_values(individual: 0, company: 1, corporate: 2) }
 end
