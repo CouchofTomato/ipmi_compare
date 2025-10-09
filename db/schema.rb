@@ -10,13 +10,13 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_09_142521) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_09_142919) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "geographic_cover_areas", force: :cascade do |t|
-    t.string "name"
-    t.string "code"
+    t.string "name", null: false
+    t.string "code", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -26,6 +26,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_09_142521) do
     t.string "jurisdiction"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "plan_geographic_cover_areas", force: :cascade do |t|
+    t.bigint "plan_id", null: false
+    t.bigint "geographic_cover_area_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["geographic_cover_area_id"], name: "index_plan_geographic_cover_areas_on_geographic_cover_area_id"
+    t.index ["plan_id"], name: "index_plan_geographic_cover_areas_on_plan_id"
   end
 
   create_table "plans", force: :cascade do |t|
@@ -68,5 +77,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_09_142521) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
+  add_foreign_key "plan_geographic_cover_areas", "plans"
   add_foreign_key "plans", "insurers"
 end
