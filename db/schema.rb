@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_11_171801) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_11_173020) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -45,6 +45,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_171801) do
     t.datetime "updated_at", null: false
     t.index ["geographic_cover_area_id"], name: "index_plan_geographic_cover_areas_on_geographic_cover_area_id"
     t.index ["plan_id"], name: "index_plan_geographic_cover_areas_on_plan_id"
+  end
+
+  create_table "plan_residency_eligibilities", force: :cascade do |t|
+    t.bigint "plan_id", null: false
+    t.bigint "country_id", null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["country_id"], name: "index_plan_residency_eligibilities_on_country_id"
+    t.index ["plan_id"], name: "index_plan_residency_eligibilities_on_plan_id"
   end
 
   create_table "plans", force: :cascade do |t|
@@ -97,5 +107,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_171801) do
   add_foreign_key "countries", "regions"
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
   add_foreign_key "plan_geographic_cover_areas", "plans"
+  add_foreign_key "plan_residency_eligibilities", "countries"
+  add_foreign_key "plan_residency_eligibilities", "plans"
   add_foreign_key "plans", "insurers"
 end
