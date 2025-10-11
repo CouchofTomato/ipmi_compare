@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :plan_residency_eligibility do
-    plan { nil }
-    country { nil }
+    plan
+    country
     notes { "MyText" }
   end
 end
