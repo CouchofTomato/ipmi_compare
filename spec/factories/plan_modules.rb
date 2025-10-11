@@ -1,9 +1,9 @@
 FactoryBot.define do
   factory :plan_module do
-    plan { nil }
+    plan
     name { "MyString" }
     is_core { false }
-    depends_on_module { nil }
-    module_group { nil }
+    association :depends_on_module, factory: :plan_module
+    module_group
   end
 end
