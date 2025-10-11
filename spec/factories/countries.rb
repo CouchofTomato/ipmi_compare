@@ -2,7 +2,7 @@ FactoryBot.define do
   factory :country do
     name { "MyString" }
     code { "MyString" }
-    region { nil }
+    region
     notes { "MyText" }
   end
 end
