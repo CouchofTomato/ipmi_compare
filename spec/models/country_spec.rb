@@ -5,6 +5,8 @@ RSpec.describe Country, type: :model do
 
   it { expect(country).to belong_to(:region) }
 
+  it { expect(country).to have_many(:plan_residency_eligibilities).dependent(:destroy) }
+  it { expect(country).to have_many(:plans).through(:plan_residency_eligibilities) }
   it { expect(country).to validate_presence_of :name }
   it { expect(country).to validate_presence_of :code }
 end
