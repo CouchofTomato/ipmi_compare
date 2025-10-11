@@ -1,6 +1,9 @@
 class Plan < ApplicationRecord
   belongs_to :insurer
 
+  has_many :plan_geographic_cover_areas, dependent: :destroy
+  has_many :geographic_cover_areas, through: :plan_geographic_cover_areas
+
   validates :name, presence: true
   validates :min_age, presence: true, numericality: { greater_than_or_equal_to: 0, only_integer: true }
   validates :max_age, numericality: { greater_than_or_equal_to: 0, only_integer: true, allow_nil: true }
