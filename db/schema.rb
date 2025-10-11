@@ -10,9 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_09_142919) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_11_173020) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "countries", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "code", null: false
+    t.bigint "region_id", null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["region_id"], name: "index_countries_on_region_id"
+  end
 
   create_table "geographic_cover_areas", force: :cascade do |t|
     t.string "name", null: false
@@ -37,6 +47,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_09_142919) do
     t.index ["plan_id"], name: "index_plan_geographic_cover_areas_on_plan_id"
   end
 
+  create_table "plan_residency_eligibilities", force: :cascade do |t|
+    t.bigint "plan_id", null: false
+    t.bigint "country_id", null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["country_id"], name: "index_plan_residency_eligibilities_on_country_id"
+    t.index ["plan_id"], name: "index_plan_residency_eligibilities_on_plan_id"
+  end
+
   create_table "plans", force: :cascade do |t|
     t.bigint "insurer_id", null: false
     t.string "name", null: false
@@ -52,6 +72,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_09_142919) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["insurer_id"], name: "index_plans_on_insurer_id"
+  end
+
+  create_table "regions", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "code", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "users", force: :cascade do |t|
@@ -77,7 +104,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_09_142919) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "countries", "regions"
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
   add_foreign_key "plan_geographic_cover_areas", "plans"
+  add_foreign_key "plan_residency_eligibilities", "countries"
+  add_foreign_key "plan_residency_eligibilities", "plans"
   add_foreign_key "plans", "insurers"
 end
