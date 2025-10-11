@@ -1,0 +1,2 @@
+class ModuleGroup < ApplicationRecord
+end
