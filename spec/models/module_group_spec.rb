@@ -1,5 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe ModuleGroup, type: :model do
-  pending "add some examples to (or delete) #{__FILE__}"
+  subject(:module_group) { create(:module_group) }
+
+  it { expect(module_group).to validate_presence_of(:name) }
 end
