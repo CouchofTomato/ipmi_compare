@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :benefit_limit_group do
-    plan_module { nil }
+    plan_module
     name { "MyString" }
     limit_usd { "9.99" }
     limit_gbp { "9.99" }
