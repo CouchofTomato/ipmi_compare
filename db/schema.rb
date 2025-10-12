@@ -10,9 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_11_192625) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_12_142118) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "benefit_limit_groups", force: :cascade do |t|
+    t.bigint "plan_module_id", null: false
+    t.string "name", null: false
+    t.decimal "limit_usd", precision: 12, scale: 2
+    t.decimal "limit_gbp", precision: 12, scale: 2
+    t.decimal "limit_eur", precision: 12, scale: 2
+    t.string "limit_unit", null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["plan_module_id"], name: "index_benefit_limit_groups_on_plan_module_id"
+  end
 
   create_table "countries", force: :cascade do |t|
     t.string "name", null: false
@@ -124,6 +137,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_192625) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "benefit_limit_groups", "plan_modules"
   add_foreign_key "countries", "regions"
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
   add_foreign_key "plan_geographic_cover_areas", "plans"
