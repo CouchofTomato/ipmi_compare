@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_13_182217) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_13_190723) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -75,6 +75,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_13_182217) do
     t.bigint "module_group_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "overall_limit_usd", precision: 12, scale: 2
+    t.decimal "overall_limit_gbp", precision: 12, scale: 2
+    t.decimal "overall_limit_eur", precision: 12, scale: 2
+    t.string "overall_limit_unit"
+    t.text "overall_limit_notes"
     t.index ["depends_on_module_id"], name: "index_plan_modules_on_depends_on_module_id"
     t.index ["module_group_id"], name: "index_plan_modules_on_module_group_id"
     t.index ["plan_id"], name: "index_plan_modules_on_plan_id"
