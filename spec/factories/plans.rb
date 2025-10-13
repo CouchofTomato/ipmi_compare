@@ -19,10 +19,11 @@ FactoryBot.define do
     overall_limit_unlimited { false }
 
     trait :unlimited do
+      overall_limit_unlimited { true }
       overall_limit_usd { nil }
       overall_limit_gbp { nil }
       overall_limit_eur { nil }
-      overall_limit_notes { "Unlimited" }
+      overall_limit_notes { "Unlimited coverage" }
     end
   end
 end
