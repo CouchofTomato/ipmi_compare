@@ -16,6 +16,7 @@ FactoryBot.define do
     overall_limit_eur { 3_800_000 }
     overall_limit_unit { "per year" }
     overall_limit_notes { nil }
+    overall_limit_unlimited { false }
 
     trait :unlimited do
       overall_limit_usd { nil }
