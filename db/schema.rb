@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_12_142118) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_13_144743) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -104,6 +104,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_12_142118) do
     t.text "review_notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "overall_limit_usd", precision: 12, scale: 2
+    t.decimal "overall_limit_gbp", precision: 12, scale: 2
+    t.decimal "overall_limit_eur", precision: 12, scale: 2
+    t.string "overall_limit_unit"
+    t.text "overall_limit_notes"
     t.index ["insurer_id"], name: "index_plans_on_insurer_id"
   end
 
