@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_14_195810) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_15_200138) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -57,6 +57,23 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_195810) do
     t.string "jurisdiction"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "module_benefits", force: :cascade do |t|
+    t.bigint "plan_module_id", null: false
+    t.bigint "benefit_id", null: false
+    t.string "coverage_description"
+    t.decimal "limit_usd", precision: 12, scale: 2
+    t.decimal "limit_gbp", precision: 12, scale: 2
+    t.decimal "limit_eur", precision: 12, scale: 2
+    t.string "limit_unit"
+    t.string "sub_limit_description"
+    t.bigint "benefit_limit_group_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["benefit_id"], name: "index_module_benefits_on_benefit_id"
+    t.index ["benefit_limit_group_id"], name: "index_module_benefits_on_benefit_limit_group_id"
+    t.index ["plan_module_id"], name: "index_module_benefits_on_plan_module_id"
   end
 
   create_table "module_groups", force: :cascade do |t|
@@ -158,6 +175,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_195810) do
 
   add_foreign_key "benefit_limit_groups", "plan_modules"
   add_foreign_key "countries", "regions"
+  add_foreign_key "module_benefits", "benefit_limit_groups"
+  add_foreign_key "module_benefits", "benefits"
+  add_foreign_key "module_benefits", "plan_modules"
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
   add_foreign_key "plan_geographic_cover_areas", "plans"
   add_foreign_key "plan_modules", "module_groups"
