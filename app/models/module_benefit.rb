@@ -1,5 +1,13 @@
 class ModuleBenefit < ApplicationRecord
   belongs_to :plan_module
   belongs_to :benefit
-  belongs_to :benefit_limit_group
+  belongs_to :benefit_limit_group, optional: true
+
+  validate :coverage_or_limit_must_be_present
+
+  def coverage_or_limit_must_be_present
+    if [ coverage_description, limit_usd, limit_gbp, limit_eur ].all?(&:blank?)
+      errors.add(:base, "Either a coverage description or at least one limit must be present")
+    end
+  end
 end

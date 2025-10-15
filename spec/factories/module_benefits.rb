@@ -1,13 +1,13 @@
 FactoryBot.define do
   factory :module_benefit do
-    plan_module { nil }
-    benefit { nil }
+    plan_module
+    benefit
     coverage_description { "MyString" }
-    limit_usd { "9.99" }
-    limit_gbp { "9.99" }
-    limit_eur { "9.99" }
-    limit_unit { "MyString" }
-    sub_limit_description { "MyString" }
+    limit_usd { nil }
+    limit_gbp { nil }
+    limit_eur { nil }
+    limit_unit { nil }
+    sub_limit_description { nil }
     benefit_limit_group { nil }
   end
 end
