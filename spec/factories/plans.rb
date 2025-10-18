@@ -25,5 +25,31 @@ FactoryBot.define do
       overall_limit_eur { nil }
       overall_limit_notes { "Unlimited coverage" }
     end
+
+    trait :with_deductible do
+      after(:create) do |plan|
+        create(:cost_share, scope: plan, cost_share_type: :deductible, amount: 1000, per: :per_year, currency: "USD")
+      end
+    end
+
+    trait :with_coinsurance do
+      after(:create) do |plan|
+        create(:cost_share, scope: plan, cost_share_type: :coinsurance, amount: 10, unit: :percent, per: :per_claim)
+      end
+    end
+
+    trait :with_excess do
+      after(:create) do |plan|
+        create(:cost_share, scope: plan, cost_share_type: :excess, amount: 25, per: :per_visit, currency: "USD")
+      end
+    end
+
+    trait :with_all_cost_shares do
+      after(:create) do |plan|
+        create(:cost_share, scope: plan, cost_share_type: :deductible, amount: 1000, per: :per_year, currency: "USD")
+        create(:cost_share, scope: plan, cost_share_type: :coinsurance, amount: 10, unit: :percent, per: :per_claim)
+        create(:cost_share, scope: plan, cost_share_type: :excess, amount: 25, per: :per_visit, currency: "USD")
+      end
+    end
   end
 end
