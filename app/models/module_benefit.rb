@@ -3,7 +3,17 @@ class ModuleBenefit < ApplicationRecord
   belongs_to :benefit
   belongs_to :benefit_limit_group, optional: true
 
+  has_many :cost_shares, as: :scope, dependent: :destroy
+  has_many :deductibles, -> { where(cost_share_type: :deductible) },
+           class_name: "CostShare", as: :scope
+  has_many :coinsurances, -> { where(cost_share_type: :coinsurance) },
+           class_name: "CostShare", as: :scope
+  has_many :excesses, -> { where(cost_share_type: :excess) },
+           class_name: "CostShare", as: :scope
+
   validate :coverage_or_limit_must_be_present
+
+  private
 
   def coverage_or_limit_must_be_present
     if [ coverage_description, limit_usd, limit_gbp, limit_eur ].all?(&:blank?)
