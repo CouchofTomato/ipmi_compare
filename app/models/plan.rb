@@ -7,6 +7,14 @@ class Plan < ApplicationRecord
   has_many :plan_residency_eligibilities, dependent: :destroy
   has_many :countries, through: :plan_residency_eligibilities
 
+  has_many :cost_shares, as: :scope, dependent: :destroy
+  has_many :deductibles, -> { where(cost_share_type: :deductible) },
+           class_name: "CostShare", as: :scope
+  has_many :coinsurances, -> { where(cost_share_type: :coinsurance) },
+           class_name: "CostShare", as: :scope
+  has_many :excesses, -> { where(cost_share_type: :excess) },
+           class_name: "CostShare", as: :scope
+
   validates :name, presence: true
   validates :min_age, presence: true, numericality: { greater_than_or_equal_to: 0, only_integer: true }
   validates :max_age, numericality: { greater_than_or_equal_to: 0, only_integer: true, allow_nil: true }
