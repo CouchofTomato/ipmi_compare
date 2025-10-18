@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_15_200138) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_18_170305) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -33,6 +33,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_200138) do
     t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "cost_shares", force: :cascade do |t|
+    t.string "scope_type", null: false
+    t.bigint "scope_id", null: false
+    t.integer "cost_share_type", null: false
+    t.decimal "amount", precision: 12, scale: 2, null: false
+    t.integer "unit", null: false
+    t.integer "per", null: false
+    t.string "currency"
+    t.text "notes"
+    t.integer "linked_cost_share_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["scope_type", "scope_id"], name: "index_cost_shares_on_scope"
   end
 
   create_table "countries", force: :cascade do |t|
@@ -174,6 +189,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_200138) do
   end
 
   add_foreign_key "benefit_limit_groups", "plan_modules"
+  add_foreign_key "cost_shares", "cost_shares", column: "linked_cost_share_id"
   add_foreign_key "countries", "regions"
   add_foreign_key "module_benefits", "benefit_limit_groups"
   add_foreign_key "module_benefits", "benefits"
