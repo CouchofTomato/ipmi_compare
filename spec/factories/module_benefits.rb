@@ -18,7 +18,7 @@ FactoryBot.define do
 
     trait :with_coinsurance do
       after(:create) do |module_benefit|
-        create(:cost_share, scope: module_benefit, cost_share_type: :coinsurance, amount: 10, unit: :percent, per: :per_claim)
+        create(:cost_share, scope: module_benefit, cost_share_type: :coinsurance, amount: 10, unit: :percent, per: :per_visit)
       end
     end
 
@@ -31,7 +31,7 @@ FactoryBot.define do
     trait :with_all_cost_shares do
       after(:create) do |module_benefit|
         create(:cost_share, scope: module_benefit, cost_share_type: :deductible, amount: 1000, per: :per_year, currency: "USD")
-        create(:cost_share, scope: module_benefit, cost_share_type: :coinsurance, amount: 10, unit: :percent, per: :per_claim)
+        create(:cost_share, scope: module_benefit, cost_share_type: :coinsurance, amount: 10, unit: :percent, per: :per_visit)
         create(:cost_share, scope: module_benefit, cost_share_type: :excess, amount: 25, per: :per_visit, currency: "USD")
       end
     end
