@@ -1,0 +1,14 @@
+<% flash.each do |type, message| %>
+  <% next if message.blank? %>
+  <% styles = case type.to_sym
+             when :notice, :success
+               "border-green-200 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-200"
+             when :alert, :error
+               "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
+             else
+               "border-gray-200 bg-gray-50 text-gray-700 dark:border-white/10 dark:bg-gray-900/50 dark:text-gray-200"
+             end %>
+  <div class="mb-3 rounded-lg border px-4 py-3 text-sm shadow-xs last:mb-0 <%= styles %>">
+    <%= sanitize(message) %>
+  </div>
+<% end %>
