@@ -1,0 +1,58 @@
+<% submit_label = local_assigns.fetch(:submit_label, "Save benefit") %>
+<% cancel_path = local_assigns[:cancel_path] %>
+<% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
+
+<%= form_with(model: benefit, local: true, builder: TailwindFormBuilder, html: { class: "space-y-8" }) do |form| %>
+  <% if benefit.errors.any? %>
+    <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-xs dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+      <div class="space-y-2">
+        <p class="font-semibold">We couldn't save this benefit</p>
+        <p>Please review the following:</p>
+        <ul class="list-disc space-y-1 pl-5">
+          <% benefit.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="space-y-6">
+    <div>
+      <%= form.label :name %>
+      <div class="mt-2">
+        <%= form.text_field :name, class: input_classes, placeholder: "e.g. Inpatient hospitalization" %>
+      </div>
+      <% if benefit.errors[:name].present? %>
+        <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= benefit.errors[:name].to_sentence %></p>
+      <% end %>
+    </div>
+
+    <div>
+      <%= form.label :category %>
+      <div class="mt-2">
+        <%= form.select :category, Benefit.categories.keys.map { |key| [key.humanize, key] }, { prompt: "Select a category" }, class: input_classes %>
+      </div>
+      <% if benefit.errors[:category].present? %>
+        <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= benefit.errors[:category].to_sentence %></p>
+      <% end %>
+    </div>
+
+    <div>
+      <%= form.label :description %>
+      <div class="mt-2">
+        <%= form.text_area :description, class: "#{input_classes} min-h-[120px]", placeholder: "Describe what this benefit covers" %>
+      </div>
+      <% if benefit.errors[:description].present? %>
+        <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= benefit.errors[:description].to_sentence %></p>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-end dark:border-white/10">
+    <% if cancel_path.present? %>
+      <%= link_to "Cancel", cancel_path, class: "text-sm font-semibold text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" %>
+    <% end %>
+    <%= form.submit submit_label %>
+  </div>
+<% end %>
