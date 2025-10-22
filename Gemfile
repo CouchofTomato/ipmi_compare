@@ -39,9 +39,11 @@ gem "thruster", require: false
 # gem "image_processing", "~> 1.2"
 
 gem "class_variants", "~> 1.1"
+gem "country_select", "~> 8.0"
 gem "cssbundling-rails", "~> 1.4"
 gem "devise", "~> 4.9"
 gem "devise_invitable", "~> 2.0.0"
+gem "inline_svg", "~> 1.8"
 gem "jsbundling-rails", "~> 1.3"
 
 group :development, :test do
