@@ -22,9 +22,13 @@
     <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
   </head>
 
-  <body class="h-full">
-    <p class="notice"><%= notice %></p>
-    <p class="alert"><%= alert %></p>
+  <body class="min-h-screen bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100">
+    <%= render "layouts/navbar" %>
+    <% if flash.any? { |_, message| message.present? } %>
+      <div class="mx-auto max-w-5xl px-4 pt-4 sm:px-6 lg:px-8">
+        <%= render "layouts/flash" %>
+      </div>
+    <% end %>
     <%= yield %>
   </body>
 </html>
