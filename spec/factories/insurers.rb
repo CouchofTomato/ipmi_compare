@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :insurer do
     name { "MyString" }
-    jurisdiction { "MyString" }
+    jurisdiction { "GB" }
   end
 end
