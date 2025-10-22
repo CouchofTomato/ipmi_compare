@@ -27,7 +27,7 @@ RSpec.configure do |config|
   config.prepend_before(:each, type: :system) do
     # Use JS driver always
     driven_by :cuprite, using: :chrome, options: {
-      window_size: [1200, 800],
+      window_size: [ 1200, 800 ],
       # See additional options for Dockerized environment in the respective section of this article
       browser_options: {},
       # Increase Chrome startup wait time (required for stable CI builds)
