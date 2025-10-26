@@ -1,4 +1,4 @@
-class CreateWizardProgress < ActiveRecord::Migration[8.1]
+class CreateWizardProgresses < ActiveRecord::Migration[8.1]
   def change
     create_table :wizard_progresses do |t|
       t.string :wizard_type, null: false
