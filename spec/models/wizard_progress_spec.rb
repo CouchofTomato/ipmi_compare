@@ -5,6 +5,7 @@ RSpec.describe WizardProgress, type: :model do
 
   #== Associations ===========================================================
   it { expect(wizard_progress).to belong_to(:entity) }
+  it { expect(wizard_progress).to belong_to(:user) }
   it { expect(wizard_progress).to belong_to(:last_actor).class_name("User").optional }
 
   #== Validations ============================================================

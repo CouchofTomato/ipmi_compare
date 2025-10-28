@@ -1,5 +1,6 @@
 class WizardProgress < ApplicationRecord
   belongs_to :entity, polymorphic: true
+  belongs_to :user
   belongs_to :last_actor, class_name: "User", optional: true
 
   enum :status, {

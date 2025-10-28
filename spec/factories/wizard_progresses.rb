@@ -2,6 +2,7 @@ FactoryBot.define do
   factory :wizard_progress do
     wizard_type { "plan_onboarding" }
     association :entity, factory: :plan
+    user
     current_step { "plan_details" }
     step_order { 1 }
     status { "in_progress" }
