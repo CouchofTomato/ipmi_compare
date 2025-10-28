@@ -14,4 +14,28 @@ class WizardProgress < ApplicationRecord
   validates :started_at, presence: true
   validates :step_order, presence: true, numericality: { greater_than_or_equal_to: 0, only_integer: true }
   validates :wizard_type, uniqueness: { scope: %i[entity_type entity_id] }
+
+  def flow
+    WizardFlow.for(self)
+  end
+
+  def steps
+    flow.steps
+  end
+
+  def current_step_index
+    steps.index(current_step) || 0
+  end
+
+  def next_step
+    steps[current_step_index + 1]
+  end
+
+  def previous_step
+    steps[current_step_index - 1] unless current_step_index.zero?
+  end
+
+  def progress
+    ((current_step_index.to_f / (steps.size - 1)) * 100).round
+  end
 end

@@ -17,4 +17,79 @@ RSpec.describe WizardProgress, type: :model do
 
   #== Enums ===================================================================
   it { expect(wizard_progress).to define_enum_for(:status).with_values(in_progress: "in_progress", complete: "complete", abandoned: "abandoned", expired: "expired").backed_by_column_of_type(:string) }
+
+  describe "#flow" do
+    subject(:wizard_progress) { build(:wizard_progress) }
+
+    let(:flow) { instance_double("WizardFlow") }
+    let(:wizard_flow_class) { class_double("WizardFlow").as_stubbed_const }
+
+    before do
+      allow(wizard_flow_class).to receive(:for).with(wizard_progress).and_return(flow)
+    end
+
+    it "returns the flow from WizardFlow.for" do
+      expect(wizard_progress.flow).to eq(flow)
+    end
+  end
+
+  describe "step helpers" do
+    subject(:wizard_progress) { build(:wizard_progress, current_step: current_step) }
+
+    let(:steps) { %w[plan_details contacts review] }
+    let(:flow) { instance_double("WizardFlow", steps: steps) }
+    let(:wizard_flow_class) { class_double("WizardFlow").as_stubbed_const }
+
+    before do
+      allow(wizard_flow_class).to receive(:for).with(wizard_progress).and_return(flow)
+    end
+
+    context "when the current step is part of the flow" do
+      let(:current_step) { "contacts" }
+
+      it "returns the list of steps from the flow" do
+        expect(wizard_progress.steps).to eq(steps)
+      end
+
+      it "returns the index of the current step" do
+        expect(wizard_progress.current_step_index).to eq(1)
+      end
+
+      it "returns the next step" do
+        expect(wizard_progress.next_step).to eq("review")
+      end
+
+      it "returns the previous step" do
+        expect(wizard_progress.previous_step).to eq("plan_details")
+      end
+
+      it "calculates the percentage of progress through the flow" do
+        expect(wizard_progress.progress).to eq(50)
+      end
+    end
+
+    context "when the current step is the first in the flow" do
+      let(:current_step) { "plan_details" }
+
+      it "does not return a previous step" do
+        expect(wizard_progress.previous_step).to be_nil
+      end
+    end
+
+    context "when the current step is the last in the flow" do
+      let(:current_step) { "review" }
+
+      it "does not return a next step" do
+        expect(wizard_progress.next_step).to be_nil
+      end
+    end
+
+    context "when the current step does not exist in the flow" do
+      let(:current_step) { "missing_step" }
+
+      it "defaults the current step index to zero" do
+        expect(wizard_progress.current_step_index).to eq(0)
+      end
+    end
+  end
 end
