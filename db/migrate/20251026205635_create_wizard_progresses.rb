@@ -14,6 +14,7 @@ class CreateWizardProgresses < ActiveRecord::Migration[8.1]
       t.string :last_event
       t.bigint :last_actor_id
       t.jsonb :metadata, null: false, default: {}
+      t.references :user, null: true, foreign_key: true
 
       t.timestamps
     end
@@ -22,7 +23,7 @@ class CreateWizardProgresses < ActiveRecord::Migration[8.1]
               %i[wizard_type entity_type entity_id],
               unique: true,
               name: "index_wizard_progresses_on_type_and_entity"
-
     add_index :wizard_progresses, %i[status updated_at]
+    add_index :wizard_progresses, :wizard_type
   end
 end

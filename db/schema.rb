@@ -233,10 +233,13 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.string "status", default: "in_progress", null: false
     t.integer "step_order", default: 0, null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id"
     t.string "wizard_type", null: false
     t.index ["entity_type", "entity_id"], name: "index_wizard_progresses_on_entity"
     t.index ["status", "updated_at"], name: "index_wizard_progresses_on_status_and_updated_at"
+    t.index ["user_id"], name: "index_wizard_progresses_on_user_id"
     t.index ["wizard_type", "entity_type", "entity_id"], name: "index_wizard_progresses_on_type_and_entity", unique: true
+    t.index ["wizard_type"], name: "index_wizard_progresses_on_wizard_type"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
@@ -255,4 +258,5 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
   add_foreign_key "plan_residency_eligibilities", "countries"
   add_foreign_key "plan_residency_eligibilities", "plans"
   add_foreign_key "plans", "insurers"
+  add_foreign_key "wizard_progresses", "users"
 end
