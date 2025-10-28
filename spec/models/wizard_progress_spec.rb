@@ -5,6 +5,7 @@ RSpec.describe WizardProgress, type: :model do
 
   #== Associations ===========================================================
   it { expect(wizard_progress).to belong_to(:entity) }
+  it { expect(wizard_progress).to belong_to(:user) }
   it { expect(wizard_progress).to belong_to(:last_actor).class_name("User").optional }
 
   #== Validations ============================================================
@@ -17,4 +18,20 @@ RSpec.describe WizardProgress, type: :model do
 
   #== Enums ===================================================================
   it { expect(wizard_progress).to define_enum_for(:status).with_values(in_progress: "in_progress", complete: "complete", abandoned: "abandoned", expired: "expired").backed_by_column_of_type(:string) }
+
+  describe "#flow" do
+    subject(:wizard_progress) { build(:wizard_progress, wizard_type: "plan_creation", current_step: "plan_residency") }
+
+    it "returns the next step correctly" do
+      expect(wizard_progress.next_step).to eq("geographic_cover_areas")
+    end
+
+    it "returns the previous step correctly" do
+      wizard_progress.current_step = "geographic_cover_areas"
+      expect(wizard_progress.previous_step).to eq("plan_residency")
+    end
+    it "calculates progress as a percentage" do
+      expect(wizard_progress.progress).to be_between(0, 100)
+    end
+  end
 end
