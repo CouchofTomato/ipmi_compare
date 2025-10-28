@@ -16,7 +16,7 @@ class WizardProgressesController < ApplicationController
     when "previous"
       @progress.update!(current_step: @progress.previous_step)
     when "complete"
-      @progress.update!(status: :completed)
+      @progress.update!(status: :complete)
     end
 
     respond_to do |format|
