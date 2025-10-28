@@ -2,7 +2,7 @@ class CreateWizardProgresses < ActiveRecord::Migration[8.1]
   def change
     create_table :wizard_progresses do |t|
       t.string :wizard_type, null: false
-      t.references :entity, polymorphic: true, null: false
+      t.references :subject, polymorphic: true, null: true
       t.string :current_step, null: false
       t.integer :step_order, null: false, default: 0
       t.string :status, null: false, default: "in_progress"
@@ -20,9 +20,9 @@ class CreateWizardProgresses < ActiveRecord::Migration[8.1]
     end
 
     add_index :wizard_progresses,
-              %i[wizard_type entity_type entity_id],
+              %i[wizard_type subject_type subject_id],
               unique: true,
-              name: "index_wizard_progresses_on_type_and_entity"
+              name: "index_wizard_progresses_on_type_and_subject"
     add_index :wizard_progresses, %i[status updated_at]
     add_index :wizard_progresses, :wizard_type
   end

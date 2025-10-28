@@ -223,8 +223,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.datetime "completed_at"
     t.datetime "created_at", null: false
     t.string "current_step", null: false
-    t.bigint "entity_id", null: false
-    t.string "entity_type", null: false
     t.datetime "expires_at"
     t.bigint "last_actor_id"
     t.string "last_event"
@@ -233,14 +231,16 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.datetime "started_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
     t.string "status", default: "in_progress", null: false
     t.integer "step_order", default: 0, null: false
+    t.bigint "subject_id"
+    t.string "subject_type"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.string "wizard_type", null: false
-    t.index ["entity_type", "entity_id"], name: "index_wizard_progresses_on_entity"
     t.index ["last_actor_id"], name: "index_wizard_progresses_on_last_actor_id"
     t.index ["status", "updated_at"], name: "index_wizard_progresses_on_status_and_updated_at"
+    t.index ["subject_type", "subject_id"], name: "index_wizard_progresses_on_subject"
     t.index ["user_id"], name: "index_wizard_progresses_on_user_id"
-    t.index ["wizard_type", "entity_type", "entity_id"], name: "index_wizard_progresses_on_type_and_entity", unique: true
+    t.index ["wizard_type", "subject_type", "subject_id"], name: "index_wizard_progresses_on_type_and_subject", unique: true
     t.index ["wizard_type"], name: "index_wizard_progresses_on_wizard_type"
   end
 
