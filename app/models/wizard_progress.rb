@@ -1,5 +1,5 @@
 class WizardProgress < ApplicationRecord
-  belongs_to :entity, polymorphic: true
+  belongs_to :subject, polymorphic: true, optional: true
   belongs_to :user
   belongs_to :last_actor, class_name: "User", optional: true
 
@@ -14,7 +14,7 @@ class WizardProgress < ApplicationRecord
   validates :current_step, presence: true
   validates :started_at, presence: true
   validates :step_order, presence: true, numericality: { greater_than_or_equal_to: 0, only_integer: true }
-  validates :wizard_type, uniqueness: { scope: %i[entity_type entity_id] }
+  validates :wizard_type, uniqueness: { scope: %i[subject_type subject_id] }
 
   def flow
     WizardFlow.for(self)
