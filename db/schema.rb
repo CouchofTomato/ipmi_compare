@@ -68,13 +68,14 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.integer "cost_share_type", null: false
     t.datetime "created_at", null: false
     t.string "currency"
-    t.integer "linked_cost_share_id"
+    t.bigint "linked_cost_share_id"
     t.text "notes"
     t.integer "per", null: false
     t.bigint "scope_id", null: false
     t.string "scope_type", null: false
     t.integer "unit", null: false
     t.datetime "updated_at", null: false
+    t.index ["linked_cost_share_id"], name: "index_cost_shares_on_linked_cost_share_id"
     t.index ["scope_type", "scope_id"], name: "index_cost_shares_on_scope"
   end
 
@@ -225,7 +226,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.bigint "entity_id", null: false
     t.string "entity_type", null: false
     t.datetime "expires_at"
-    t.integer "last_actor_id"
+    t.bigint "last_actor_id"
     t.string "last_event"
     t.datetime "last_interaction_at"
     t.jsonb "metadata", default: {}, null: false
@@ -236,6 +237,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.bigint "user_id"
     t.string "wizard_type", null: false
     t.index ["entity_type", "entity_id"], name: "index_wizard_progresses_on_entity"
+    t.index ["last_actor_id"], name: "index_wizard_progresses_on_last_actor_id"
     t.index ["status", "updated_at"], name: "index_wizard_progresses_on_status_and_updated_at"
     t.index ["user_id"], name: "index_wizard_progresses_on_user_id"
     t.index ["wizard_type", "entity_type", "entity_id"], name: "index_wizard_progresses_on_type_and_entity", unique: true

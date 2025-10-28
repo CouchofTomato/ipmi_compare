@@ -8,11 +8,9 @@ class CreateCostShares < ActiveRecord::Migration[8.0]
       t.integer :per, null: false
       t.string :currency
       t.text :notes
-      t.integer :linked_cost_share_id
+      t.references :linked_cost_share, foreign_key: { to_table: :cost_shares }, type: :bigint
 
       t.timestamps
     end
-
-    add_foreign_key :cost_shares, :cost_shares, column: :linked_cost_share_id
   end
 end
