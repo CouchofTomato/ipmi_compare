@@ -17,52 +17,58 @@
         <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Insurer directory</h2>
       </div>
       <div class="px-4 py-4 sm:px-6">
-        <div class="-mx-4 sm:-mx-6 lg:-mx-8">
-          <div class="inline-block min-w-full align-middle">
-            <div class="overflow-hidden shadow-sm ring-1 ring-black ring-opacity-5 sm:rounded-lg dark:ring-white/10">
-              <table class="min-w-full divide-y divide-gray-300 dark:divide-white/15">
-                <thead class="bg-gray-50 dark:bg-gray-900/50">
-                  <tr>
-                    <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6 dark:text-white">Name</th>
-                    <th scope="col" class="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell dark:text-white">Jurisdiction</th>
-                    <th scope="col" class="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 sm:table-cell dark:text-white">Plans</th>
-                    <th scope="col" class="py-3.5 pr-4 pl-3 sm:pr-6">
-                      <span class="sr-only">Edit</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 bg-white dark:divide-white/10 dark:bg-gray-900">
-                  <% @insurers.each do |insurer| %>
+        <% if @insurers.any? %>
+          <div class="-mx-4 sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full align-middle">
+              <div class="overflow-hidden shadow-sm ring-1 ring-black ring-opacity-5 sm:rounded-lg dark:ring-white/10">
+                <table class="min-w-full divide-y divide-gray-300 dark:divide-white/15">
+                  <thead class="bg-gray-50 dark:bg-gray-900/50">
                     <tr>
-                      <td class="w-full max-w-0 py-4 pr-3 pl-4 text-sm font-medium text-gray-900 sm:w-auto sm:max-w-none sm:pl-6 dark:text-white">
-                        <div class="flex items-center gap-x-4">
-                          <% if insurer.logo.attached? %>
-                            <%= image_tag insurer.logo.variant(resize_to_limit: [48, 48]), alt: "#{insurer.name} Logo", class: "h-12 w-12 flex-none rounded-full bg-gray-50" %>
-                          <% end %>
-                          <%= link_to insurer_path(insurer), class: "block truncate text-sm/6 font-medium text-gray-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-300" do %>
-                            <span class="truncate"><%= insurer.name %></span>
-                          <% end %>
-                        </div>
-                        <dl class="font-normal lg:hidden">
-                          <dt class="sr-only">Jurisdiction</dt>
-                          <dd class="mt-1 truncate text-gray-700 dark:text-gray-300"><%= insurer.country_name %></dd>
-                        </dl>
-                      </td>
-                      <td class="hidden px-3 py-4 text-sm text-gray-500 sm:table-cell dark:text-gray-400"><%= insurer.country_name %></td>
-                      <td class="hidden px-3 py-4 text-sm text-gray-500 sm:table-cell dark:text-gray-400"><%= insurer.plans.count %></td>
-                      <td class="py-4 pr-4 pl-3 text-right text-sm font-medium sm:pr-6">
-                        <%= link_to edit_insurer_path(insurer), class: "inline-flex items-center justify-center text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300" do %>
-                          <span class="sr-only">Edit</span>
-                          <%= inline_svg_tag "pencil-square.svg", class: "h-5 w-5", aria: { hidden: true } %>
-                        <% end %>
-                      </td>
+                      <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6 dark:text-white">Name</th>
+                      <th scope="col" class="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell dark:text-white">Jurisdiction</th>
+                      <th scope="col" class="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 sm:table-cell dark:text-white">Plans</th>
+                      <th scope="col" class="py-3.5 pr-4 pl-3 sm:pr-6">
+                        <span class="sr-only">Edit</span>
+                      </th>
                     </tr>
-                  <% end %>
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 bg-white dark:divide-white/10 dark:bg-gray-900">
+                    <% @insurers.each do |insurer| %>
+                      <tr>
+                        <td class="w-full max-w-0 py-4 pr-3 pl-4 text-sm font-medium text-gray-900 sm:w-auto sm:max-w-none sm:pl-6 dark:text-white">
+                          <div class="flex items-center gap-x-4">
+                            <% if insurer.logo.attached? %>
+                              <%= image_tag insurer.logo.variant(resize_to_limit: [48, 48]), alt: "#{insurer.name} Logo", class: "h-12 w-12 flex-none rounded-full bg-gray-50" %>
+                            <% end %>
+                            <%= link_to insurer_path(insurer), class: "block truncate text-sm/6 font-medium text-gray-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-300" do %>
+                              <span class="truncate"><%= insurer.name %></span>
+                            <% end %>
+                          </div>
+                          <dl class="font-normal lg:hidden">
+                            <dt class="sr-only">Jurisdiction</dt>
+                            <dd class="mt-1 truncate text-gray-700 dark:text-gray-300"><%= insurer.country_name %></dd>
+                          </dl>
+                        </td>
+                        <td class="hidden px-3 py-4 text-sm text-gray-500 sm:table-cell dark:text-gray-400"><%= insurer.country_name %></td>
+                        <td class="hidden px-3 py-4 text-sm text-gray-500 sm:table-cell dark:text-gray-400"><%= insurer.plans.count %></td>
+                        <td class="py-4 pr-4 pl-3 text-right text-sm font-medium sm:pr-6">
+                          <%= link_to edit_insurer_path(insurer), class: "inline-flex items-center justify-center text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300" do %>
+                            <span class="sr-only">Edit</span>
+                            <%= inline_svg_tag "pencil-square.svg", class: "h-5 w-5", aria: { hidden: true } %>
+                          <% end %>
+                        </td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
+        <% else %>
+          <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-6 py-12 text-center text-sm text-gray-600 dark:border-white/15 dark:bg-gray-900/50 dark:text-gray-300">
+            <p>No insurers yet. <%= link_to "Create the first insurer", new_insurer_path, class: "font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300" %>.</p>
+          </div>
+        <% end %>
       </div>
     </div>
   </div>

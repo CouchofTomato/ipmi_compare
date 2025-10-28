@@ -1,5 +1,6 @@
 <% nav_links = if user_signed_in?
   [
+    { name: "Plans", path: plans_path },
     { name: "Benefits", path: benefits_path },
     { name: "Insurers", path: insurers_path }
   ]
