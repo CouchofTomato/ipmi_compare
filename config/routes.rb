@@ -22,7 +22,5 @@ Rails.application.routes.draw do
   resources :plans, only: %i[index show new create]
   resources :benefits
   resources :insurers
-
-  get "wizard_progresses/show"
-  get "wizard_progresses/update"
+  resources :wizard_progresses, only: %i[show update]
 end
