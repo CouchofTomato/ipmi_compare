@@ -1,0 +1,100 @@
+<% content_for :title, @plan.name %>
+
+<div class="px-4 py-10 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-4xl space-y-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <%= link_to "Back to plans", plans_path, class: "inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300" %>
+        <h1 class="mt-4 text-3xl font-semibold text-gray-900 dark:text-white"><%= @plan.name %></h1>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Core plan information at a glance.</p>
+      </div>
+    </div>
+
+    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-gray-900">
+      <dl class="divide-y divide-gray-200 text-sm text-gray-700 dark:divide-white/10 dark:text-gray-200">
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Insurer</dt>
+          <dd><%= @plan.insurer&.name || "Unassigned" %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Policy type</dt>
+          <dd><%= @plan.policy_type&.humanize || "Not set" %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Version year</dt>
+          <dd><%= @plan.version_year %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Min age</dt>
+          <dd><%= @plan.min_age %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Max age</dt>
+          <dd><%= @plan.max_age || "Not set" %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Next review due</dt>
+          <dd><%= @plan.next_review_due&.strftime("%Y-%m-%d") || "Not set" %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Last reviewed at</dt>
+          <dd><%= @plan.last_reviewed_at&.strftime("%Y-%m-%d") || "Not set" %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Published?</dt>
+          <dd><%= @plan.published? ? "Yes" : "No" %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Children only?</dt>
+          <dd><%= @plan.children_only_allowed? ? "Yes" : "No" %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit USD</dt>
+          <dd>
+            <% if @plan.overall_limit_usd.present? %>
+              <%= number_to_currency(@plan.overall_limit_usd, unit: "$", precision: 0) %>
+            <% else %>
+              Not set
+            <% end %>
+          </dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit GBP</dt>
+          <dd>
+            <% if @plan.overall_limit_gbp.present? %>
+              <%= number_to_currency(@plan.overall_limit_gbp, unit: "£", precision: 0) %>
+            <% else %>
+              Not set
+            <% end %>
+          </dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit EUR</dt>
+          <dd>
+            <% if @plan.overall_limit_eur.present? %>
+              <%= number_to_currency(@plan.overall_limit_eur, unit: "€", precision: 0) %>
+            <% else %>
+              Not set
+            <% end %>
+          </dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit unit</dt>
+          <dd><%= @plan.overall_limit_unit.presence || "Not set" %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit unlimited?</dt>
+          <dd><%= @plan.overall_limit_unlimited? ? "Yes" : "No" %></dd>
+        </div>
+        <div class="px-6 py-4">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit notes</dt>
+          <dd class="mt-2 text-gray-700 dark:text-gray-200"><%= @plan.overall_limit_notes.presence || "No notes provided." %></dd>
+        </div>
+        <div class="px-6 py-4">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Review notes</dt>
+          <dd class="mt-2 text-gray-700 dark:text-gray-200"><%= @plan.review_notes.presence || "No notes provided." %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</div>
