@@ -12,12 +12,14 @@ class CreateWizardProgresses < ActiveRecord::Migration[8.1]
       t.datetime :abandoned_at
       t.datetime :expires_at
       t.string :last_event
-      t.bigint :last_actor_id
+      t.integer :last_actor_id
       t.jsonb :metadata, null: false, default: {}
       t.references :user, null: true, foreign_key: true
 
       t.timestamps
     end
+
+    add_foreign_key :wizard_progresses, :users, column: :last_actor_id
 
     add_index :wizard_progresses,
               %i[wizard_type entity_type entity_id],

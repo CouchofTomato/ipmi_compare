@@ -225,7 +225,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.bigint "entity_id", null: false
     t.string "entity_type", null: false
     t.datetime "expires_at"
-    t.bigint "last_actor_id"
+    t.integer "last_actor_id"
     t.string "last_event"
     t.datetime "last_interaction_at"
     t.jsonb "metadata", default: {}, null: false
@@ -259,4 +259,5 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
   add_foreign_key "plan_residency_eligibilities", "plans"
   add_foreign_key "plans", "insurers"
   add_foreign_key "wizard_progresses", "users"
+  add_foreign_key "wizard_progresses", "users", column: "last_actor_id"
 end
