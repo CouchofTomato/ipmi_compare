@@ -240,7 +240,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.index ["status", "updated_at"], name: "index_wizard_progresses_on_status_and_updated_at"
     t.index ["subject_type", "subject_id"], name: "index_wizard_progresses_on_subject"
     t.index ["user_id"], name: "index_wizard_progresses_on_user_id"
-    t.index ["wizard_type", "subject_type", "subject_id"], name: "index_wizard_progresses_on_type_and_subject", unique: true
+    t.index ["wizard_type", "subject_type", "subject_id"], name: "index_wizard_progresses_on_type_and_subject", unique: true, where: "(subject_id IS NOT NULL)"
     t.index ["wizard_type"], name: "index_wizard_progresses_on_wizard_type"
   end
 
