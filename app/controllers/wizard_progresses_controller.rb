@@ -14,7 +14,7 @@ class WizardProgressesController < ApplicationController
     progress.current_step = progress.steps.first
 
     if progress.save
-      redirect_to wizard_progress_path(progress), notice: "Plan wizard started."
+      redirect_to wizard_progress_path(progress)
     else
       redirect_back fallback_location: root_path,
                     alert: "Could not start the wizard: #{progress.errors.full_messages.to_sentence}"
