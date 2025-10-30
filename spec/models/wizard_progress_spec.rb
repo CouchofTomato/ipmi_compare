@@ -14,7 +14,30 @@ RSpec.describe WizardProgress, type: :model do
   it { expect(wizard_progress).to validate_presence_of(:started_at) }
   it { expect(wizard_progress).to validate_presence_of(:step_order) }
   it { expect(wizard_progress).to validate_numericality_of(:step_order).is_greater_than_or_equal_to(0).only_integer }
-  it { expect(wizard_progress).to validate_uniqueness_of(:wizard_type).scoped_to(:subject_type, :subject_id) }
+  describe "wizard type uniqueness scoped to subject" do
+    it "allows duplicates when subject is nil" do
+      create(:wizard_progress, wizard_type: "plan_creation", subject: nil, subject_type: nil, subject_id: nil)
+
+      duplicate = build(
+        :wizard_progress,
+        wizard_type: "plan_creation",
+        subject: nil,
+        subject_type: nil,
+        subject_id: nil
+      )
+
+      expect(duplicate).to be_valid
+    end
+
+    it "prevents duplicates when subject is present" do
+      plan = create(:plan)
+      create(:wizard_progress, wizard_type: "plan_creation", subject: plan)
+
+      duplicate = build(:wizard_progress, wizard_type: "plan_creation", subject: plan)
+      expect(duplicate).to be_invalid
+      expect(duplicate.errors[:wizard_type]).to include("has already been taken")
+    end
+  end
 
   #== Enums ===================================================================
   it { expect(wizard_progress).to define_enum_for(:status).with_values(in_progress: "in_progress", complete: "complete", abandoned: "abandoned", expired: "expired").backed_by_column_of_type(:string) }

@@ -1,0 +1,202 @@
+<% plan = progress.subject || Plan.new %>
+<% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
+<% field_classes = lambda do |attributes, *extra_classes|
+     attrs = Array(attributes)
+     classes = [input_classes] + extra_classes
+     classes << "ring-red-500 focus:ring-red-500" if attrs.any? { |attr| plan.errors[attr].present? }
+     classes.compact.join(" ")
+   end %>
+
+<div class="space-y-6">
+  <div>
+    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Step 1: Plan details</h2>
+    <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Start a new plan by entering its core attributes. You can refine the rest of the plan as you move through the wizard.</p>
+  </div>
+
+  <%= form_with(
+        model: plan,
+        url: wizard_progress_path(progress),
+        method: :patch,
+        data: { turbo_frame: "wizard_step" },
+        local: true,
+        builder: TailwindFormBuilder,
+        html: { class: "space-y-8" }
+      ) do |form| %>
+    <% if plan.errors.any? %>
+      <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-xs dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+        <div class="space-y-2">
+          <p class="font-semibold">We couldn't save this plan</p>
+          <p>Please review the following:</p>
+          <ul class="list-disc space-y-1 pl-5">
+            <% plan.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    <% end %>
+
+    <div class="space-y-6">
+      <div>
+        <%= form.label :insurer_id, "Insurer" %>
+        <div class="mt-2">
+          <%= form.collection_select :insurer_id, Insurer.order(:name), :id, :name, { prompt: "Select an insurer" }, class: field_classes.call([:insurer, :insurer_id]) %>
+        </div>
+        <% insurer_errors = plan.errors[:insurer] + plan.errors[:insurer_id] %>
+        <% if insurer_errors.present? %>
+          <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= insurer_errors.uniq.to_sentence %></p>
+        <% end %>
+      </div>
+
+      <div>
+        <%= form.label :name, "Plan name" %>
+        <div class="mt-2">
+          <%= form.text_field :name, class: field_classes.call(:name), placeholder: "e.g. Global Gold" %>
+        </div>
+        <% if plan.errors[:name].present? %>
+          <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:name].to_sentence %></p>
+        <% end %>
+      </div>
+
+      <div class="grid gap-6 sm:grid-cols-2">
+        <div>
+          <%= form.label :version_year %>
+          <div class="mt-2">
+            <%= form.number_field :version_year, class: field_classes.call(:version_year), min: 1900 %>
+          </div>
+          <% if plan.errors[:version_year].present? %>
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:version_year].to_sentence %></p>
+          <% end %>
+        </div>
+
+        <div>
+          <%= form.label :policy_type %>
+          <div class="mt-2">
+            <%= form.select :policy_type, Plan.policy_types.keys.map { |type| [type.humanize, type] }, { prompt: "Select a policy type" }, class: field_classes.call(:policy_type) %>
+          </div>
+          <% if plan.errors[:policy_type].present? %>
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:policy_type].to_sentence %></p>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="grid gap-6 sm:grid-cols-2">
+        <div>
+          <%= form.label :min_age %>
+          <div class="mt-2">
+            <%= form.number_field :min_age, class: field_classes.call(:min_age), min: 0 %>
+          </div>
+          <% if plan.errors[:min_age].present? %>
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:min_age].to_sentence %></p>
+          <% end %>
+        </div>
+
+        <div>
+          <%= form.label :max_age %>
+          <div class="mt-2">
+            <%= form.number_field :max_age, class: field_classes.call(:max_age), min: 0 %>
+          </div>
+          <% if plan.errors[:max_age].present? %>
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:max_age].to_sentence %></p>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="grid gap-6 sm:grid-cols-2">
+        <div>
+          <%= form.label :next_review_due %>
+          <div class="mt-2">
+            <%= form.date_field :next_review_due, class: field_classes.call(:next_review_due) %>
+          </div>
+          <% if plan.errors[:next_review_due].present? %>
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:next_review_due].to_sentence %></p>
+          <% end %>
+        </div>
+
+        <div>
+          <%= form.label :last_reviewed_at %>
+          <div class="mt-2">
+            <%= form.date_field :last_reviewed_at, class: field_classes.call(:last_reviewed_at) %>
+          </div>
+          <% if plan.errors[:last_reviewed_at].present? %>
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:last_reviewed_at].to_sentence %></p>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="grid gap-6 sm:grid-cols-3">
+        <div>
+          <%= form.label :overall_limit_usd, "Overall limit (USD)" %>
+          <div class="mt-2">
+            <%= form.number_field :overall_limit_usd, class: field_classes.call(:overall_limit_usd), min: 0, step: 0.01 %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :overall_limit_gbp, "Overall limit (GBP)" %>
+          <div class="mt-2">
+            <%= form.number_field :overall_limit_gbp, class: field_classes.call(:overall_limit_gbp), min: 0, step: 0.01 %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :overall_limit_eur, "Overall limit (EUR)" %>
+          <div class="mt-2">
+            <%= form.number_field :overall_limit_eur, class: field_classes.call(:overall_limit_eur), min: 0, step: 0.01 %>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <%= form.label :overall_limit_unit, "Overall limit unit" %>
+        <div class="mt-2">
+          <%= form.text_field :overall_limit_unit, class: field_classes.call(:overall_limit_unit), placeholder: "e.g. Per policy year" %>
+        </div>
+      </div>
+
+      <div>
+        <%= form.label :overall_limit_notes %>
+        <div class="mt-2">
+          <%= form.text_area :overall_limit_notes, class: field_classes.call(:overall_limit_notes, "min-h-[120px]"), placeholder: "Add any additional context around the overall limits" %>
+        </div>
+      </div>
+
+      <div>
+        <%= form.label :review_notes %>
+        <div class="mt-2">
+          <%= form.text_area :review_notes, class: field_classes.call(:review_notes, "min-h-[120px]"), placeholder: "Internal notes about this plan's review status" %>
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="flex items-center gap-3">
+          <%= form.check_box :children_only_allowed %>
+          <%= form.label :children_only_allowed, "Children only plan", class: "text-sm font-medium text-gray-700 dark:text-gray-200" %>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <%= form.check_box :published %>
+          <%= form.label :published, class: "text-sm font-medium text-gray-700 dark:text-gray-200" %>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-3 rounded-lg border border-gray-200 p-4 dark:border-white/10">
+        <div class="pt-1">
+          <%= form.check_box :overall_limit_unlimited %>
+        </div>
+        <div>
+          <%= form.label :overall_limit_unlimited, "Mark the plan's overall limit as unlimited", class: "text-sm font-medium text-gray-700 dark:text-gray-200" %>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">When selected, you can leave the currency limits blank. Otherwise, provide at least one limit amount above.</p>
+          <% if plan.errors[:overall_limit_unlimited].present? || plan.errors[:base].present? %>
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= (plan.errors[:overall_limit_unlimited] + plan.errors[:base]).uniq.to_sentence %></p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+      <%= button_tag "← Back", name: "step_action", value: "previous", class: "rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10" %>
+      <%= button_tag "Save and continue →", name: "step_action", value: "next", class: "rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400" %>
+    </div>
+  <% end %>
+</div>
