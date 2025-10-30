@@ -7,7 +7,8 @@
      classes.compact.join(" ")
    end %>
 
-<div class="space-y-6">
+<%= turbo_frame_tag "wizard_step" do %>
+  <div class="space-y-6">
   <div>
     <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Step 1: Plan details</h2>
     <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Start a new plan by entering its core attributes. You can refine the rest of the plan as you move through the wizard.</p>
@@ -195,8 +196,8 @@
     </div>
 
     <div class="flex flex-col gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
-      <%= button_tag "← Back", name: "step_action", value: "previous", class: "rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10" %>
       <%= button_tag "Save and continue →", name: "step_action", value: "next", class: "rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400" %>
     </div>
   <% end %>
 </div>
+<% end %>

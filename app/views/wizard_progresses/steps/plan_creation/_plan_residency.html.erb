@@ -1,10 +1,13 @@
-<div>
-  <h2 class="text-xl font-semibold mb-2">Step 1: Plan Residency</h2>
-  <p>This is a placeholder for the Plan Residency step.</p>
+<%= turbo_frame_tag "wizard_step" do %>
+  <div>
+    <h2 class="text-xl font-semibold mb-2">Step 1: Plan Residency</h2>
+    <p>This is a placeholder for the Plan Residency step.</p>
 
-  <%= form_with url: wizard_progress_path(@progress), method: :patch, data: { turbo_frame: "wizard_step" } do %>
-    <div class="mt-4 flex justify-end">
-      <%= submit_tag "Next →", name: "step_action", value: "next", class: "bg-blue-600 text-white px-4 py-2 rounded" %>
-    </div>
-  <% end %>
-</div>
+    <%= form_with url: wizard_progress_path(@progress), method: :patch, data: { turbo_frame: "wizard_step" } do %>
+      <div class="mt-4 flex justify-end">
+        <%= button_tag "← Back", name: "step_action", value: "previous", class: "rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10" %>
+        <%= submit_tag "Next →", name: "step_action", value: "next", class: "bg-blue-600 text-white px-4 py-2 rounded" %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

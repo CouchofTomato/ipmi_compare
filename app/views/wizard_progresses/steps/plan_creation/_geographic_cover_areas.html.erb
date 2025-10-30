@@ -1,11 +1,13 @@
-<div>
-  <h2 class="text-xl font-semibold mb-2">Step 2: GeographicCoverArea</h2>
-  <p>Placeholder step — will handle GeographicCoverArea associations later.</p>
+<%= turbo_frame_tag "wizard_step" do %>
+  <div>
+    <h2 class="text-xl font-semibold mb-2">Step 2: GeographicCoverArea</h2>
+    <p>Placeholder step — will handle GeographicCoverArea associations later.</p>
 
-  <%= form_with url: wizard_progress_path(@progress), method: :patch, data: { turbo_frame: "wizard_step" } do %>
-    <div class="flex justify-between mt-4">
-      <%= submit_tag "← Back", name: "step_action", value: "previous", class: "bg-gray-300 px-4 py-2 rounded" %>
-      <%= submit_tag "Next →", name: "step_action", value: "next", class: "bg-blue-600 text-white px-4 py-2 rounded" %>
-    </div>
-  <% end %>
-</div>
+    <%= form_with url: wizard_progress_path(@progress), method: :patch, data: { turbo_frame: "wizard_step" } do %>
+      <div class="flex justify-between mt-4">
+        <%= submit_tag "← Back", name: "step_action", value: "previous", class: "bg-gray-300 px-4 py-2 rounded" %>
+        <%= submit_tag "Next →", name: "step_action", value: "next", class: "bg-blue-600 text-white px-4 py-2 rounded" %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

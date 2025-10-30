@@ -5,7 +5,5 @@
     <div class="bg-blue-600 h-2 rounded-full" style="width: <%= @progress.progress %>%"></div>
   </div>
 
-  <%= turbo_frame_tag "wizard_step" do %>
-    <%= render "wizard_progresses/steps/#{@progress.wizard_type}/#{@progress.current_step}", progress: @progress %>
-  <% end %>
+  <%= render "wizard_progresses/steps/#{@progress.wizard_type}/#{@progress.current_step}", progress: @progress %>
 </div>
