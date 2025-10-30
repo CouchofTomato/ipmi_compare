@@ -18,49 +18,42 @@ class PlanWizardFlow
     when "module_benefits"      then save_module_benefits(params[:benefits])
     when "cost_shares"   then save_cost_shares(params[:cost_shares])
     else
-      true
+      WizardStepResult.new(success: true)
     end
-
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
-    progress.errors.add(:base, e.message)
-    false
-  rescue => e
-    Rails.logger.error("[PlanWizardFlow] Unexpected error: #{e.class} - #{e.message}")
-    progress.errors.add(:base, "An unexpected error occurred. Please try again.")
-    false
   end
 
   def save_plan_details(plan_params)
     raise ActionController::ParameterMissing, :plan if plan_params.nil?
+    plan = progress.subject || Plan.new
+    plan.assign_attributes(
+      plan_params.permit(
+        :insurer_id,
+        :name,
+        :min_age,
+        :max_age,
+        :children_only_allowed,
+        :version_year,
+        :published,
+        :policy_type,
+        :last_reviewed_at,
+        :next_review_due,
+        :review_notes,
+        :overall_limit_usd,
+        :overall_limit_gbp,
+        :overall_limit_eur,
+        :overall_limit_unit,
+        :overall_limit_notes,
+        :overall_limit_unlimited
+      )
+    )
 
     ActiveRecord::Base.transaction do
-      plan = progress.subject || Plan.new
-      plan.assign_attributes(
-        plan_params.permit(
-          :insurer_id,
-          :name,
-          :min_age,
-          :max_age,
-          :children_only_allowed,
-          :version_year,
-          :published,
-          :policy_type,
-          :last_reviewed_at,
-          :next_review_due,
-          :review_notes,
-          :overall_limit_usd,
-          :overall_limit_gbp,
-          :overall_limit_eur,
-          :overall_limit_unit,
-          :overall_limit_notes,
-          :overall_limit_unlimited
-        )
-      )
-      plan.save!
-      progress.update!(subject: plan)
+      if plan.save
+        progress.update!(subject: plan)
+        WizardStepResult.new(success: true, resource: plan)
+      else
+        WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages)
+      end
     end
-  rescue ActiveRecord::RecordInvalid => error
-    progress.association(:subject).target = error.record
-    :validation_failed
   end
 end

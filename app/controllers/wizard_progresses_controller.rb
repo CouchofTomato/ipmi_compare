@@ -28,13 +28,15 @@ class WizardProgressesController < ApplicationController
   def update
     result = @progress.flow.handle_step(params)
 
-    return render_current_step if result == :validation_failed
-    return render_current_step unless result
-
+    if result.success?
     case params[:step_action]
     when "next"     then @progress.update!(current_step: @progress.next_step)
     when "previous" then @progress.update!(current_step: @progress.previous_step)
     when "complete" then @progress.update!(status: :completed)
+    end
+    else
+    @resource = result.resource
+    result.errors.each { |e| @progress.errors.add(:base, e) }
     end
 
     render_current_step
@@ -48,7 +50,7 @@ class WizardProgressesController < ApplicationController
         render turbo_stream: turbo_stream.replace(
           "wizard_step",
           partial: "wizard_progresses/steps/#{@progress.wizard_type}/#{@progress.current_step}",
-          locals: { progress: @progress }
+          locals: { progress: @progress, resource: @resource }
         )
       end
 
