@@ -162,12 +162,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.integer "min_age", default: 0, null: false
     t.string "name", null: false
     t.date "next_review_due", null: false
-    t.decimal "overall_limit_eur", precision: 12, scale: 2
-    t.decimal "overall_limit_gbp", precision: 12, scale: 2
-    t.text "overall_limit_notes"
-    t.string "overall_limit_unit"
-    t.boolean "overall_limit_unlimited", default: false, null: false
-    t.decimal "overall_limit_usd", precision: 12, scale: 2
     t.integer "policy_type", null: false
     t.boolean "published", default: false, null: false
     t.text "review_notes"

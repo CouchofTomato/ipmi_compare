@@ -24,22 +24,4 @@ RSpec.describe Plan, type: :model do
 
   #== Enums ===================================================================
   it { should define_enum_for(:policy_type).with_values(individual: 0, company: 1, corporate: 2) }
-
-  describe "overall_limit_presence_rule" do
-    it "is valid when marked unlimited with no numeric limits" do
-      plan = build(:plan, :unlimited)
-      expect(plan).to be_valid
-    end
-
-    it "is invalid when not unlimited and no numeric limits are provided" do
-      plan = build(:plan, overall_limit_unlimited: false, overall_limit_usd: nil, overall_limit_gbp: nil, overall_limit_eur: nil)
-      expect(plan).not_to be_valid
-      expect(plan.errors[:base]).to include("Specify at least one overall limit or mark the plan as unlimited")
-    end
-
-    it "is valid when at least one numeric limit is present" do
-      plan = build(:plan, overall_limit_unlimited: false, overall_limit_usd: 5_000_000)
-      expect(plan).to be_valid
-    end
-  end
 end
