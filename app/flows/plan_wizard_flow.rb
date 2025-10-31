@@ -58,5 +58,40 @@ class PlanWizardFlow
   end
 
   def save_plan_residency(residency_params)
+    plan = progress.subject
+    return WizardStepResult.new(success: false, errors: ["Plan must be created before setting residency eligibility"]) unless plan.present?
+
+    params_for_residency = residency_params.is_a?(ActionController::Parameters) ? residency_params : ActionController::Parameters.new
+    permitted = params_for_residency.permit(country_codes: [])
+    country_codes = Array(permitted[:country_codes])
+      .map { |code| code.to_s.strip.upcase }
+      .reject(&:blank?)
+      .uniq
+
+    valid_codes = ISO3166::Country.all.map(&:alpha2)
+    invalid_codes = country_codes - valid_codes
+
+    if invalid_codes.any?
+      invalid_codes.each do |code|
+        plan.errors.add(:base, "#{code} is not a valid ISO country code")
+      end
+      return WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages)
+    end
+
+    ActiveRecord::Base.transaction do
+      plan.plan_residency_eligibilities.where.not(country_code: country_codes).destroy_all
+      country_codes.each do |code|
+        plan.plan_residency_eligibilities.find_or_create_by!(country_code: code)
+      end
+    end
+
+    plan.plan_residency_eligibilities.reload
+
+    WizardStepResult.new(success: true, resource: plan)
+  rescue ActiveRecord::RecordInvalid => e
+    e.record.errors.each do |attribute, message|
+      plan.errors.add(attribute, message)
+    end
+    WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages.presence || ["Could not update residency eligibility"])
   end
 end
