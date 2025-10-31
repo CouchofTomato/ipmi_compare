@@ -56,4 +56,7 @@ class PlanWizardFlow
       end
     end
   end
+
+  def save_plan_residency(residency_params)
+  end
 end

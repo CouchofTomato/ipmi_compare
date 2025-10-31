@@ -79,16 +79,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.index ["scope_type", "scope_id"], name: "index_cost_shares_on_scope"
   end
 
-  create_table "countries", force: :cascade do |t|
-    t.string "code", null: false
-    t.datetime "created_at", null: false
-    t.string "name", null: false
-    t.text "notes"
-    t.bigint "region_id", null: false
-    t.datetime "updated_at", null: false
-    t.index ["region_id"], name: "index_countries_on_region_id"
-  end
-
   create_table "geographic_cover_areas", force: :cascade do |t|
     t.string "code", null: false
     t.datetime "created_at", null: false
@@ -155,12 +145,11 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
   end
 
   create_table "plan_residency_eligibilities", force: :cascade do |t|
-    t.bigint "country_id", null: false
+    t.string "country_code", null: false
     t.datetime "created_at", null: false
     t.text "notes"
     t.bigint "plan_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["country_id"], name: "index_plan_residency_eligibilities_on_country_id"
     t.index ["plan_id"], name: "index_plan_residency_eligibilities_on_plan_id"
   end
 
@@ -185,13 +174,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.datetime "updated_at", null: false
     t.integer "version_year", null: false
     t.index ["insurer_id"], name: "index_plans_on_insurer_id"
-  end
-
-  create_table "regions", force: :cascade do |t|
-    t.string "code", null: false
-    t.datetime "created_at", null: false
-    t.string "name", null: false
-    t.datetime "updated_at", null: false
   end
 
   create_table "users", force: :cascade do |t|
@@ -248,7 +230,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "benefit_limit_groups", "plan_modules"
   add_foreign_key "cost_shares", "cost_shares", column: "linked_cost_share_id"
-  add_foreign_key "countries", "regions"
   add_foreign_key "module_benefits", "benefit_limit_groups"
   add_foreign_key "module_benefits", "benefits"
   add_foreign_key "module_benefits", "plan_modules"
@@ -257,7 +238,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
   add_foreign_key "plan_modules", "module_groups"
   add_foreign_key "plan_modules", "plan_modules", column: "depends_on_module_id"
   add_foreign_key "plan_modules", "plans"
-  add_foreign_key "plan_residency_eligibilities", "countries"
   add_foreign_key "plan_residency_eligibilities", "plans"
   add_foreign_key "plans", "insurers"
   add_foreign_key "wizard_progresses", "users"

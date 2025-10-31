@@ -5,7 +5,6 @@ class Plan < ApplicationRecord
   has_many :geographic_cover_areas, through: :plan_geographic_cover_areas
 
   has_many :plan_residency_eligibilities, dependent: :destroy
-  has_many :countries, through: :plan_residency_eligibilities
 
   has_many :cost_shares, as: :scope, dependent: :destroy
   has_many :deductibles, -> { where(cost_share_type: :deductible) },

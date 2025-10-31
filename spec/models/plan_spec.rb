@@ -8,7 +8,6 @@ RSpec.describe Plan, type: :model do
   it { expect(plan).to have_many(:plan_geographic_cover_areas).dependent(:destroy) }
   it { expect(plan).to have_many(:geographic_cover_areas).through(:plan_geographic_cover_areas) }
   it { expect(plan).to have_many(:plan_residency_eligibilities).dependent(:destroy) }
-  it { expect(plan).to have_many(:countries).through(:plan_residency_eligibilities) }
   it { expect(plan).to have_many(:cost_shares).dependent(:destroy) }
   it { expect(plan).to have_many(:deductibles).class_name("CostShare") }
   it { expect(plan).to have_many(:coinsurances).class_name("CostShare") }

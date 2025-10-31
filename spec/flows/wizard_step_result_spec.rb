@@ -34,7 +34,7 @@ RSpec.describe WizardStepResult do
     end
 
     it "exposes the errors collection" do
-      errors = ["invalid attributes"]
+      errors = [ "invalid attributes" ]
       result = described_class.new(success: false, errors: errors)
 
       expect(result.errors).to eq(errors)
