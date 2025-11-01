@@ -1,5 +1,6 @@
 <% plan = progress.subject %>
 <% resource = local_assigns[:resource] %>
+<% new_area = local_assigns[:new_geographic_cover_area] || GeographicCoverArea.new %>
 <% selected_area_ids =
      case resource
      when Hash
@@ -11,6 +12,7 @@
      end
 %>
 <% available_areas = GeographicCoverArea.order(:name) %>
+<% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
 
 <%= turbo_frame_tag "wizard_step" do %>
   <div class="space-y-6">
@@ -37,6 +39,52 @@
         </ul>
       </div>
     <% end %>
+
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">Add a new coverage area</h3>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Create an additional area without exiting the wizard.</p>
+        </div>
+      </div>
+      <div class="mt-4">
+        <%= turbo_frame_tag "new_geographic_cover_area" do %>
+          <%= form_with model: new_area,
+                        url: geographic_cover_areas_path,
+                        data: { turbo_frame: "new_geographic_cover_area" },
+                        html: { class: "space-y-4" } do |form| %>
+            <div>
+              <%= form.label :name, "Area name", class: "text-sm font-medium text-gray-700 dark:text-gray-200" %>
+              <div class="mt-2">
+                <%= form.text_field :name,
+                                    class: input_classes,
+                                    placeholder: "e.g. APAC" %>
+              </div>
+              <% if new_area.errors[:name].present? %>
+                <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= new_area.errors[:name].to_sentence %></p>
+              <% end %>
+            </div>
+
+            <div>
+              <%= form.label :code, "Area code", class: "text-sm font-medium text-gray-700 dark:text-gray-200" %>
+              <div class="mt-2">
+                <%= form.text_field :code,
+                                    class: input_classes,
+                                    placeholder: "e.g. APAC-001" %>
+              </div>
+              <% if new_area.errors[:code].present? %>
+                <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= new_area.errors[:code].to_sentence %></p>
+              <% end %>
+            </div>
+
+            <div class="flex justify-end">
+              <%= form.button "Create area",
+                              class: "inline-flex items-center gap-1 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400" %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
 
     <%= form_with url: wizard_progress_path(progress),
                   method: :patch,
