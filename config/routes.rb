@@ -22,5 +22,6 @@ Rails.application.routes.draw do
   resources :plans, only: %i[index show new create]
   resources :benefits
   resources :insurers
+  resources :geographic_cover_areas
   resources :wizard_progresses, only: %i[create show update]
 end
