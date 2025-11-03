@@ -94,4 +94,75 @@ class PlanWizardFlow
     end
     WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages.presence || ["Could not update residency eligibility"])
   end
+
+  def save_geographic_cover_areas(areas_params)
+    plan = progress.subject
+    return WizardStepResult.new(success: false, errors: ["Plan must be created before selecting geographic cover areas"]) unless plan.present?
+
+    params_for_areas =
+      case areas_params
+      when ActionController::Parameters then areas_params
+      when Hash then ActionController::Parameters.new(areas_params)
+      else
+        ActionController::Parameters.new
+      end
+
+    permitted = params_for_areas.permit(geographic_cover_area_ids: [], area_ids: [])
+    raw_ids = Array(permitted[:geographic_cover_area_ids]) + Array(permitted[:area_ids])
+    raw_ids = raw_ids.map { |value| value.to_s.strip }.reject(&:blank?)
+
+    sanitized_ids = []
+    invalid_inputs = []
+
+    raw_ids.each do |value|
+      begin
+        sanitized_ids << Integer(value)
+      rescue ArgumentError, TypeError
+        invalid_inputs << value
+      end
+    end
+
+    if invalid_inputs.any?
+      invalid_inputs.each do |value|
+        plan.errors.add(:base, "#{value} is not a valid geographic cover area id")
+      end
+      return WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages)
+    end
+
+    sanitized_ids.uniq!
+    existing_ids = GeographicCoverArea.where(id: sanitized_ids).pluck(:id)
+    missing_ids = sanitized_ids - existing_ids
+
+    if missing_ids.any?
+      missing_ids.each do |value|
+        plan.errors.add(:base, "Geographic cover area #{value} could not be found")
+      end
+      return WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages)
+    end
+
+    ActiveRecord::Base.transaction do
+      if existing_ids.empty?
+        plan.plan_geographic_cover_areas.destroy_all
+      else
+        plan.plan_geographic_cover_areas.where.not(geographic_cover_area_id: existing_ids).destroy_all
+        existing_ids.each do |area_id|
+          plan.plan_geographic_cover_areas.find_or_create_by!(geographic_cover_area_id: area_id)
+        end
+      end
+    end
+
+    plan.plan_geographic_cover_areas.reload
+    plan.geographic_cover_areas.reset
+
+    WizardStepResult.new(success: true, resource: plan)
+  rescue ActiveRecord::RecordInvalid => e
+    e.record.errors.each do |attribute, message|
+      plan.errors.add(attribute, message)
+    end
+    WizardStepResult.new(
+      success: false,
+      resource: plan,
+      errors: plan.errors.full_messages.presence || ["Could not update geographic cover areas"]
+    )
+  end
 end

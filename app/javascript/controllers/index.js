@@ -9,3 +9,6 @@ application.register("hello", HelloController)
 
 import ResidencySelectorController from "./residency_selector_controller"
 application.register("residency-selector", ResidencySelectorController)
+
+import GeographicCoverAreasController from "./geographic_cover_areas_controller"
+application.register("geographic-cover-areas", GeographicCoverAreasController)
