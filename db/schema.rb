@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_10_201322) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -126,6 +126,18 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.index ["plan_id"], name: "index_plan_geographic_cover_areas_on_plan_id"
   end
 
+  create_table "plan_module_requirements", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "module_id", null: false
+    t.bigint "plan_id", null: false
+    t.bigint "requires_module_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["module_id"], name: "index_plan_module_requirements_on_module_id"
+    t.index ["plan_id", "module_id", "requires_module_id"], name: "idx_pmr_plan_module_requires_unique", unique: true
+    t.index ["plan_id"], name: "index_plan_module_requirements_on_plan_id"
+    t.index ["requires_module_id"], name: "index_plan_module_requirements_on_requires_module_id"
+  end
+
   create_table "plan_modules", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.boolean "is_core", default: false, null: false
@@ -227,6 +239,9 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
   add_foreign_key "module_benefits", "plan_modules"
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
   add_foreign_key "plan_geographic_cover_areas", "plans"
+  add_foreign_key "plan_module_requirements", "plan_modules", column: "module_id"
+  add_foreign_key "plan_module_requirements", "plan_modules", column: "requires_module_id"
+  add_foreign_key "plan_module_requirements", "plans"
   add_foreign_key "plan_modules", "module_groups"
   add_foreign_key "plan_modules", "plans"
   add_foreign_key "plan_residency_eligibilities", "plans"
