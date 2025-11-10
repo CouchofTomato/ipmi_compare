@@ -59,7 +59,7 @@ class PlanWizardFlow
 
   def save_plan_residency(residency_params)
     plan = progress.subject
-    return WizardStepResult.new(success: false, errors: ["Plan must be created before setting residency eligibility"]) unless plan.present?
+    return WizardStepResult.new(success: false, errors: [ "Plan must be created before setting residency eligibility" ]) unless plan.present?
 
     params_for_residency = residency_params.is_a?(ActionController::Parameters) ? residency_params : ActionController::Parameters.new
     permitted = params_for_residency.permit(country_codes: [])
@@ -92,12 +92,12 @@ class PlanWizardFlow
     e.record.errors.each do |attribute, message|
       plan.errors.add(attribute, message)
     end
-    WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages.presence || ["Could not update residency eligibility"])
+    WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages.presence || [ "Could not update residency eligibility" ])
   end
 
   def save_geographic_cover_areas(areas_params)
     plan = progress.subject
-    return WizardStepResult.new(success: false, errors: ["Plan must be created before selecting geographic cover areas"]) unless plan.present?
+    return WizardStepResult.new(success: false, errors: [ "Plan must be created before selecting geographic cover areas" ]) unless plan.present?
 
     params_for_areas =
       case areas_params
@@ -162,7 +162,7 @@ class PlanWizardFlow
     WizardStepResult.new(
       success: false,
       resource: plan,
-      errors: plan.errors.full_messages.presence || ["Could not update geographic cover areas"]
+      errors: plan.errors.full_messages.presence || [ "Could not update geographic cover areas" ]
     )
   end
 end

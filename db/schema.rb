@@ -128,7 +128,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
 
   create_table "plan_modules", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.bigint "depends_on_module_id"
     t.boolean "is_core", default: false, null: false
     t.bigint "module_group_id", null: false
     t.string "name", null: false
@@ -139,7 +138,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.decimal "overall_limit_usd", precision: 12, scale: 2
     t.bigint "plan_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["depends_on_module_id"], name: "index_plan_modules_on_depends_on_module_id"
     t.index ["module_group_id"], name: "index_plan_modules_on_module_group_id"
     t.index ["plan_id"], name: "index_plan_modules_on_plan_id"
   end
@@ -230,7 +228,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
   add_foreign_key "plan_geographic_cover_areas", "plans"
   add_foreign_key "plan_modules", "module_groups"
-  add_foreign_key "plan_modules", "plan_modules", column: "depends_on_module_id"
   add_foreign_key "plan_modules", "plans"
   add_foreign_key "plan_residency_eligibilities", "plans"
   add_foreign_key "plans", "insurers"

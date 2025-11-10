@@ -30,12 +30,6 @@ FactoryBot.define do
       end
     end
 
-    trait :with_depends_on_module do
-      after(:create) do |plan_module|
-        plan_module.depends_on_module = create(:plan_module)
-      end
-    end
-
     trait :with_deductible do
       after(:create) do |plan_module|
         create(:cost_share, scope: plan_module, cost_share_type: :deductible, amount: 1000, per: :per_year, currency: "USD")
