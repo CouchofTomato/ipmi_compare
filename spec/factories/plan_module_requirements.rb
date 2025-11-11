@@ -1,17 +1,11 @@
 FactoryBot.define do
   factory :plan_module_requirement do
-    association :plan
+    plan
 
     # The module that has the requirement
-    association :module, factory: :plan_module
+    dependent_module { association :plan_module, plan: plan }
 
     # The module required in order to select the above module
-    association :requires_module, factory: :plan_module
-
-    # Ensure both modules belong to the same plan
-    after(:build) do |req|
-      req.module.plan = req.plan
-      req.requires_module.plan = req.plan
-    end
+    required_module { association :plan_module, plan: plan }
   end
 end

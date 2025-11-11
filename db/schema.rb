@@ -128,14 +128,14 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_201322) do
 
   create_table "plan_module_requirements", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.bigint "module_id", null: false
+    t.bigint "dependent_module_id", null: false
     t.bigint "plan_id", null: false
-    t.bigint "requires_module_id", null: false
+    t.bigint "required_module_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["module_id"], name: "index_plan_module_requirements_on_module_id"
-    t.index ["plan_id", "module_id", "requires_module_id"], name: "idx_pmr_plan_module_requires_unique", unique: true
+    t.index ["dependent_module_id"], name: "index_plan_module_requirements_on_dependent_module_id"
+    t.index ["plan_id", "dependent_module_id", "required_module_id"], name: "idx_pmr_plan_module_requires_unique", unique: true
     t.index ["plan_id"], name: "index_plan_module_requirements_on_plan_id"
-    t.index ["requires_module_id"], name: "index_plan_module_requirements_on_requires_module_id"
+    t.index ["required_module_id"], name: "index_plan_module_requirements_on_required_module_id"
   end
 
   create_table "plan_modules", force: :cascade do |t|
@@ -239,8 +239,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_201322) do
   add_foreign_key "module_benefits", "plan_modules"
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
   add_foreign_key "plan_geographic_cover_areas", "plans"
-  add_foreign_key "plan_module_requirements", "plan_modules", column: "module_id"
-  add_foreign_key "plan_module_requirements", "plan_modules", column: "requires_module_id"
+  add_foreign_key "plan_module_requirements", "plan_modules", column: "dependent_module_id"
+  add_foreign_key "plan_module_requirements", "plan_modules", column: "required_module_id"
   add_foreign_key "plan_module_requirements", "plans"
   add_foreign_key "plan_modules", "module_groups"
   add_foreign_key "plan_modules", "plans"
