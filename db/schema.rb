@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_10_201322) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_15_164344) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -98,6 +98,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_201322) do
     t.bigint "benefit_limit_group_id"
     t.string "coverage_description"
     t.datetime "created_at", null: false
+    t.integer "interaction_type", default: 1, null: false
     t.decimal "limit_eur", precision: 12, scale: 2
     t.decimal "limit_gbp", precision: 12, scale: 2
     t.string "limit_unit"
@@ -105,9 +106,12 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_201322) do
     t.bigint "plan_module_id", null: false
     t.string "sub_limit_description"
     t.datetime "updated_at", null: false
+    t.integer "weighting", default: 0, null: false
     t.index ["benefit_id"], name: "index_module_benefits_on_benefit_id"
     t.index ["benefit_limit_group_id"], name: "index_module_benefits_on_benefit_limit_group_id"
+    t.index ["interaction_type"], name: "index_module_benefits_on_interaction_type"
     t.index ["plan_module_id"], name: "index_module_benefits_on_plan_module_id"
+    t.index ["weighting"], name: "index_module_benefits_on_weighting"
   end
 
   create_table "module_groups", force: :cascade do |t|
