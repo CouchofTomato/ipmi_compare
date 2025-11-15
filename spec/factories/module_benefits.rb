@@ -9,6 +9,8 @@ FactoryBot.define do
     limit_unit { nil }
     sub_limit_description { nil }
     benefit_limit_group { nil }
+    interaction_type { 1 } # append
+    weighting { 0 }
 
     trait :with_deductible do
       after(:create) do |module_benefit|

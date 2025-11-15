@@ -13,6 +13,11 @@ class ModuleBenefit < ApplicationRecord
 
   validate :coverage_or_limit_must_be_present
 
+  enum :interaction_type, {
+    replace: 0,
+    append: 1
+  }
+
   private
 
   def coverage_or_limit_must_be_present

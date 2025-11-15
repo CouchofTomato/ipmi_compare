@@ -13,6 +13,10 @@ RSpec.describe ModuleBenefit, type: :model do
   it { expect(module_benefit).to have_many(:coinsurances).class_name("CostShare") }
   it { expect(module_benefit).to have_many(:excesses).class_name("CostShare") }
 
+  #== Enums ================================================================
+
+  it { should define_enum_for(:interaction_type).with_values(replace: 0, append: 1) }
+
   #== Validations ===========================================================
   describe 'coverage_or_limit_must_be_present' do
     context 'when no coverage description or limits are provided' do
