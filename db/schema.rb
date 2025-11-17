@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_15_164344) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_17_200502) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -118,7 +118,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_15_164344) do
     t.datetime "created_at", null: false
     t.text "description"
     t.string "name", null: false
+    t.bigint "plan_id", null: false
+    t.integer "position"
     t.datetime "updated_at", null: false
+    t.index ["plan_id"], name: "index_module_groups_on_plan_id"
   end
 
   create_table "plan_geographic_cover_areas", force: :cascade do |t|
@@ -241,6 +244,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_15_164344) do
   add_foreign_key "module_benefits", "benefit_limit_groups"
   add_foreign_key "module_benefits", "benefits"
   add_foreign_key "module_benefits", "plan_modules"
+  add_foreign_key "module_groups", "plans"
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
   add_foreign_key "plan_geographic_cover_areas", "plans"
   add_foreign_key "plan_module_requirements", "plan_modules", column: "dependent_module_id"
