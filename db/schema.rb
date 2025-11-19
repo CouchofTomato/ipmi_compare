@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_17_200502) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_19_212746) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -77,6 +77,21 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_17_200502) do
     t.datetime "updated_at", null: false
     t.index ["linked_cost_share_id"], name: "index_cost_shares_on_linked_cost_share_id"
     t.index ["scope_type", "scope_id"], name: "index_cost_shares_on_scope"
+  end
+
+  create_table "coverage_categories", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.integer "position", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_coverage_categories_on_name", unique: true
+    t.index ["position"], name: "index_coverage_categories_on_position"
+  end
+
+  create_table "coverage_categories_plan_modules", id: false, force: :cascade do |t|
+    t.bigint "coverage_category_id", null: false
+    t.bigint "plan_module_id", null: false
+    t.index ["plan_module_id", "coverage_category_id"], name: "idx_ccpm_unique", unique: true
   end
 
   create_table "geographic_cover_areas", force: :cascade do |t|
@@ -241,6 +256,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_17_200502) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "benefit_limit_groups", "plan_modules"
   add_foreign_key "cost_shares", "cost_shares", column: "linked_cost_share_id"
+  add_foreign_key "coverage_categories_plan_modules", "coverage_categories"
+  add_foreign_key "coverage_categories_plan_modules", "plan_modules"
   add_foreign_key "module_benefits", "benefit_limit_groups"
   add_foreign_key "module_benefits", "benefits"
   add_foreign_key "module_benefits", "plan_modules"
