@@ -2,6 +2,7 @@ FactoryBot.define do
   factory :module_benefit do
     plan_module
     benefit
+    coverage_category
     coverage_description { "MyString" }
     limit_usd { nil }
     limit_gbp { nil }
