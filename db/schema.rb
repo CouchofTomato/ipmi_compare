@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_20_185925) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_20_190122) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -81,7 +81,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_185925) do
   create_table "coverage_categories", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name", null: false
-    t.integer "position", null: false
+    t.integer "position", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index ["name"], name: "index_coverage_categories_on_name", unique: true
     t.index ["position"], name: "index_coverage_categories_on_position"
@@ -135,7 +135,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_185925) do
     t.text "description"
     t.string "name", null: false
     t.bigint "plan_id", null: false
-    t.integer "position"
+    t.integer "position", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index ["plan_id"], name: "index_module_groups_on_plan_id"
   end
