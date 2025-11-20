@@ -55,5 +55,17 @@ FactoryBot.define do
         create(:cost_share, scope: plan_module, cost_share_type: :excess, amount: 25, per: :per_visit, currency: "USD")
       end
     end
+
+    trait :with_categories do
+      transient do
+        coverage_categories { [] } # array of CoverageCategory objects or names
+      end
+
+      after(:create) do |plan_module, evaluator|
+        evaluator.coverage_categories.each do |category|
+          plan_module.coverage_categories << category
+        end
+      end
+    end
   end
 end
