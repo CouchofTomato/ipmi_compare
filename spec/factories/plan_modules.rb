@@ -67,5 +67,17 @@ FactoryBot.define do
         end
       end
     end
+
+    trait :with_module_benefits do
+      transient do
+        benefits { [] } # array of Benefit objects or names
+      end
+
+      after(:create) do |plan_module, evaluator|
+        evaluator.benefits.each do |benefit|
+          plan_module.benefits << benefit
+        end
+      end
+    end
   end
 end

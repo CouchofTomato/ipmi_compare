@@ -2,6 +2,9 @@ class PlanModule < ApplicationRecord
   belongs_to :plan
   belongs_to :module_group
 
+  has_many :module_benefits, dependent: :destroy
+  has_many :benefits, through: :module_benefits
+
   has_and_belongs_to_many :coverage_categories
 
   has_many :benefit_limit_groups, dependent: :destroy
