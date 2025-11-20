@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :coverage_category do
-    name { "MyString" }
-    position { 1 }
+    sequence(:name) { |n| "category_#{n}" }
+    position { 0 }
 
     factory :coverage_category_with_plan_modules do
       transient do
