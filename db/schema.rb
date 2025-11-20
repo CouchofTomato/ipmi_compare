@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_19_212746) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_20_185821) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -111,6 +111,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_19_212746) do
   create_table "module_benefits", force: :cascade do |t|
     t.bigint "benefit_id", null: false
     t.bigint "benefit_limit_group_id"
+    t.bigint "coverage_category_id", null: false
     t.string "coverage_description"
     t.datetime "created_at", null: false
     t.integer "interaction_type", default: 1, null: false
@@ -124,6 +125,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_19_212746) do
     t.integer "weighting", default: 0, null: false
     t.index ["benefit_id"], name: "index_module_benefits_on_benefit_id"
     t.index ["benefit_limit_group_id"], name: "index_module_benefits_on_benefit_limit_group_id"
+    t.index ["coverage_category_id"], name: "index_module_benefits_on_coverage_category_id"
     t.index ["interaction_type"], name: "index_module_benefits_on_interaction_type"
     t.index ["plan_module_id"], name: "index_module_benefits_on_plan_module_id"
     t.index ["weighting"], name: "index_module_benefits_on_weighting"
@@ -260,6 +262,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_19_212746) do
   add_foreign_key "coverage_categories_plan_modules", "plan_modules"
   add_foreign_key "module_benefits", "benefit_limit_groups"
   add_foreign_key "module_benefits", "benefits"
+  add_foreign_key "module_benefits", "coverage_categories"
   add_foreign_key "module_benefits", "plan_modules"
   add_foreign_key "module_groups", "plans"
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
