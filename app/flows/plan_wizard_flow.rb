@@ -15,7 +15,7 @@ class PlanWizardFlow
     when "plan_residency" then save_plan_residency(params[:residency])
     when "geographic_cover_areas" then save_geographic_cover_areas(params[:areas])
     when "module_groups" then save_module_groups(params[:module_groups], params[:step_action])
-    when "plan_modules"       then save_plan_modules(params[:modules])
+    when "plan_modules"       then save_plan_modules(params[:modules], params[:step_action])
     when "module_benefits"      then save_module_benefits(params[:benefits])
     when "cost_shares"   then save_cost_shares(params[:cost_shares])
     else
@@ -199,6 +199,48 @@ class PlanWizardFlow
       WizardStepResult.new(success: true, resource: module_group)
     else
       WizardStepResult.new(success: false, resource: module_group, errors: module_group.errors.full_messages)
+    end
+  end
+
+  def save_plan_modules(module_params, step_action = nil)
+    plan = progress.subject
+    return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding plan modules" ]) unless plan.present?
+
+    # Only create a new module when explicitly requested
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
+
+    params_for_module =
+      case module_params
+      when ActionController::Parameters then module_params
+      when Hash then ActionController::Parameters.new(module_params)
+      else
+        ActionController::Parameters.new
+      end
+
+    permitted = params_for_module.permit(:name,
+                                         :module_group_id,
+                                         :is_core,
+                                         :overall_limit_usd,
+                                         :overall_limit_gbp,
+                                         :overall_limit_eur,
+                                         :overall_limit_unit,
+                                         :overall_limit_notes)
+    sanitized_values = permitted.to_h
+    sanitized_values["is_core"] = ActiveModel::Type::Boolean.new.cast(sanitized_values["is_core"])
+
+    plan_module = plan.plan_modules.build(sanitized_values)
+
+    # Guard against selecting a module group from another plan
+    if plan_module.module_group_id.present? && !plan.module_groups.exists?(id: plan_module.module_group_id)
+      plan_module.errors.add(:module_group, "must belong to this plan")
+      return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+    end
+
+    if plan_module.save
+      plan.plan_modules.reload
+      WizardStepResult.new(success: true, resource: plan_module)
+    else
+      WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
     end
   end
 end

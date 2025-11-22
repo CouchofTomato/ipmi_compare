@@ -12,6 +12,8 @@ RSpec.describe Plan, type: :model do
   it { expect(plan).to have_many(:deductibles).class_name("CostShare") }
   it { expect(plan).to have_many(:coinsurances).class_name("CostShare") }
   it { expect(plan).to have_many(:excesses).class_name("CostShare") }
+  it { expect(plan).to have_many(:plan_modules).dependent(:destroy) }
+  it { expect(plan).to have_many(:module_groups).dependent(:destroy) }
 
   #== Validations ===========================================================
   it { expect(plan).to validate_presence_of :name }

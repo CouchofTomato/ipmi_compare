@@ -13,6 +13,8 @@ class Plan < ApplicationRecord
            class_name: "CostShare", as: :scope
   has_many :excesses, -> { where(cost_share_type: :excess) },
            class_name: "CostShare", as: :scope
+
+  has_many :plan_modules, dependent: :destroy
   has_many :module_groups, -> { order(:position, :created_at) }, dependent: :destroy
 
   validates :name, presence: true
