@@ -1,2 +1,7 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/forms";
+
+select,
+::picker(select) {
+  appearance: base-select;
+}
