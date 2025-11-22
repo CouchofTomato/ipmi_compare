@@ -1,6 +1,5 @@
 <% submit_label = local_assigns.fetch(:submit_label, "Save insurer") %>
 <% cancel_path = local_assigns[:cancel_path] %>
-<% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
 
 <%= form_with(model: insurer, local: true, builder: TailwindFormBuilder, html: { class: "space-y-8" }) do |form| %>
   <% if insurer.errors.any? %>
@@ -21,7 +20,7 @@
     <div>
       <%= form.label :name %>
       <div class="mt-2">
-        <%= form.text_field :name, class: input_classes, placeholder: "e.g. Global Health Insurance" %>
+        <%= form.text_field :name, placeholder: "e.g. Global Health Insurance" %>
       </div>
       <% if insurer.errors[:name].present? %>
         <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= insurer.errors[:name].to_sentence %></p>
@@ -31,7 +30,7 @@
     <div>
       <%= form.label :jurisdiction %>
       <div class="mt-2">
-        <%= form.country_select :jurisdiction, { include_blank: "Select a country" }, class: input_classes %>
+        <%= form.country_select :jurisdiction, { include_blank: "Select a country" } %>
       </div>
       <% if insurer.errors[:jurisdiction].present? %>
         <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= insurer.errors[:jurisdiction].to_sentence %></p>
