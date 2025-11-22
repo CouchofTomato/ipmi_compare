@@ -168,5 +168,34 @@ class PlanWizardFlow
   end
 
   def save_module_groups(module_group_params)
+    plan = progress.subject
+    return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module groups" ]) unless plan.present?
+
+    params_for_group =
+      case module_group_params
+      when ActionController::Parameters then module_group_params
+      when Hash then ActionController::Parameters.new(module_group_params)
+      else
+        ActionController::Parameters.new
+      end
+
+    permitted = params_for_group.permit(:name, :description, :position)
+    sanitized_values = permitted.to_h
+
+    module_group = plan.module_groups.build(sanitized_values)
+    module_group.position ||= plan.module_groups.maximum(:position).to_i + 1
+
+    if sanitized_values["name"].to_s.strip.blank?
+      module_group.validate
+      module_group.errors.add(:name, "can't be blank") if module_group.errors[:name].blank?
+      return WizardStepResult.new(success: false, resource: module_group, errors: module_group.errors.full_messages)
+    end
+
+    if module_group.save
+      plan.module_groups.reload
+      WizardStepResult.new(success: true, resource: module_group)
+    else
+      WizardStepResult.new(success: false, resource: module_group, errors: module_group.errors.full_messages)
+    end
   end
 end
