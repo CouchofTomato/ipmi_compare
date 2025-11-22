@@ -45,7 +45,6 @@
                             <% end %>
                           </dl>
                         </td>
-                        <td class="hidden px-3 py-4 text-sm text-gray-500 sm:table-cell dark:text-gray-400"><%= benefit.category.humanize %></td>
                         <td class="hidden px-3 py-4 text-sm text-gray-500 lg:table-cell dark:text-gray-400">
                           <% if benefit.description.present? %>
                             <%= truncate(benefit.description, length: 60) %>

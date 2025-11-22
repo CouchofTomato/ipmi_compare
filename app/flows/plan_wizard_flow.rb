@@ -16,7 +16,7 @@ class PlanWizardFlow
     when "geographic_cover_areas" then save_geographic_cover_areas(params[:areas])
     when "module_groups" then save_module_groups(params[:module_groups], params[:step_action])
     when "plan_modules"       then save_plan_modules(params[:modules], params[:step_action])
-    when "module_benefits"      then save_module_benefits(params[:benefits])
+    when "module_benefits"      then save_module_benefits(params[:benefits], params[:step_action])
     when "cost_shares"   then save_cost_shares(params[:cost_shares])
     else
       WizardStepResult.new(success: true)
@@ -241,6 +241,61 @@ class PlanWizardFlow
       WizardStepResult.new(success: true, resource: plan_module)
     else
       WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+    end
+  end
+
+  def save_module_benefits(benefit_params, step_action = nil)
+    plan = progress.subject
+    return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module benefits" ]) unless plan.present?
+
+    # Only create a new module benefit when explicitly asked
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
+
+    params_for_benefit =
+      case benefit_params
+      when ActionController::Parameters then benefit_params
+      when Hash then ActionController::Parameters.new(benefit_params)
+      else
+        ActionController::Parameters.new
+      end
+
+    permitted = params_for_benefit.permit(:plan_module_id,
+                                          :benefit_id,
+                                          :coverage_category_id,
+                                          :coverage_description,
+                                          :limit_usd,
+                                          :limit_gbp,
+                                          :limit_eur,
+                                          :limit_unit,
+                                          :sub_limit_description,
+                                          :benefit_limit_group_id,
+                                          :interaction_type,
+                                          :weighting)
+
+    sanitized_values = permitted.to_h
+    sanitized_values["weighting"] = sanitized_values["weighting"].presence || nil
+
+    plan_module = plan.plan_modules.find_by(id: sanitized_values["plan_module_id"])
+
+    unless plan_module
+      module_benefit = ModuleBenefit.new
+      module_benefit.errors.add(:plan_module, "must belong to this plan")
+      return WizardStepResult.new(success: false, resource: module_benefit, errors: module_benefit.errors.full_messages)
+    end
+
+    module_benefit = ModuleBenefit.new(sanitized_values.merge(plan_module:))
+
+    # default weighting to next available slot if not provided
+    if module_benefit.weighting.nil?
+      max_weighting = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).maximum(:weighting)
+      module_benefit.weighting = max_weighting ? max_weighting + 1 : 0
+    end
+
+    if module_benefit.save
+      plan_module.module_benefits.reload
+      WizardStepResult.new(success: true, resource: module_benefit)
+    else
+      WizardStepResult.new(success: false, resource: module_benefit, errors: module_benefit.errors.full_messages)
     end
   end
 end
