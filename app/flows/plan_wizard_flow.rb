@@ -14,7 +14,7 @@ class PlanWizardFlow
     when "plan_details" then save_plan_details(params[:plan])
     when "plan_residency" then save_plan_residency(params[:residency])
     when "geographic_cover_areas" then save_geographic_cover_areas(params[:areas])
-    when "module_groups" then save_module_groups(params[:module_groups])
+    when "module_groups" then save_module_groups(params[:module_groups], params[:step_action])
     when "plan_modules"       then save_plan_modules(params[:modules])
     when "module_benefits"      then save_module_benefits(params[:benefits])
     when "cost_shares"   then save_cost_shares(params[:cost_shares])
@@ -167,9 +167,12 @@ class PlanWizardFlow
     )
   end
 
-  def save_module_groups(module_group_params)
+  def save_module_groups(module_group_params, step_action = nil)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module groups" ]) unless plan.present?
+
+    # Only attempt to create a new module group when explicitly asked
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
     params_for_group =
       case module_group_params
