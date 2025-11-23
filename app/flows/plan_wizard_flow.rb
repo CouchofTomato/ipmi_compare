@@ -6,7 +6,17 @@ class PlanWizardFlow
   end
 
   def steps
-    %w[ plan_details plan_residency geographic_cover_areas module_groups plan_modules module_benefits cost_shares review]
+    %w[
+      plan_details
+      plan_residency
+      geographic_cover_areas
+      module_groups
+      plan_modules
+      module_benefits
+      benefit_limit_groups
+      cost_shares
+      review
+    ]
   end
 
   def handle_step(params)
@@ -17,6 +27,7 @@ class PlanWizardFlow
     when "module_groups" then save_module_groups(params[:module_groups], params[:step_action])
     when "plan_modules"       then save_plan_modules(params[:modules], params[:step_action])
     when "module_benefits"      then save_module_benefits(params[:benefits], params[:step_action])
+    when "benefit_limit_groups" then save_benefit_limit_groups(params[:benefit_limit_groups], params[:step_action])
     when "cost_shares"   then save_cost_shares(params[:cost_shares])
     else
       WizardStepResult.new(success: true)
@@ -268,7 +279,6 @@ class PlanWizardFlow
                                           :limit_eur,
                                           :limit_unit,
                                           :sub_limit_description,
-                                          :benefit_limit_group_id,
                                           :interaction_type,
                                           :weighting)
 
@@ -297,5 +307,61 @@ class PlanWizardFlow
     else
       WizardStepResult.new(success: false, resource: module_benefit, errors: module_benefit.errors.full_messages)
     end
+  end
+
+  def save_benefit_limit_groups(group_params, step_action = nil)
+    plan = progress.subject
+    return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding benefit limit groups" ]) unless plan.present?
+
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
+
+    params_for_group =
+      case group_params
+      when ActionController::Parameters then group_params
+      when Hash then ActionController::Parameters.new(group_params)
+      else
+        ActionController::Parameters.new
+      end
+
+    permitted = params_for_group.permit(:plan_module_id,
+                                        :name,
+                                        :limit_usd,
+                                        :limit_gbp,
+                                        :limit_eur,
+                                        :limit_unit,
+                                        :notes,
+                                        module_benefit_ids: [])
+
+    sanitized_values = permitted.to_h
+    module_benefit_ids =
+      Array(permitted[:module_benefit_ids])
+        .map { |id| id.presence }
+        .map { |id| Integer(id) rescue nil }
+        .compact
+        .uniq
+
+    plan_module = plan.plan_modules.find_by(id: sanitized_values["plan_module_id"])
+    unless plan_module
+      benefit_limit_group = BenefitLimitGroup.new
+      benefit_limit_group.module_benefit_ids = module_benefit_ids
+      benefit_limit_group.errors.add(:plan_module, "must belong to this plan")
+      return WizardStepResult.new(success: false, resource: benefit_limit_group, errors: benefit_limit_group.errors.full_messages)
+    end
+
+    selected_module_benefit_ids = plan_module.module_benefits.where(id: module_benefit_ids).pluck(:id)
+    benefit_limit_group = plan_module.benefit_limit_groups.new(sanitized_values.except("module_benefit_ids"))
+    benefit_limit_group.module_benefit_ids = selected_module_benefit_ids
+
+    if benefit_limit_group.save
+      ModuleBenefit.where(id: selected_module_benefit_ids).update_all(benefit_limit_group_id: benefit_limit_group.id) if selected_module_benefit_ids.any?
+      plan_module.module_benefits.reload
+      WizardStepResult.new(success: true, resource: benefit_limit_group)
+    else
+      WizardStepResult.new(success: false, resource: benefit_limit_group, errors: benefit_limit_group.errors.full_messages)
+    end
+  end
+
+  def save_cost_shares(_cost_share_params)
+    WizardStepResult.new(success: true)
   end
 end

@@ -3,8 +3,11 @@ require 'rails_helper'
 RSpec.describe BenefitLimitGroup, type: :model do
   subject(:benefit_limit_group) { create(:benefit_limit_group) }
 
+  #== Associations =============================================================
   it { expect(benefit_limit_group).to belong_to(:plan_module) }
+  it { expect(benefit_limit_group).to have_many(:module_benefits).dependent(:destroy) }
 
+  #== Validations ============================================================
   it { expect(benefit_limit_group).to validate_presence_of(:name) }
   it { expect(benefit_limit_group).to validate_presence_of(:limit_unit) }
 
