@@ -1,0 +1,43 @@
+<% content_for :title, "Your wizard sessions" %>
+
+<div class="px-4 py-10 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-4xl space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Wizard sessions</h1>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Continue where you left off.</p>
+      </div>
+      <%= link_to "Start plan wizard", wizard_progresses_path(wizard_type: "plan_creation"), method: :post, class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
+    </div>
+
+    <% if @wizard_progresses.empty? %>
+      <div class="rounded-lg border border-dashed border-gray-300 bg-white p-6 text-sm text-gray-600 shadow-sm dark:border-white/10 dark:bg-gray-900 dark:text-gray-200">
+        <p>You don’t have any in-progress wizards.</p>
+        <div class="mt-4">
+          <%= link_to "Start a new plan wizard", wizard_progresses_path(wizard_type: "plan_creation"), method: :post, class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
+        </div>
+      </div>
+    <% else %>
+      <div class="space-y-3">
+        <% @wizard_progresses.each do |progress| %>
+          <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-gray-900">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"><%= progress.wizard_type.humanize %></p>
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <% if progress.subject.is_a?(Plan) %>
+                  <%= progress.subject.name %>
+                <% else %>
+                  Draft <%= progress.wizard_type %>
+                <% end %>
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Step <%= progress.current_step.humanize %> · Updated <%= time_ago_in_words(progress.updated_at) %> ago</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <%= link_to "Open", wizard_progress_path(progress), class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

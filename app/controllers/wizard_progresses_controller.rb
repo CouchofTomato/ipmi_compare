@@ -2,6 +2,10 @@ class WizardProgressesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_progress, only: %i[show update]
 
+  def index
+    @wizard_progresses = current_user.wizard_progresses.where(status: :in_progress).order(updated_at: :desc)
+  end
+
   def create
     wizard_type = params.fetch(:wizard_type, "plan_creation")
 
