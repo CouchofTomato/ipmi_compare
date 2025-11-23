@@ -1,0 +1,36 @@
+<% content_for :title, @coverage_category.name %>
+
+<div class="px-4 py-10 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-3xl">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <%= link_to "Back to categories", coverage_categories_path, class: "inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300" %>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <%= link_to "Edit", edit_coverage_category_path(@coverage_category), class: "inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:border-gray-300 hover:text-gray-900 dark:border-white/10 dark:text-gray-200 dark:hover:border-white/20 dark:hover:text-white" %>
+        <%= button_to "Delete", @coverage_category, method: :delete, data: { turbo_confirm: "Delete this coverage category?" }, class: "inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:bg-red-500 dark:hover:bg-red-400 dark:focus-visible:outline-red-500" %>
+      </div>
+    </div>
+
+    <div class="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-gray-900">
+      <div class="border-b border-gray-200 bg-gray-50 px-6 py-5 dark:border-white/10 dark:bg-gray-900/50">
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-white"><%= @coverage_category.name %></h1>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Reference details for this coverage category.</p>
+      </div>
+      <div class="px-6 py-6">
+        <dl class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+          <div>
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Position</dt>
+            <dd class="mt-1 text-base text-gray-900 dark:text-white"><%= @coverage_category.position %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Modules using this category</dt>
+            <dd class="mt-1 text-base text-gray-900 dark:text-white"><%= @coverage_category.plan_modules.count %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Last updated</dt>
+            <dd class="mt-1 text-base text-gray-900 dark:text-white"><%= l @coverage_category.updated_at, format: :long %></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
