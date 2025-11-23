@@ -81,6 +81,45 @@
           </div>
         </div>
 
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <%= form.label :overall_limit_usd, "Limit (USD)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+            <div class="mt-2">
+              <%= form.number_field :overall_limit_usd, class: field_classes.call(:overall_limit_usd), step: 0.01, min: 0 %>
+            </div>
+          </div>
+
+          <div>
+            <%= form.label :overall_limit_gbp, "Limit (GBP)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+            <div class="mt-2">
+              <%= form.number_field :overall_limit_gbp, class: field_classes.call(:overall_limit_gbp), step: 0.01, min: 0 %>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <%= form.label :overall_limit_eur, "Limit (EUR)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+            <div class="mt-2">
+              <%= form.number_field :overall_limit_eur, class: field_classes.call(:overall_limit_eur), step: 0.01, min: 0 %>
+            </div>
+          </div>
+
+          <div>
+            <%= form.label :overall_limit_unit, "Limit unit", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+            <div class="mt-2">
+              <%= form.text_field :overall_limit_unit, class: field_classes.call(:overall_limit_unit), placeholder: "e.g. per policy / per year" %>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :overall_limit_notes, "Limit notes (optional)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+          <div class="mt-2">
+            <%= form.text_area :overall_limit_notes, class: field_classes.call(:overall_limit_notes, "min-h-[100px]"), placeholder: "Add context for how this limit applies." %>
+          </div>
+        </div>
+
       </div>
 
       <div class="flex flex-col gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">

@@ -7,14 +7,20 @@
         <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Wizard sessions</h1>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Continue where you left off.</p>
       </div>
-      <%= link_to "Start plan wizard", wizard_progresses_path(wizard_type: "plan_creation"), method: :post, class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
+      <%= button_to "Start plan wizard",
+                    wizard_progresses_path(wizard_type: "plan_creation"),
+                    method: :post,
+                    class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
     </div>
 
     <% if @wizard_progresses.empty? %>
       <div class="rounded-lg border border-dashed border-gray-300 bg-white p-6 text-sm text-gray-600 shadow-sm dark:border-white/10 dark:bg-gray-900 dark:text-gray-200">
         <p>You don’t have any in-progress wizards.</p>
         <div class="mt-4">
-          <%= link_to "Start a new plan wizard", wizard_progresses_path(wizard_type: "plan_creation"), method: :post, class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
+          <%= button_to "Start a new plan wizard",
+                        wizard_progresses_path(wizard_type: "plan_creation"),
+                        method: :post,
+                        class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
         </div>
       </div>
     <% else %>

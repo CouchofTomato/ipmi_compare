@@ -236,6 +236,11 @@ class PlanWizardFlow
                                          :overall_limit_gbp,
                                          :overall_limit_eur,
                                          :overall_limit_unit,
+                                         :overall_limit_notes,
+                                         :overall_limit_usd,
+                                         :overall_limit_gbp,
+                                         :overall_limit_eur,
+                                         :overall_limit_unit,
                                          :overall_limit_notes)
     sanitized_values = permitted.to_h
     sanitized_values["is_core"] = ActiveModel::Type::Boolean.new.cast(sanitized_values["is_core"])
