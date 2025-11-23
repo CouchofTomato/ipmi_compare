@@ -361,7 +361,67 @@ class PlanWizardFlow
     end
   end
 
-  def save_cost_shares(_cost_share_params)
-    WizardStepResult.new(success: true)
+  def save_cost_shares(cost_share_params, step_action = nil)
+    plan = progress.subject
+    return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding cost shares" ]) unless plan.present?
+
+    params_for_cost_share =
+      case cost_share_params
+      when ActionController::Parameters then cost_share_params
+      when Hash then ActionController::Parameters.new(cost_share_params)
+      else
+        ActionController::Parameters.new
+      end
+
+    permitted = params_for_cost_share.permit(:applies_to,
+                                             :plan_module_id,
+                                             :module_benefit_id,
+                                             :linked_cost_share_id,
+                                             :cost_share_type,
+                                             :amount,
+                                             :unit,
+                                             :per,
+                                             :currency,
+                                             :notes)
+
+    sanitized = permitted.to_h
+    # Only treat this submission as a create when meaningful fields are present.
+    user_filled_any = sanitized.slice("amount", "currency", "notes", "linked_cost_share_id", "plan_module_id", "module_benefit_id").values.any?(&:present?)
+    creating = step_action.in?(["add", "next"]) || (step_action.blank? && user_filled_any)
+
+    return WizardStepResult.new(success: true, resource: plan) unless creating && user_filled_any
+
+    applies_to = permitted[:applies_to].presence || "plan"
+    plan_module_id = permitted[:plan_module_id].presence
+    module_benefit_id = permitted[:module_benefit_id].presence
+
+    scope =
+      case applies_to
+      when "plan"
+        plan
+      when "plan_module"
+        plan.plan_modules.find_by(id: plan_module_id)
+      when "module_benefit"
+        ModuleBenefit.where(plan_module_id: plan.plan_module_ids).find_by(id: module_benefit_id)
+      else
+        nil
+      end
+
+    cost_share = CostShare.new(permitted.except(:applies_to, :plan_module_id, :module_benefit_id).merge(scope:))
+    cost_share.applies_to = applies_to
+    cost_share.plan_module_id = plan_module_id
+    cost_share.module_benefit_id = module_benefit_id
+
+    if scope.nil?
+      cost_share.errors.add(:base, "Select where this cost share applies")
+      return WizardStepResult.new(success: false, resource: cost_share, errors: cost_share.errors.full_messages)
+    end
+
+    if cost_share.save
+      scope.cost_shares.reload if scope.respond_to?(:cost_shares)
+      WizardStepResult.new(success: true, resource: cost_share)
+    else
+      WizardStepResult.new(success: false, resource: cost_share, errors: cost_share.errors.full_messages)
+    end
   end
 end
