@@ -48,48 +48,6 @@
           <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Children only?</dt>
           <dd><%= @plan.children_only_allowed? ? "Yes" : "No" %></dd>
         </div>
-        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
-          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit USD</dt>
-          <dd>
-            <% if @plan.overall_limit_usd.present? %>
-              <%= number_to_currency(@plan.overall_limit_usd, unit: "$", precision: 0) %>
-            <% else %>
-              Not set
-            <% end %>
-          </dd>
-        </div>
-        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
-          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit GBP</dt>
-          <dd>
-            <% if @plan.overall_limit_gbp.present? %>
-              <%= number_to_currency(@plan.overall_limit_gbp, unit: "£", precision: 0) %>
-            <% else %>
-              Not set
-            <% end %>
-          </dd>
-        </div>
-        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
-          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit EUR</dt>
-          <dd>
-            <% if @plan.overall_limit_eur.present? %>
-              <%= number_to_currency(@plan.overall_limit_eur, unit: "€", precision: 0) %>
-            <% else %>
-              Not set
-            <% end %>
-          </dd>
-        </div>
-        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
-          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit unit</dt>
-          <dd><%= @plan.overall_limit_unit.presence || "Not set" %></dd>
-        </div>
-        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
-          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit unlimited?</dt>
-          <dd><%= @plan.overall_limit_unlimited? ? "Yes" : "No" %></dd>
-        </div>
-        <div class="px-6 py-4">
-          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Overall limit notes</dt>
-          <dd class="mt-2 text-gray-700 dark:text-gray-200"><%= @plan.overall_limit_notes.presence || "No notes provided." %></dd>
-        </div>
         <div class="px-6 py-4">
           <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Review notes</dt>
           <dd class="mt-2 text-gray-700 dark:text-gray-200"><%= @plan.review_notes.presence || "No notes provided." %></dd>

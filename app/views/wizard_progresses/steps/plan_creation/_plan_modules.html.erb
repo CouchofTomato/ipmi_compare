@@ -81,41 +81,6 @@
           </div>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-3">
-          <div>
-            <%= form.label :overall_limit_usd, "Overall limit (USD)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
-            <div class="mt-2">
-              <%= form.number_field :overall_limit_usd, class: field_classes.call(:overall_limit_usd), step: 0.01, min: 0 %>
-            </div>
-          </div>
-          <div>
-            <%= form.label :overall_limit_gbp, "Overall limit (GBP)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
-            <div class="mt-2">
-              <%= form.number_field :overall_limit_gbp, class: field_classes.call(:overall_limit_gbp), step: 0.01, min: 0 %>
-            </div>
-          </div>
-          <div>
-            <%= form.label :overall_limit_eur, "Overall limit (EUR)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
-            <div class="mt-2">
-              <%= form.number_field :overall_limit_eur, class: field_classes.call(:overall_limit_eur), step: 0.01, min: 0 %>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <%= form.label :overall_limit_unit, "Limit unit (optional)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
-            <div class="mt-2">
-              <%= form.text_field :overall_limit_unit, class: field_classes.call(:overall_limit_unit), placeholder: "e.g. per policy / per member" %>
-            </div>
-          </div>
-          <div>
-            <%= form.label :overall_limit_notes, "Limit notes (optional)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
-            <div class="mt-2">
-              <%= form.text_area :overall_limit_notes, class: field_classes.call(:overall_limit_notes, "min-h-[80px]"), placeholder: "Context about how the limit applies." %>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="flex flex-col gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
@@ -165,25 +130,6 @@
                   <% end %>
                 </div>
               </div>
-              <% if mod.overall_limit_notes.present? %>
-                <p class="mt-3 text-sm text-gray-600 dark:text-gray-300"><%= mod.overall_limit_notes %></p>
-              <% end %>
-              <% if mod.overall_limit_usd.present? || mod.overall_limit_gbp.present? || mod.overall_limit_eur.present? || mod.overall_limit_unit.present? %>
-                <div class="mt-3 rounded-lg bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                  <% if mod.overall_limit_usd.present? %>
-                    <p><span class="font-semibold">USD:</span> <%= number_to_currency(mod.overall_limit_usd, unit: "$") %></p>
-                  <% end %>
-                  <% if mod.overall_limit_gbp.present? %>
-                    <p><span class="font-semibold">GBP:</span> <%= number_to_currency(mod.overall_limit_gbp, unit: "£") %></p>
-                  <% end %>
-                  <% if mod.overall_limit_eur.present? %>
-                    <p><span class="font-semibold">EUR:</span> <%= number_to_currency(mod.overall_limit_eur, unit: "€") %></p>
-                  <% end %>
-                  <% if mod.overall_limit_unit.present? %>
-                    <p><span class="font-semibold">Unit:</span> <%= mod.overall_limit_unit %></p>
-                  <% end %>
-                </div>
-              <% end %>
             </div>
           <% end %>
         </div>
