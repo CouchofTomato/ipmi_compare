@@ -29,14 +29,14 @@ class WizardProgressesController < ApplicationController
     result = @progress.flow.handle_step(params)
 
     if result.success?
-    case params[:step_action]
-    when "next"     then @progress.update!(current_step: @progress.next_step)
-    when "previous" then @progress.update!(current_step: @progress.previous_step)
-    when "complete" then @progress.update!(status: :completed)
-    end
+      case params[:step_action]
+      when "next"     then @progress.update!(current_step: @progress.next_step)
+      when "previous" then @progress.update!(current_step: @progress.previous_step)
+      when "complete" then @progress.update!(status: :complete)
+      end
     else
-    @resource = result.resource
-    result.errors.each { |e| @progress.errors.add(:base, e) }
+      @resource = result.resource
+      result.errors.each { |e| @progress.errors.add(:base, e) }
     end
 
     render_current_step
@@ -45,6 +45,14 @@ class WizardProgressesController < ApplicationController
   private
 
   def render_current_step
+    if @progress.complete? && @progress.subject.is_a?(Plan)
+      respond_to do |format|
+        format.turbo_stream { redirect_to plan_path(@progress.subject), notice: "Plan published and wizard completed" }
+        format.html { redirect_to plan_path(@progress.subject), notice: "Plan published and wizard completed" }
+      end
+      return
+    end
+
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: turbo_stream.replace(

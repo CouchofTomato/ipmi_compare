@@ -28,7 +28,8 @@ class PlanWizardFlow
     when "plan_modules"       then save_plan_modules(params[:modules], params[:step_action])
     when "module_benefits"      then save_module_benefits(params[:benefits], params[:step_action])
     when "benefit_limit_groups" then save_benefit_limit_groups(params[:benefit_limit_groups], params[:step_action])
-    when "cost_shares"   then save_cost_shares(params[:cost_shares])
+    when "cost_shares"   then save_cost_shares(params[:cost_shares], params[:step_action])
+    when "review"        then save_review(params[:review], params[:step_action])
     else
       WizardStepResult.new(success: true)
     end
@@ -422,6 +423,23 @@ class PlanWizardFlow
       WizardStepResult.new(success: true, resource: cost_share)
     else
       WizardStepResult.new(success: false, resource: cost_share, errors: cost_share.errors.full_messages)
+    end
+  end
+
+  def save_review(review_params, step_action = nil)
+    plan = progress.subject
+    return WizardStepResult.new(success: false, errors: [ "Plan must be created before review" ]) unless plan.present?
+
+    # Only act when finishing the wizard
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "complete"
+
+    publish_now = ActiveModel::Type::Boolean.new.cast(review_params&.[](:publish_now))
+    plan.published = true if publish_now
+
+    if plan.save
+      WizardStepResult.new(success: true, resource: plan)
+    else
+      WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages)
     end
   end
 end
