@@ -1,6 +1,7 @@
 class WizardProgressesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_progress, only: %i[show update]
+  before_action :redirect_if_complete, only: %i[show update]
 
   def index
     @wizard_progresses = current_user.wizard_progresses.where(status: :in_progress).order(updated_at: :desc)
@@ -16,6 +17,7 @@ class WizardProgressesController < ApplicationController
     )
 
     progress.current_step = progress.steps.first
+    progress.step_order = progress.current_step_index
 
     if progress.save
       redirect_to wizard_progress_path(progress)
@@ -43,20 +45,14 @@ class WizardProgressesController < ApplicationController
       result.errors.each { |e| @progress.errors.add(:base, e) }
     end
 
+    return if redirect_to_plan_if_complete
+
     render_current_step
   end
 
   private
 
   def render_current_step
-    if @progress.complete? && @progress.subject.is_a?(Plan)
-      respond_to do |format|
-        format.turbo_stream { redirect_to plan_path(@progress.subject), notice: "Plan published and wizard completed" }
-        format.html { redirect_to plan_path(@progress.subject), notice: "Plan published and wizard completed" }
-      end
-      return
-    end
-
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: turbo_stream.replace(
@@ -72,5 +68,28 @@ class WizardProgressesController < ApplicationController
 
   def set_progress
     @progress = WizardProgress.find(params[:id])
+  end
+
+  def redirect_if_complete
+    redirect_to_plan_if_complete
+  end
+
+  def redirect_to_plan_if_complete
+    return false unless @progress.complete? && @progress.subject.is_a?(Plan)
+
+    respond_to do |format|
+      format.turbo_stream do
+        redirect_to plan_path(@progress.subject),
+                    notice: "Plan published and wizard completed",
+                    status: :see_other
+      end
+      format.html do
+        redirect_to plan_path(@progress.subject),
+                    notice: "Plan published and wizard completed",
+                    status: :see_other
+      end
+    end
+
+    true
   end
 end
