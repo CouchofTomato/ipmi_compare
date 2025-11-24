@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
-# Usually, especially when using Selenium, developers tend to increase the max wait time.
-# With Cuprite, there is no need for that.
-# We use a Capybara default value here explicitly.
-Capybara.default_max_wait_time = 2
+# Allow tuning wait time in CI where things can be slower.
+Capybara.default_max_wait_time = ENV.fetch('CAPYBARA_DEFAULT_MAX_WAIT_TIME', 2).to_f
 
 # Normalize whitespaces when using `has_text?` and similar matchers,
 # i.e., ignore newlines, trailing spaces, etc.
