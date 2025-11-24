@@ -61,7 +61,8 @@
                                          ->(m) { [m.module_group&.name, m.name].compact.join(" – ") },
                                          { prompt: available_modules.empty? ? "No modules available" : "Select a module" },
                                          class: field_classes.call(:plan_module),
-                                         disabled: available_modules.empty? %>
+                                         disabled: available_modules.empty?,
+                                         data: { test_id: "module-field" } %>
             </div>
             <% if benefit_limit_group.errors[:plan_module].present? || benefit_limit_group.errors[:plan_module_id].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= (benefit_limit_group.errors[:plan_module] + benefit_limit_group.errors[:plan_module_id]).uniq.to_sentence %></p>
@@ -71,7 +72,7 @@
           <div>
             <%= form.label :name, "Limit group name", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
-              <%= form.text_field :name, class: field_classes.call(:name), placeholder: "e.g. Annual outpatient therapies limit" %>
+              <%= form.text_field :name, class: field_classes.call(:name), placeholder: "e.g. Annual outpatient therapies limit", data: { test_id: "limit-group-name-field" } %>
             </div>
             <% if benefit_limit_group.errors[:name].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= benefit_limit_group.errors[:name].to_sentence %></p>
@@ -83,7 +84,7 @@
           <div>
             <%= form.label :limit_usd, "Limit (USD)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
-              <%= form.number_field :limit_usd, class: field_classes.call(:limit_usd), step: 0.01, min: 0 %>
+              <%= form.number_field :limit_usd, class: field_classes.call(:limit_usd), step: 0.01, min: 0, data: { test_id: "limit-usd-field" } %>
             </div>
           </div>
           <div>
@@ -104,7 +105,7 @@
           <div>
             <%= form.label :limit_unit, "Limit unit", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
-              <%= form.text_field :limit_unit, class: field_classes.call(:limit_unit), placeholder: "e.g. per policy / per year" %>
+              <%= form.text_field :limit_unit, class: field_classes.call(:limit_unit), placeholder: "e.g. per policy / per year", data: { test_id: "limit-unit-field" } %>
             </div>
             <% if benefit_limit_group.errors[:limit_unit].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= benefit_limit_group.errors[:limit_unit].to_sentence %></p>
@@ -134,7 +135,8 @@
                                          { selected: selected_module_benefit_ids },
                                          class: field_classes.call(:module_benefit_ids, "min-h-[140px]"),
                                          multiple: true,
-                                         size: 8 %>
+                                         size: 8,
+                                         data: { test_id: "module-benefits-field" } %>
             <% end %>
           </div>
         </div>
@@ -153,11 +155,13 @@
                          name: "step_action",
                          value: "add",
                          class: "inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 dark:disabled:bg-gray-700 dark:disabled:text-gray-400 dark:bg-indigo-500 dark:hover:bg-indigo-400",
-                         disabled: available_module_benefits.empty? %>
+                         disabled: available_module_benefits.empty?,
+                         data: { test_id: "add-benefit-limit-group-button" } %>
           <%= button_tag "Save and continue →",
                          name: "step_action",
                          value: "next",
-                         class: "inline-flex items-center gap-2 rounded-md border border-transparent px-4 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 shadow-xs hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-600/20 dark:text-indigo-100 dark:hover:bg-indigo-600/30" %>
+                         class: "inline-flex items-center gap-2 rounded-md border border-transparent px-4 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 shadow-xs hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-600/20 dark:text-indigo-100 dark:hover:bg-indigo-600/30",
+                         data: { test_id: "next-step-button" } %>
         </div>
       </div>
     <% end %>

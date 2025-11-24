@@ -72,7 +72,8 @@
               <%= form.select :applies_to,
                               [["Plan", "plan"], ["Module", "plan_module"], ["Module benefit", "module_benefit"]],
                               {},
-                              class: field_classes.call(:applies_to) %>
+                              class: field_classes.call(:applies_to),
+                              data: { test_id: "applies-to-field" } %>
             </div>
           </div>
 
@@ -120,14 +121,15 @@
               <%= form.select :cost_share_type,
                               CostShare.cost_share_types.keys.map { |key| [key.humanize, key] },
                               {},
-                              class: field_classes.call(:cost_share_type) %>
+                              class: field_classes.call(:cost_share_type),
+                              data: { test_id: "cost-share-type-field" } %>
             </div>
           </div>
 
           <div>
             <%= form.label :amount, "Amount", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
-              <%= form.number_field :amount, class: field_classes.call(:amount), step: 0.01, min: 0 %>
+              <%= form.number_field :amount, class: field_classes.call(:amount), step: 0.01, min: 0, data: { test_id: "cost-share-amount-field" } %>
             </div>
           </div>
 
@@ -137,7 +139,8 @@
               <%= form.select :unit,
                               CostShare.units.keys.map { |key| [key.humanize, key] },
                               {},
-                              class: field_classes.call(:unit) %>
+                              class: field_classes.call(:unit),
+                              data: { test_id: "cost-share-unit-field" } %>
             </div>
           </div>
         </div>
@@ -149,14 +152,15 @@
               <%= form.select :per,
                               CostShare.pers.keys.map { |key| [key.humanize, key] },
                               {},
-                              class: field_classes.call(:per) %>
+                              class: field_classes.call(:per),
+                              data: { test_id: "cost-share-per-field" } %>
             </div>
           </div>
 
           <div>
             <%= form.label :currency, "Currency (optional)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
-              <%= form.text_field :currency, class: field_classes.call(:currency), placeholder: "e.g. USD" %>
+              <%= form.text_field :currency, class: field_classes.call(:currency), placeholder: "e.g. USD", data: { test_id: "cost-share-currency-field" } %>
             </div>
           </div>
         </div>
@@ -182,11 +186,13 @@
                          name: "step_action",
                          value: "add",
                          class: "inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 dark:disabled:bg-gray-700 dark:disabled:text-gray-400 dark:bg-indigo-500 dark:hover:bg-indigo-400",
-                         disabled: plan.blank? %>
+                         disabled: plan.blank?,
+                         data: { test_id: "add-cost-share-button" } %>
           <%= button_tag "Save and continue →",
                          name: "step_action",
                          value: "next",
-                         class: "inline-flex items-center gap-2 rounded-md border border-transparent px-4 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 shadow-xs hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-600/20 dark:text-indigo-100 dark:hover:bg-indigo-600/30" %>
+                         class: "inline-flex items-center gap-2 rounded-md border border-transparent px-4 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 shadow-xs hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-600/20 dark:text-indigo-100 dark:hover:bg-indigo-600/30",
+                         data: { test_id: "next-step-button" } %>
         </div>
       </div>
     <% end %>

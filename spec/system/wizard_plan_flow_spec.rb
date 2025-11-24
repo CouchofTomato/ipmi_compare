@@ -19,71 +19,72 @@ RSpec.describe "Plan wizard", type: :system do
     sign_in(email: user.email, password: "password123")
 
     visit wizard_progresses_path
-    click_button "Start plan wizard"
+    find(:test_id, "start-plan-wizard-button").click
 
-    select insurer.name, from: "Insurer"
-    fill_in "Plan name", with: "Global Gold"
-    fill_in "Min age", with: 0
-    fill_in "Max age", with: 65
-    fill_in "Version year", with: Date.current.year
-    select "Individual", from: "Policy type"
-    fill_in "Next review due", with: Date.current.next_year
-    fill_in "Last reviewed at", with: Date.current
-    fill_in "Review notes", with: "System spec created plan."
-    click_button "Save and continue →"
+    expect(page).to have_content("Step 1: Plan details")
+    find(:test_id, "insurer-select-field").select(insurer.name)
+    find(:test_id, "plan-name-field").fill_in with: "Global Gold"
+    find(:test_id, "min-age-field").fill_in with: 0
+    find(:test_id, "max-age-field").fill_in with: 65
+    find(:test_id, "version-year-field").fill_in with: Date.current.year
+    find(:test_id, "policy-type-field").select "Individual"
+    find(:test_id, "next-review-due-field").fill_in with: Date.current.next_year
+    find(:test_id, "last-reviewed-at-field").fill_in with: Date.current
+    find(:test_id, "review-notes-field").fill_in with: "System spec created plan."
+    find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 2: Residency eligibility")
-    click_button "Save and continue →"
+    find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 3: Geographic coverage")
-    check area.name
-    click_button "Save and continue →"
+    find(:test_id, "area-#{area.id}-checkbox").check
+    find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 4: Module groups")
-    fill_in "Module group name", with: "Core"
-    fill_in "Description", with: "Included for every member."
-    click_button "Add module group"
+    find(:test_id, "module-group-name-field").fill_in with: "Core"
+    find(:test_id, "module-group-description-field").fill_in with: "Included for every member."
+    find(:test_id, "add-module-group-button").click
     expect(page).to have_content("Core")
-    click_button "Save and continue →"
+    find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 5: Plan modules")
-    fill_in "Module name", with: "Hospital module"
-    select "Core", from: "Module group"
-    check "Core module"
-    click_button "Add module"
+    find(:test_id, "module-name-field").fill_in with: "Hospital module"
+    find(:test_id, "module-group-field").select "Core"
+    find(:test_id, "is-core-checkbox").check
+    find(:test_id, "add-module-button").click
     expect(page).to have_content("Hospital module")
-    click_button "Save and continue →"
+    find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 6: Module benefits")
-    select "Core – Hospital module", from: "Module"
-    select coverage_category.name, from: "Coverage category"
-    select benefit.name, from: "Benefit"
-    fill_in "Coverage description", with: "Covers inpatient stays and surgery."
-    select "Replace", from: "Interaction type"
-    click_button "Add module benefit"
+    find(:test_id, "module-field").select "Core – Hospital module"
+    find(:test_id, "coverage-category-field").select coverage_category.name
+    find(:test_id, "benefit-field").select benefit.name
+    find(:test_id, "coverage-description-field").fill_in with: "Covers inpatient stays and surgery."
+    find(:test_id, "interaction-type-field").select "Replace"
+    find(:test_id, "add-module-benefit-button").click
     expect(page).to have_content(benefit.name)
-    click_button "Save and continue →"
+    find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 7: Benefit limit groups")
-    select "Core – Hospital module", from: "Module"
-    fill_in "Limit group name", with: "Annual inpatient limit"
-    fill_in "Limit (USD)", with: 10_000
-    fill_in "Limit unit", with: "per year"
-    select benefit.name, from: "Module benefits using this limit"
-    click_button "Add benefit limit group"
+    find(:test_id, "module-field").select "Core – Hospital module"
+    find(:test_id, "limit-group-name-field").fill_in with: "Annual inpatient limit"
+    find(:test_id, "limit-usd-field").fill_in with: 10_000
+    find(:test_id, "limit-unit-field").fill_in with: "per year"
+    find(:test_id, "module-benefits-field").select benefit.name
+    find(:test_id, "add-benefit-limit-group-button").click
     expect(page).to have_content("Annual inpatient limit")
-    click_button "Save and continue →"
+    find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 8: Cost shares")
-    select "Plan", from: "Applies to"
-    select "Deductible", from: "Type"
-    fill_in "Amount", with: 250
-    select "Amount", from: "Unit"
-    select "Per year", from: "Per"
-    fill_in "Currency", with: "USD"
-    click_button "Add cost share"
+    find(:test_id, "applies-to-field").select "Plan"
+    find(:test_id, "cost-share-type-field").select "Deductible"
+    find(:test_id, "cost-share-amount-field").fill_in with: 250
+    find(:test_id, "cost-share-unit-field").select "Amount"
+    find(:test_id, "cost-share-per-field").select "Per year"
+    find(:test_id, "cost-share-currency-field").fill_in with: "USD"
+    find(:test_id, "add-cost-share-button").click
     expect(page).to have_content("Deductible")
-    click_button "Save and continue →"
+    find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 9: Review & publish")
     expect(page).to have_content("Global Gold")
@@ -93,7 +94,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content("Annual inpatient limit")
     expect(page).to have_content("Deductible")
 
-    click_button "Finish and publish"
+    find(:test_id, "publish-plan-button").click
 
     expect(page).to have_content("Plan published and wizard completed")
     expect(page).to have_content("Global Gold")

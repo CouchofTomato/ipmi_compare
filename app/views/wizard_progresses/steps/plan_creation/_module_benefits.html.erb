@@ -64,7 +64,8 @@
                                          ->(m) { [m.module_group&.name, m.name].compact.join(" – ") },
                                          { prompt: available_modules.empty? ? "No modules available" : "Select a module" },
                                          class: field_classes.call(:plan_module),
-                                         disabled: available_modules.empty? %>
+                                         disabled: available_modules.empty?,
+                                         data: { test_id: "module-field" } %>
             </div>
             <% if module_benefit.errors[:plan_module].present? || module_benefit.errors[:plan_module_id].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= (module_benefit.errors[:plan_module] + module_benefit.errors[:plan_module_id]).uniq.to_sentence %></p>
@@ -79,7 +80,8 @@
                                          :id,
                                          :name,
                                          { prompt: "Select a category" },
-                                         class: field_classes.call(:coverage_category) %>
+                                         class: field_classes.call(:coverage_category),
+                                         data: { test_id: "coverage-category-field" } %>
             </div>
             <% if module_benefit.errors[:coverage_category].present? || module_benefit.errors[:coverage_category_id].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= (module_benefit.errors[:coverage_category] + module_benefit.errors[:coverage_category_id]).uniq.to_sentence %></p>
@@ -95,7 +97,8 @@
                                        :id,
                                        :name,
                                        { prompt: "Select a benefit" },
-                                       class: field_classes.call(:benefit) %>
+                                       class: field_classes.call(:benefit),
+                                       data: { test_id: "benefit-field" } %>
           </div>
           <% if module_benefit.errors[:benefit].present? || module_benefit.errors[:benefit_id].present? %>
             <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= (module_benefit.errors[:benefit] + module_benefit.errors[:benefit_id]).uniq.to_sentence %></p>
@@ -106,7 +109,7 @@
           <div>
             <%= form.label :coverage_description, "Coverage description", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
-              <%= form.text_area :coverage_description, class: field_classes.call(:coverage_description, "min-h-[90px]"), placeholder: "Describe the coverage or conditions" %>
+              <%= form.text_area :coverage_description, class: field_classes.call(:coverage_description, "min-h-[90px]"), placeholder: "Describe the coverage or conditions", data: { test_id: "coverage-description-field" } %>
             </div>
           </div>
 
@@ -159,7 +162,8 @@
               <%= form.select :interaction_type,
                               ModuleBenefit.interaction_types.keys.map { |key| [key.humanize, key] },
                               {},
-                              class: field_classes.call(:interaction_type) %>
+                              class: field_classes.call(:interaction_type),
+                              data: { test_id: "interaction-type-field" } %>
             </div>
           </div>
 
@@ -188,11 +192,13 @@
                          name: "step_action",
                          value: "add",
                          class: "inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 dark:disabled:bg-gray-700 dark:disabled:text-gray-400 dark:bg-indigo-500 dark:hover:bg-indigo-400",
-                         disabled: available_modules.empty? %>
+                         disabled: available_modules.empty?,
+                         data: { test_id: "add-module-benefit-button" } %>
           <%= button_tag "Save and continue →",
                          name: "step_action",
                          value: "next",
-                         class: "inline-flex items-center gap-2 rounded-md border border-transparent px-4 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 shadow-xs hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-600/20 dark:text-indigo-100 dark:hover:bg-indigo-600/30" %>
+                         class: "inline-flex items-center gap-2 rounded-md border border-transparent px-4 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 shadow-xs hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-600/20 dark:text-indigo-100 dark:hover:bg-indigo-600/30",
+                         data: { test_id: "next-step-button" } %>
         </div>
       </div>
     <% end %>

@@ -37,7 +37,7 @@
         <div>
           <%= form.label :name, "Module group name", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
           <div class="mt-2">
-            <%= form.text_field :name, name: "module_groups[name]", class: input_classes, placeholder: "e.g. Core benefits" %>
+            <%= form.text_field :name, name: "module_groups[name]", class: input_classes, placeholder: "e.g. Core benefits", data: { test_id: "module-group-name-field" } %>
           </div>
           <% if module_group.errors[:name].present? %>
             <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= module_group.errors[:name].to_sentence %></p>
@@ -51,7 +51,8 @@
               <%= form.text_area :description,
                                  name: "module_groups[description]",
                                  class: "#{input_classes} min-h-[120px]",
-                                 placeholder: "Optional context that explains what's included in this group." %>
+                                 placeholder: "Optional context that explains what's included in this group.",
+                                 data: { test_id: "module-group-description-field" } %>
             </div>
           </div>
 
@@ -62,7 +63,8 @@
                                     name: "module_groups[position]",
                                     value: next_position,
                                     min: 0,
-                                    class: input_classes %>
+                                    class: input_classes,
+                                    data: { test_id: "module-group-position-field" } %>
             </div>
             <% if module_group.errors[:position].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= module_group.errors[:position].to_sentence %></p>
@@ -83,11 +85,13 @@
           <%= button_tag "Add module group",
                          name: "step_action",
                          value: "add",
-                         class: "inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400" %>
+                         class: "inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400",
+                         data: { test_id: "add-module-group-button" } %>
           <%= button_tag "Save and continue →",
                          name: "step_action",
                          value: "next",
-                         class: "inline-flex items-center gap-2 rounded-md border border-transparent px-4 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 shadow-xs hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-600/20 dark:text-indigo-100 dark:hover:bg-indigo-600/30" %>
+                         class: "inline-flex items-center gap-2 rounded-md border border-transparent px-4 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 shadow-xs hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-600/20 dark:text-indigo-100 dark:hover:bg-indigo-600/30",
+                         data: { test_id: "next-step-button" } %>
         </div>
       </div>
     <% end %>

@@ -27,7 +27,7 @@
         <div>
           <%= form.label :insurer_id, "Insurer" %>
           <div class="mt-2">
-            <%= form.collection_select :insurer_id, Insurer.order(:name), :id, :name, { prompt: "Select an insurer" }, class: field_classes.call([:insurer, :insurer_id]) %>
+            <%= form.collection_select :insurer_id, Insurer.order(:name), :id, :name, { prompt: "Select an insurer" }, class: field_classes.call([:insurer, :insurer_id]), data: { test_id: "insurer-select-field" } %>
           </div>
           <% insurer_errors = plan.errors[:insurer] + plan.errors[:insurer_id] %>
           <% if insurer_errors.present? %>
@@ -38,7 +38,7 @@
         <div>
           <%= form.label :name, "Plan name" %>
           <div class="mt-2">
-            <%= form.text_field :name, class: field_classes.call(:name), placeholder: "e.g. Global Gold" %>
+            <%= form.text_field :name, class: field_classes.call(:name), placeholder: "e.g. Global Gold", data: { test_id: "plan-name-field" } %>
           </div>
           <% if plan.errors[:name].present? %>
             <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:name].to_sentence %></p>
@@ -49,7 +49,7 @@
           <div>
             <%= form.label :version_year %>
             <div class="mt-2">
-              <%= form.number_field :version_year, class: field_classes.call(:version_year), min: 1900 %>
+              <%= form.number_field :version_year, class: field_classes.call(:version_year), min: 1900, data: { test_id: "version-year-field" } %>
             </div>
             <% if plan.errors[:version_year].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:version_year].to_sentence %></p>
@@ -59,7 +59,7 @@
           <div>
             <%= form.label :policy_type %>
             <div class="mt-2">
-              <%= form.select :policy_type, Plan.policy_types.keys.map { |type| [type.humanize, type] }, { prompt: "Select a policy type" }, class: field_classes.call(:policy_type) %>
+              <%= form.select :policy_type, Plan.policy_types.keys.map { |type| [type.humanize, type] }, { prompt: "Select a policy type" }, class: field_classes.call(:policy_type), data: { test_id: "policy-type-field" } %>
             </div>
             <% if plan.errors[:policy_type].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:policy_type].to_sentence %></p>
@@ -71,7 +71,7 @@
           <div>
             <%= form.label :min_age %>
             <div class="mt-2">
-              <%= form.number_field :min_age, class: field_classes.call(:min_age), min: 0 %>
+              <%= form.number_field :min_age, class: field_classes.call(:min_age), min: 0, data: { test_id: "min-age-field" } %>
             </div>
             <% if plan.errors[:min_age].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:min_age].to_sentence %></p>
@@ -81,7 +81,7 @@
           <div>
             <%= form.label :max_age %>
             <div class="mt-2">
-              <%= form.number_field :max_age, class: field_classes.call(:max_age), min: 0 %>
+              <%= form.number_field :max_age, class: field_classes.call(:max_age), min: 0, data: { test_id: "max-age-field" } %>
             </div>
             <% if plan.errors[:max_age].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:max_age].to_sentence %></p>
@@ -93,7 +93,7 @@
           <div>
             <%= form.label :next_review_due %>
             <div class="mt-2">
-              <%= form.date_field :next_review_due, class: field_classes.call(:next_review_due) %>
+              <%= form.date_field :next_review_due, class: field_classes.call(:next_review_due), data: { test_id: "next-review-due-field" } %>
             </div>
             <% if plan.errors[:next_review_due].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:next_review_due].to_sentence %></p>
@@ -103,7 +103,7 @@
           <div>
             <%= form.label :last_reviewed_at %>
             <div class="mt-2">
-              <%= form.date_field :last_reviewed_at, class: field_classes.call(:last_reviewed_at) %>
+              <%= form.date_field :last_reviewed_at, class: field_classes.call(:last_reviewed_at), data: { test_id: "last-reviewed-at-field" } %>
             </div>
             <% if plan.errors[:last_reviewed_at].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:last_reviewed_at].to_sentence %></p>
@@ -114,7 +114,7 @@
         <div>
           <%= form.label :review_notes %>
           <div class="mt-2">
-            <%= form.text_area :review_notes, class: field_classes.call(:review_notes, "min-h-[120px]"), placeholder: "Internal notes about this plan's review status" %>
+            <%= form.text_area :review_notes, class: field_classes.call(:review_notes, "min-h-[120px]"), placeholder: "Internal notes about this plan's review status", data: { test_id: "review-notes-field" } %>
           </div>
         </div>
 
@@ -132,7 +132,7 @@
       </div>
 
       <div class="flex flex-col items-end gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-end dark:border-white/10">
-        <%= button_tag "Save and continue →", name: "step_action", value: "next", class: "rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400" %>
+        <%= button_tag "Save and continue →", name: "step_action", value: "next", class: "rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400", data: { test_id: "next-step-button" } %>
       </div>
     <% end %>
   </div>
