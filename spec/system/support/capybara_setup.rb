@@ -30,3 +30,7 @@ Capybara.singleton_class.prepend(Module.new do
     self.last_used_session = nil
   end
 end)
+
+Capybara.add_selector(:test_id) do
+  css { |value| "[data-test-id='#{value}']" }
+end
