@@ -91,9 +91,6 @@ jobs:
       - name: Install Chrome
         uses: browser-actions/setup-chrome@v1
 
-      - name: Install Chromedriver
-        uses: browser-actions/setup-chromedriver@v1
-
       - name: Precompile assets
         env:
           RAILS_ENV: test
