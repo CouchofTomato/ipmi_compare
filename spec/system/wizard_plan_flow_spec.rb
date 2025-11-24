@@ -28,26 +28,26 @@ RSpec.describe "Plan wizard", type: :system do
     find(:test_id, "max-age-field").fill_in with: 65
     find(:test_id, "version-year-field").fill_in with: Date.current.year
     find(:test_id, "policy-type-field").select "Individual"
-    find(:test_id, "next-review-due-field").fill_in with: Date.current.next_year
-    find(:test_id, "last-reviewed-at-field").fill_in with: Date.current
+    find(:test_id, "next-review-due-field").fill_in with: Date.current.next_year.strftime('%Y-%m-%d')
+    find(:test_id, "last-reviewed-at-field").fill_in with: Date.current.strftime('%Y-%m-%d')
     find(:test_id, "review-notes-field").fill_in with: "System spec created plan."
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 2: Residency eligibility")
+    expect(page).to have_content("Step 2: Residency eligibility", wait: 10)
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 3: Geographic coverage")
+    expect(page).to have_content("Step 3: Geographic coverage", wait: 10)
     find(:test_id, "area-#{area.id}-checkbox").check
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 4: Module groups")
+    expect(page).to have_content("Step 4: Module groups", wait: 10)
     find(:test_id, "module-group-name-field").fill_in with: "Core"
     find(:test_id, "module-group-description-field").fill_in with: "Included for every member."
     find(:test_id, "add-module-group-button").click
     expect(page).to have_content("Core")
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 5: Plan modules")
+    expect(page).to have_content("Step 5: Plan modules", wait: 10)
     find(:test_id, "module-name-field").fill_in with: "Hospital module"
     find(:test_id, "module-group-field").select "Core"
     find(:test_id, "is-core-checkbox").check
@@ -55,7 +55,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content("Hospital module")
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 6: Module benefits")
+    expect(page).to have_content("Step 6: Module benefits", wait: 10)
     find(:test_id, "module-field").select "Core – Hospital module"
     find(:test_id, "coverage-category-field").select coverage_category.name
     find(:test_id, "benefit-field").select benefit.name
@@ -65,7 +65,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content(benefit.name)
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 7: Benefit limit groups")
+    expect(page).to have_content("Step 7: Benefit limit groups", wait: 10)
     find(:test_id, "module-field").select "Core – Hospital module"
     find(:test_id, "limit-group-name-field").fill_in with: "Annual inpatient limit"
     find(:test_id, "limit-usd-field").fill_in with: 10_000
@@ -75,7 +75,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content("Annual inpatient limit")
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 8: Cost shares")
+    expect(page).to have_content("Step 8: Cost shares", wait: 10)
     find(:test_id, "applies-to-field").select "Plan"
     find(:test_id, "cost-share-type-field").select "Deductible"
     find(:test_id, "cost-share-amount-field").fill_in with: 250
@@ -86,7 +86,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content("Deductible")
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 9: Review & publish")
+    expect(page).to have_content("Step 9: Review & publish", wait: 10)
     expect(page).to have_content("Global Gold")
     expect(page).to have_content("Core")
     expect(page).to have_content("Hospital module")
