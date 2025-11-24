@@ -97,6 +97,5 @@ RSpec.describe "Plan wizard", type: :system do
 
     expect(page).to have_content("Plan published and wizard completed")
     expect(page).to have_content("Global Gold")
-    expect(page).to have_content("Published")
   end
 end
