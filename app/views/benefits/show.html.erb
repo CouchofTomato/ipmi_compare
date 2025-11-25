@@ -18,10 +18,6 @@
       <div class="px-6 py-6">
         <dl class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
           <div>
-            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Category</dt>
-            <dd class="mt-1 text-base text-gray-900 dark:text-white"><%= @benefit.category.humanize %></dd>
-          </div>
-          <div>
             <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Last updated</dt>
             <dd class="mt-1 text-base text-gray-900 dark:text-white"><%= l @benefit.updated_at, format: :long %></dd>
           </div>

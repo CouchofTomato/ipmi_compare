@@ -1,6 +1,8 @@
 class BenefitLimitGroup < ApplicationRecord
   belongs_to :plan_module
 
+  has_many :module_benefits, dependent: :destroy
+
   validates :name, presence: true
   validates :limit_unit, presence: true
   validate :at_least_one_currency_limit_present

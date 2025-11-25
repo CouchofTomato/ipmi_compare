@@ -1,7 +1,6 @@
 FactoryBot.define do
   factory :benefit do
-    name { "MyString" }
-    category { 1 }
-    description { "MyText" }
+    sequence(:name) { |n| "Benefit_#{n}" }
+    description { "Description of the benefit" }
   end
 end

@@ -15,12 +15,24 @@ class TailwindFormBuilder < ActionView::Helpers::FormBuilder
     base: "block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500"
   )
 
+  SELECT_CLASSES = ClassVariants.build(
+    base: "block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500"
+  )
+
   SUBMIT_CLASSES = ClassVariants.build(
     base: "flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:shadow-none dark:hover:bg-indigo-400 dark:focus-visible:outline-indigo-500"
   )
 
+  TEXT_FIELD_CLASSES = ClassVariants.build(
+    base: "block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500"
+  )
+
   def check_box(method, options = {}, checked_value = "1", unchecked_value = "0")
     super(method, options.reverse_merge(class: CHECK_BOX_CLASSES.render), checked_value, unchecked_value)
+  end
+
+  def country_select(method, options = {}, html_options = {})
+    super(method, options, html_options.reverse_merge(class: SELECT_CLASSES.render))
   end
 
   def email_field(method, options = {})
@@ -35,7 +47,15 @@ class TailwindFormBuilder < ActionView::Helpers::FormBuilder
     super(method, options.reverse_merge(class: PASSWORD_CLASSES.render))
   end
 
+  def select(method, choices = nil, options = {}, html_options = {}, &)
+    super(method, choices, options, html_options.reverse_merge(class: SELECT_CLASSES.render), &)
+  end
+
   def submit(value = nil, options = {})
     super(value, options.reverse_merge(class: SUBMIT_CLASSES.render))
+  end
+
+  def text_field(method, options = {})
+    super(method, options.reverse_merge(class: TEXT_FIELD_CLASSES.render))
   end
 end

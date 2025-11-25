@@ -22,7 +22,8 @@ class CreateWizardProgresses < ActiveRecord::Migration[8.1]
     add_index :wizard_progresses,
               %i[wizard_type subject_type subject_id],
               unique: true,
-              name: "index_wizard_progresses_on_type_and_subject"
+              name: "index_wizard_progresses_on_type_and_subject",
+              where: "subject_id IS NOT NULL"
     add_index :wizard_progresses, %i[status updated_at]
     add_index :wizard_progresses, :wizard_type
   end

@@ -9,13 +9,7 @@ class PlansController < ApplicationController
   end
 
   def new
-    @plan = Plan.new(
-      children_only_allowed: false,
-      published: false,
-      overall_limit_unlimited: true,
-      version_year: Time.current.year,
-      next_review_due: 1.year.from_now.to_date
-    )
+    @plan = Plan.new
   end
 
   def create
@@ -47,12 +41,6 @@ class PlansController < ApplicationController
         :last_reviewed_at,
         :next_review_due,
         :review_notes,
-        :overall_limit_usd,
-        :overall_limit_gbp,
-        :overall_limit_eur,
-        :overall_limit_unit,
-        :overall_limit_notes,
-        :overall_limit_unlimited
       )
     end
 end

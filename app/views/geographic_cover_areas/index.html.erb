@@ -1,0 +1,70 @@
+<% content_for :title, "Geographic Cover Areas" %>
+
+<div class="px-4 py-10 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-5xl">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Geographic cover areas</h1>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Define the regions used when mapping plan coverage.</p>
+      </div>
+      <div>
+        <%= link_to "Add area", new_geographic_cover_area_path, class: "inline-flex items-center gap-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus-visible:outline-indigo-500" %>
+      </div>
+    </div>
+
+    <div class="mt-8 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-gray-900">
+      <div class="border-b border-gray-200 bg-gray-50 px-6 py-5 dark:border-white/10 dark:bg-gray-900/50">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Coverage directory</h2>
+      </div>
+      <div class="px-4 py-4 sm:px-6">
+        <% if @geographic_cover_areas.any? %>
+          <div class="-mx-4 sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full align-middle">
+              <div class="overflow-hidden shadow-sm ring-1 ring-black ring-opacity-5 sm:rounded-lg dark:ring-white/10">
+                <table class="min-w-full divide-y divide-gray-300 dark:divide-white/15">
+                  <thead class="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                      <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6 dark:text-white">Name</th>
+                      <th scope="col" class="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 sm:table-cell dark:text-white">Code</th>
+                      <th scope="col" class="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell dark:text-white">Plans</th>
+                      <th scope="col" class="py-3.5 pr-4 pl-3 sm:pr-6">
+                        <span class="sr-only">Edit</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 bg-white dark:divide-white/10 dark:bg-gray-900">
+                    <% @geographic_cover_areas.each do |area| %>
+                      <tr>
+                        <td class="w-full max-w-0 py-4 pr-3 pl-4 text-sm font-medium text-gray-900 sm:w-auto sm:max-w-none sm:pl-6 dark:text-white">
+                          <%= link_to geographic_cover_area_path(area), class: "block truncate text-sm/6 font-medium text-gray-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-300" do %>
+                            <span class="truncate"><%= area.name %></span>
+                          <% end %>
+                          <dl class="font-normal sm:hidden">
+                            <dt class="sr-only">Code</dt>
+                            <dd class="mt-1 uppercase text-gray-500 dark:text-gray-400"><%= area.code %></dd>
+                          </dl>
+                        </td>
+                        <td class="hidden px-3 py-4 text-sm uppercase text-gray-500 sm:table-cell dark:text-gray-400"><%= area.code %></td>
+                        <td class="hidden px-3 py-4 text-sm text-gray-500 lg:table-cell dark:text-gray-400"><%= area.plans.count %></td>
+                        <td class="py-4 pr-4 pl-3 text-right text-sm font-medium sm:pr-6">
+                          <%= link_to edit_geographic_cover_area_path(area), class: "inline-flex items-center justify-center text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300" do %>
+                            <span class="sr-only">Edit</span>
+                            <%= inline_svg_tag "pencil-square.svg", class: "h-5 w-5", aria: { hidden: true } %>
+                          <% end %>
+                        </td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        <% else %>
+          <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-6 py-12 text-center text-sm text-gray-600 dark:border-white/15 dark:bg-gray-900/50 dark:text-gray-300">
+            <p>No geographic cover areas yet. <%= link_to "Create the first area", new_geographic_cover_area_path, class: "font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300" %>.</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

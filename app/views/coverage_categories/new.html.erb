@@ -1,0 +1,16 @@
+<% content_for :title, "New Coverage Category" %>
+
+<div class="px-4 py-10 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-3xl">
+    <%= link_to "Back to categories", coverage_categories_path, class: "inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300" %>
+    <div class="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-gray-900">
+      <div class="border-b border-gray-200 bg-gray-50 px-6 py-5 dark:border-white/10 dark:bg-gray-900/50">
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Add a new coverage category</h1>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Create a category to organize benefits within plan modules.</p>
+      </div>
+      <div class="px-6 py-6">
+        <%= render "form", coverage_category: @coverage_category, submit_label: "Create category", cancel_path: coverage_categories_path %>
+      </div>
+    </div>
+  </div>
+</div>

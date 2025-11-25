@@ -6,6 +6,7 @@ RSpec.describe ModuleBenefit, type: :model do
   #== Associations ===========================================================
   it { expect(module_benefit).to belong_to(:plan_module) }
   it { expect(module_benefit).to belong_to(:benefit) }
+  it { expect(module_benefit).to belong_to(:coverage_category) }
   it { expect(module_benefit).to belong_to(:benefit_limit_group).optional(true) }
 
   it { expect(module_benefit).to have_many(:cost_shares).dependent(:destroy) }
@@ -13,7 +14,17 @@ RSpec.describe ModuleBenefit, type: :model do
   it { expect(module_benefit).to have_many(:coinsurances).class_name("CostShare") }
   it { expect(module_benefit).to have_many(:excesses).class_name("CostShare") }
 
+  #== Enums ================================================================
+
+  it { should define_enum_for(:interaction_type).with_values(replace: 0, append: 1) }
+
   #== Validations ===========================================================
+
+  it { expect(module_benefit).to validate_presence_of(:coverage_category) }
+  it { expect(module_benefit).to validate_presence_of(:benefit) }
+  it { expect(module_benefit).to validate_presence_of(:plan_module) }
+  it { expect(module_benefit).to validate_numericality_of(:weighting).only_integer }
+
   describe 'coverage_or_limit_must_be_present' do
     context 'when no coverage description or limits are provided' do
       it 'is invalid' do

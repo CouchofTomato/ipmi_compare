@@ -25,7 +25,6 @@
                   <thead class="bg-gray-50 dark:bg-gray-900/50">
                     <tr>
                       <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6 dark:text-white">Name</th>
-                      <th scope="col" class="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 sm:table-cell dark:text-white">Category</th>
                       <th scope="col" class="hidden px-3 py-3.5 text-left text-sm font-semibold text-gray-900 lg:table-cell dark:text-white">Description</th>
                       <th scope="col" class="py-3.5 pr-4 pl-3 sm:pr-6">
                         <span class="sr-only">Edit</span>
@@ -40,15 +39,12 @@
                             <span class="truncate"><%= benefit.name %></span>
                           <% end %>
                           <dl class="font-normal sm:hidden">
-                            <dt class="sr-only">Category</dt>
-                            <dd class="mt-1 truncate text-gray-700 dark:text-gray-300"><%= benefit.category.humanize %></dd>
                             <% if benefit.description.present? %>
                               <dt class="sr-only">Description</dt>
                               <dd class="mt-1 text-gray-500 dark:text-gray-400"><%= truncate(benefit.description, length: 80) %></dd>
                             <% end %>
                           </dl>
                         </td>
-                        <td class="hidden px-3 py-4 text-sm text-gray-500 sm:table-cell dark:text-gray-400"><%= benefit.category.humanize %></td>
                         <td class="hidden px-3 py-4 text-sm text-gray-500 lg:table-cell dark:text-gray-400">
                           <% if benefit.description.present? %>
                             <%= truncate(benefit.description, length: 60) %>

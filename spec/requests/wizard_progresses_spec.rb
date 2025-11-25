@@ -9,6 +9,10 @@ RSpec.describe "WizardProgresses", type: :request do
     )
   end
 
+  before do
+    sign_in wizard_progress.user
+  end
+
   describe "GET /show" do
     it "returns http success" do
       get wizard_progress_path(wizard_progress)

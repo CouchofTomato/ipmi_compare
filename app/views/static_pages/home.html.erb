@@ -1,3 +1,50 @@
-<h1>StaticPages#home</h1>
-<p>Find me in app/views/static_pages/home.html.erb</p>
-<p>Welcome!</p>
+<% content_for :title, "Home" %>
+
+<div class="px-4 py-10 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-4xl space-y-6">
+    <div>
+      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Welcome back</h1>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Choose an area to manage your IPMI data.</p>
+    </div>
+
+    <div class="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-700 shadow-sm dark:border-white/10 dark:bg-gray-900 dark:text-gray-200">
+      Looking for your wizards? Head to the
+      <%= link_to "wizard sessions page", wizard_progresses_path, class: "font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-300 dark:hover:text-indigo-200" %>
+      to start a new plan or continue an in-progress flow.
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <%= link_to plans_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Plans</p>
+          <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Browse and compare plans</p>
+        </div>
+        <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
+      <% end %>
+
+      <%= link_to benefits_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Benefits</p>
+          <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Manage benefit details</p>
+        </div>
+        <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
+      <% end %>
+
+      <%= link_to geographic_cover_areas_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Geographic cover</p>
+          <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Review coverage areas</p>
+        </div>
+        <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
+      <% end %>
+
+      <%= link_to insurers_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Insurers</p>
+          <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Maintain insurer records</p>
+        </div>
+        <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
+      <% end %>
+    </div>
+  </div>
+</div>

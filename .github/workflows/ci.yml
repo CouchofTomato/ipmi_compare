@@ -68,7 +68,7 @@ jobs:
 
     steps:
       - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y google-chrome-stable curl libjemalloc2 libvips postgresql-client libpq-dev
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y curl libjemalloc2 libvips postgresql-client libpq-dev
 
       - name: Checkout code
         uses: actions/checkout@v5
@@ -79,11 +79,39 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'yarn'
+
+      - name: Install JavaScript dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build Esbuild
+        run: yarn build
+      
+      - name: Build CSS
+        run: yarn build:css
+
+      - name: Install Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Precompile assets
+        env:
+          RAILS_ENV: test
+        run: bin/rails assets:precompile
+
       - name: Run tests
         env:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
-        run: bin/rails db:setup spec
+          CAPYBARA_DEFAULT_MAX_WAIT_TIME: 8
+          HEADLESS: 1
+          CAPYBARA_ARTIFACTS: ${{ github.workspace }}/tmp/capybara
+          CUPRITE_BROWSER_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: bin/rails db:setup && bundle exec rspec
 
       - name: Keep screenshots from failed system tests
         uses: actions/upload-artifact@v5

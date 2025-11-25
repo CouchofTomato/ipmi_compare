@@ -1,11 +1,99 @@
-<div>
-  <h2 class="text-xl font-semibold mb-2">Step 2: GeographicCoverArea</h2>
-  <p>Placeholder step — will handle GeographicCoverArea associations later.</p>
+<% plan = progress.subject %>
+<% resource = local_assigns[:resource] %>
+<% new_area = local_assigns[:new_geographic_cover_area] || GeographicCoverArea.new %>
+<% selected_area_ids =
+     case resource
+     when Hash
+       Array(resource[:geographic_cover_area_ids] || resource["geographic_cover_area_ids"] || resource[:area_ids] || resource["area_ids"]).map(&:to_s)
+     when Plan
+       resource.geographic_cover_area_ids.map(&:to_s)
+     else
+       Array(plan&.geographic_cover_area_ids).map(&:to_s)
+     end
+%>
+<% available_areas = GeographicCoverArea.order(:name) %>
+<% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
 
-  <%= form_with url: wizard_progress_path(@progress), method: :patch, data: { turbo_frame: "wizard_step" } do %>
-    <div class="flex justify-between mt-4">
-      <%= submit_tag "← Back", name: "step_action", value: "previous", class: "bg-gray-300 px-4 py-2 rounded" %>
-      <%= submit_tag "Next →", name: "step_action", value: "next", class: "bg-blue-600 text-white px-4 py-2 rounded" %>
+<%= turbo_frame_tag "wizard_step" do %>
+  <div class="space-y-6">
+    <div>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Step 3: Geographic coverage</h2>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+        Choose the areas this plan covers so brokers know where members can receive service.
+      </p>
     </div>
-  <% end %>
-</div>
+
+    <% has_errors = (resource.respond_to?(:errors) && resource.errors.any?) || progress.errors.any? %>
+    <% if has_errors %>
+      <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-xs dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+        <p class="font-semibold">We couldn't save these coverage areas</p>
+        <ul class="mt-2 list-disc space-y-1 pl-4">
+          <% if resource.respond_to?(:errors) && resource.errors.any? %>
+            <% resource.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          <% end %>
+          <% progress.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <%= form_with url: wizard_progress_path(progress),
+                  method: :patch,
+                  data: { turbo_frame: "wizard_step" },
+                  html: { class: "space-y-8" } do %>
+      <div class="space-y-4" data-controller="geographic-cover-areas">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-sm text-gray-600 dark:text-gray-300">
+            <strong class="font-semibold text-gray-900 dark:text-gray-100" data-geographic-cover-areas-target="count"><%= selected_area_ids.size %></strong>
+            <span data-geographic-cover-areas-target="label"><%= "area".pluralize(selected_area_ids.size) %></span> selected
+          </p>
+          <% if available_areas.any? %>
+            <span class="text-xs text-gray-500 dark:text-gray-400">Toggle the checkboxes below to adjust coverage.</span>
+          <% end %>
+        </div>
+
+        <% if available_areas.empty? %>
+          <div class="rounded-lg border border-dashed border-gray-300 bg-white p-6 text-center text-sm text-gray-500 shadow-xs dark:border-white/20 dark:bg-gray-900 dark:text-gray-300">
+            No geographic cover areas have been defined yet. Add some areas in the admin panel before completing this step.
+          </div>
+        <% else %>
+          <fieldset class="grid gap-4 sm:grid-cols-2">
+            <% available_areas.each do |area| %>
+              <% area_id = area.id.to_s %>
+              <label class="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 shadow-xs transition hover:border-indigo-300 hover:bg-indigo-50/50 dark:border-white/10 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-indigo-400/60 dark:hover:bg-indigo-500/10">
+                <%= check_box_tag "areas[geographic_cover_area_ids][]",
+                                   area_id,
+                                   selected_area_ids.include?(area_id),
+                                   id: "areas_geographic_cover_area_ids_#{area_id}",
+                                   class: "mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500",
+                                   data: { action: "change->geographic-cover-areas#update", geographic_cover_areas_target: "checkbox", test_id: "area-#{area_id}-checkbox" } %>
+                <span class="space-y-1">
+                  <span class="block text-base font-semibold text-gray-900 dark:text-gray-100"><%= area.name %></span>
+                  <span class="block text-xs uppercase text-gray-500 dark:text-gray-400 tracking-wide"><%= area.code %></span>
+                </span>
+              </label>
+            <% end %>
+          </fieldset>
+        <% end %>
+      </div>
+
+      <div class="flex flex-col gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+        <div>
+          <%= button_tag "← Back",
+                         name: "step_action",
+                         value: "previous",
+                         class: "inline-flex items-center gap-1 rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10 dark:focus:ring-indigo-500" %>
+        </div>
+
+        <%= button_tag "Save and continue →",
+                       name: "step_action",
+                       value: "next",
+                       class: "inline-flex items-center gap-1 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400",
+                       data: { test_id: "next-step-button" } %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

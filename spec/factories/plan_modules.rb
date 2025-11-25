@@ -30,12 +30,6 @@ FactoryBot.define do
       end
     end
 
-    trait :with_depends_on_module do
-      after(:create) do |plan_module|
-        plan_module.depends_on_module = create(:plan_module)
-      end
-    end
-
     trait :with_deductible do
       after(:create) do |plan_module|
         create(:cost_share, scope: plan_module, cost_share_type: :deductible, amount: 1000, per: :per_year, currency: "USD")
@@ -59,6 +53,30 @@ FactoryBot.define do
         create(:cost_share, scope: plan_module, cost_share_type: :deductible, amount: 1000, per: :per_year, currency: "USD")
         create(:cost_share, scope: plan_module, cost_share_type: :coinsurance, amount: 10, unit: :percent, per: :per_visit)
         create(:cost_share, scope: plan_module, cost_share_type: :excess, amount: 25, per: :per_visit, currency: "USD")
+      end
+    end
+
+    trait :with_categories do
+      transient do
+        coverage_categories { [] } # array of CoverageCategory objects or names
+      end
+
+      after(:create) do |plan_module, evaluator|
+        evaluator.coverage_categories.each do |category|
+          plan_module.coverage_categories << category
+        end
+      end
+    end
+
+    trait :with_module_benefits do
+      transient do
+        benefits { [] } # array of Benefit objects or names
+      end
+
+      after(:create) do |plan_module, evaluator|
+        evaluator.benefits.each do |benefit|
+          plan_module.benefits << benefit
+        end
       end
     end
   end

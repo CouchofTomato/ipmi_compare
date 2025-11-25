@@ -1,9 +1,11 @@
 class PlanModule < ApplicationRecord
   belongs_to :plan
   belongs_to :module_group
-  belongs_to :depends_on_module, class_name: "PlanModule", optional: true
 
-  has_many :dependent_modules, class_name: "PlanModule", foreign_key: "depends_on_module_id", dependent: :nullify
+  has_many :module_benefits, dependent: :destroy
+  has_many :benefits, through: :module_benefits
+
+  has_and_belongs_to_many :coverage_categories
 
   has_many :benefit_limit_groups, dependent: :destroy
 

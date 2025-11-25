@@ -8,11 +8,12 @@ RSpec.describe Plan, type: :model do
   it { expect(plan).to have_many(:plan_geographic_cover_areas).dependent(:destroy) }
   it { expect(plan).to have_many(:geographic_cover_areas).through(:plan_geographic_cover_areas) }
   it { expect(plan).to have_many(:plan_residency_eligibilities).dependent(:destroy) }
-  it { expect(plan).to have_many(:countries).through(:plan_residency_eligibilities) }
   it { expect(plan).to have_many(:cost_shares).dependent(:destroy) }
   it { expect(plan).to have_many(:deductibles).class_name("CostShare") }
   it { expect(plan).to have_many(:coinsurances).class_name("CostShare") }
   it { expect(plan).to have_many(:excesses).class_name("CostShare") }
+  it { expect(plan).to have_many(:plan_modules).dependent(:destroy) }
+  it { expect(plan).to have_many(:module_groups).dependent(:destroy) }
 
   #== Validations ===========================================================
   it { expect(plan).to validate_presence_of :name }
@@ -25,22 +26,4 @@ RSpec.describe Plan, type: :model do
 
   #== Enums ===================================================================
   it { should define_enum_for(:policy_type).with_values(individual: 0, company: 1, corporate: 2) }
-
-  describe "overall_limit_presence_rule" do
-    it "is valid when marked unlimited with no numeric limits" do
-      plan = build(:plan, :unlimited)
-      expect(plan).to be_valid
-    end
-
-    it "is invalid when not unlimited and no numeric limits are provided" do
-      plan = build(:plan, overall_limit_unlimited: false, overall_limit_usd: nil, overall_limit_gbp: nil, overall_limit_eur: nil)
-      expect(plan).not_to be_valid
-      expect(plan.errors[:base]).to include("Specify at least one overall limit or mark the plan as unlimited")
-    end
-
-    it "is valid when at least one numeric limit is present" do
-      plan = build(:plan, overall_limit_unlimited: false, overall_limit_usd: 5_000_000)
-      expect(plan).to be_valid
-    end
-  end
 end

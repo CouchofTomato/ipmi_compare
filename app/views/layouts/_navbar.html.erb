@@ -2,7 +2,13 @@
   [
     { name: "Plans", path: plans_path },
     { name: "Benefits", path: benefits_path },
-    { name: "Insurers", path: insurers_path }
+    { name: "Coverage categories", path: coverage_categories_path },
+    { name: "Geographic cover", path: geographic_cover_areas_path },
+    { name: "Insurers", path: insurers_path },
+    {
+      name: "Wizard sessions",
+      path: wizard_progresses_path
+    }
   ]
 else
   []
@@ -20,14 +26,17 @@ end %>
         <div class="hidden items-center gap-6 md:flex">
           <% nav_links.each do |link| %>
             <% path = link[:path] %>
-            <% active = request.path == path || request.path.start_with?("#{path}/") %>
+            <% path_without_query = path.to_s.split("?").first %>
+            <% active = request.path == path_without_query || request.path.start_with?("#{path_without_query}/") %>
             <% base_classes = "rounded-md px-2 py-1 text-sm font-medium transition-colors" %>
             <% link_classes = if active
               "#{base_classes} bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200"
             else
               "#{base_classes} text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
             end %>
-            <%= link_to link[:name], path, class: link_classes %>
+            <% html_options = { class: link_classes } %>
+            <% html_options[:data] = link[:data] if link[:data].present? %>
+            <%= link_to link[:name], path, html_options %>
           <% end %>
         </div>
       <% end %>
@@ -50,14 +59,17 @@ end %>
       <div class="mx-auto flex max-w-7xl flex-wrap gap-4 px-4 py-3 text-sm font-medium text-gray-600 sm:px-6 lg:px-8 dark:text-gray-300">
         <% nav_links.each do |link| %>
           <% path = link[:path] %>
-          <% active = request.path == path || request.path.start_with?("#{path}/") %>
+          <% path_without_query = path.to_s.split("?").first %>
+          <% active = request.path == path_without_query || request.path.start_with?("#{path_without_query}/") %>
           <% base_classes = "rounded-md px-2 py-1 transition-colors" %>
           <% link_classes = if active
             "#{base_classes} bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200"
           else
             "#{base_classes} text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
           end %>
-          <%= link_to link[:name], path, class: link_classes %>
+          <% html_options = { class: link_classes } %>
+          <% html_options[:data] = link[:data] if link[:data].present? %>
+          <%= link_to link[:name], path, html_options %>
         <% end %>
       </div>
     </div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_20_190122) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -56,7 +56,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
   end
 
   create_table "benefits", force: :cascade do |t|
-    t.integer "category", null: false
     t.datetime "created_at", null: false
     t.text "description"
     t.string "name", null: false
@@ -79,14 +78,19 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.index ["scope_type", "scope_id"], name: "index_cost_shares_on_scope"
   end
 
-  create_table "countries", force: :cascade do |t|
-    t.string "code", null: false
+  create_table "coverage_categories", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name", null: false
-    t.text "notes"
-    t.bigint "region_id", null: false
+    t.integer "position", default: 0, null: false
     t.datetime "updated_at", null: false
-    t.index ["region_id"], name: "index_countries_on_region_id"
+    t.index ["name"], name: "index_coverage_categories_on_name", unique: true
+    t.index ["position"], name: "index_coverage_categories_on_position"
+  end
+
+  create_table "coverage_categories_plan_modules", id: false, force: :cascade do |t|
+    t.bigint "coverage_category_id", null: false
+    t.bigint "plan_module_id", null: false
+    t.index ["plan_module_id", "coverage_category_id"], name: "idx_ccpm_unique", unique: true
   end
 
   create_table "geographic_cover_areas", force: :cascade do |t|
@@ -106,8 +110,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
   create_table "module_benefits", force: :cascade do |t|
     t.bigint "benefit_id", null: false
     t.bigint "benefit_limit_group_id"
+    t.bigint "coverage_category_id", null: false
     t.string "coverage_description"
     t.datetime "created_at", null: false
+    t.integer "interaction_type", default: 1, null: false
     t.decimal "limit_eur", precision: 12, scale: 2
     t.decimal "limit_gbp", precision: 12, scale: 2
     t.string "limit_unit"
@@ -115,16 +121,23 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.bigint "plan_module_id", null: false
     t.string "sub_limit_description"
     t.datetime "updated_at", null: false
+    t.integer "weighting", default: 0, null: false
     t.index ["benefit_id"], name: "index_module_benefits_on_benefit_id"
     t.index ["benefit_limit_group_id"], name: "index_module_benefits_on_benefit_limit_group_id"
+    t.index ["coverage_category_id"], name: "index_module_benefits_on_coverage_category_id"
+    t.index ["interaction_type"], name: "index_module_benefits_on_interaction_type"
     t.index ["plan_module_id"], name: "index_module_benefits_on_plan_module_id"
+    t.index ["weighting"], name: "index_module_benefits_on_weighting"
   end
 
   create_table "module_groups", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
     t.string "name", null: false
+    t.bigint "plan_id", null: false
+    t.integer "position", default: 0, null: false
     t.datetime "updated_at", null: false
+    t.index ["plan_id"], name: "index_module_groups_on_plan_id"
   end
 
   create_table "plan_geographic_cover_areas", force: :cascade do |t|
@@ -136,9 +149,20 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.index ["plan_id"], name: "index_plan_geographic_cover_areas_on_plan_id"
   end
 
+  create_table "plan_module_requirements", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "dependent_module_id", null: false
+    t.bigint "plan_id", null: false
+    t.bigint "required_module_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dependent_module_id"], name: "index_plan_module_requirements_on_dependent_module_id"
+    t.index ["plan_id", "dependent_module_id", "required_module_id"], name: "idx_pmr_plan_module_requires_unique", unique: true
+    t.index ["plan_id"], name: "index_plan_module_requirements_on_plan_id"
+    t.index ["required_module_id"], name: "index_plan_module_requirements_on_required_module_id"
+  end
+
   create_table "plan_modules", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.bigint "depends_on_module_id"
     t.boolean "is_core", default: false, null: false
     t.bigint "module_group_id", null: false
     t.string "name", null: false
@@ -149,18 +173,16 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.decimal "overall_limit_usd", precision: 12, scale: 2
     t.bigint "plan_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["depends_on_module_id"], name: "index_plan_modules_on_depends_on_module_id"
     t.index ["module_group_id"], name: "index_plan_modules_on_module_group_id"
     t.index ["plan_id"], name: "index_plan_modules_on_plan_id"
   end
 
   create_table "plan_residency_eligibilities", force: :cascade do |t|
-    t.bigint "country_id", null: false
+    t.string "country_code", null: false
     t.datetime "created_at", null: false
     t.text "notes"
     t.bigint "plan_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["country_id"], name: "index_plan_residency_eligibilities_on_country_id"
     t.index ["plan_id"], name: "index_plan_residency_eligibilities_on_plan_id"
   end
 
@@ -173,25 +195,12 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.integer "min_age", default: 0, null: false
     t.string "name", null: false
     t.date "next_review_due", null: false
-    t.decimal "overall_limit_eur", precision: 12, scale: 2
-    t.decimal "overall_limit_gbp", precision: 12, scale: 2
-    t.text "overall_limit_notes"
-    t.string "overall_limit_unit"
-    t.boolean "overall_limit_unlimited", default: false, null: false
-    t.decimal "overall_limit_usd", precision: 12, scale: 2
     t.integer "policy_type", null: false
     t.boolean "published", default: false, null: false
     t.text "review_notes"
     t.datetime "updated_at", null: false
     t.integer "version_year", null: false
     t.index ["insurer_id"], name: "index_plans_on_insurer_id"
-  end
-
-  create_table "regions", force: :cascade do |t|
-    t.string "code", null: false
-    t.datetime "created_at", null: false
-    t.string "name", null: false
-    t.datetime "updated_at", null: false
   end
 
   create_table "users", force: :cascade do |t|
@@ -240,7 +249,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
     t.index ["status", "updated_at"], name: "index_wizard_progresses_on_status_and_updated_at"
     t.index ["subject_type", "subject_id"], name: "index_wizard_progresses_on_subject"
     t.index ["user_id"], name: "index_wizard_progresses_on_user_id"
-    t.index ["wizard_type", "subject_type", "subject_id"], name: "index_wizard_progresses_on_type_and_subject", unique: true
+    t.index ["wizard_type", "subject_type", "subject_id"], name: "index_wizard_progresses_on_type_and_subject", unique: true, where: "(subject_id IS NOT NULL)"
     t.index ["wizard_type"], name: "index_wizard_progresses_on_wizard_type"
   end
 
@@ -248,16 +257,20 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_205635) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "benefit_limit_groups", "plan_modules"
   add_foreign_key "cost_shares", "cost_shares", column: "linked_cost_share_id"
-  add_foreign_key "countries", "regions"
+  add_foreign_key "coverage_categories_plan_modules", "coverage_categories"
+  add_foreign_key "coverage_categories_plan_modules", "plan_modules"
   add_foreign_key "module_benefits", "benefit_limit_groups"
   add_foreign_key "module_benefits", "benefits"
+  add_foreign_key "module_benefits", "coverage_categories"
   add_foreign_key "module_benefits", "plan_modules"
+  add_foreign_key "module_groups", "plans"
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
   add_foreign_key "plan_geographic_cover_areas", "plans"
+  add_foreign_key "plan_module_requirements", "plan_modules", column: "dependent_module_id"
+  add_foreign_key "plan_module_requirements", "plan_modules", column: "required_module_id"
+  add_foreign_key "plan_module_requirements", "plans"
   add_foreign_key "plan_modules", "module_groups"
-  add_foreign_key "plan_modules", "plan_modules", column: "depends_on_module_id"
   add_foreign_key "plan_modules", "plans"
-  add_foreign_key "plan_residency_eligibilities", "countries"
   add_foreign_key "plan_residency_eligibilities", "plans"
   add_foreign_key "plans", "insurers"
   add_foreign_key "wizard_progresses", "users"

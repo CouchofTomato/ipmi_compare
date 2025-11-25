@@ -29,16 +29,6 @@
     </div>
 
     <div>
-      <%= form.label :category %>
-      <div class="mt-2">
-        <%= form.select :category, Benefit.categories.keys.map { |key| [key.humanize, key] }, { prompt: "Select a category" }, class: input_classes %>
-      </div>
-      <% if benefit.errors[:category].present? %>
-        <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= benefit.errors[:category].to_sentence %></p>
-      <% end %>
-    </div>
-
-    <div>
       <%= form.label :description %>
       <div class="mt-2">
         <%= form.text_area :description, class: "#{input_classes} min-h-[120px]", placeholder: "Describe what this benefit covers" %>
