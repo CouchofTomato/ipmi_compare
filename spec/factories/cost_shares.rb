@@ -9,7 +9,6 @@ FactoryBot.define do
     per              { :per_year }      # enum: { per_claim: 0, per_year: 1 }
     currency         { "USD" }
     notes            { "Standard annual deductible" }
-    linked_cost_share { nil }
 
     # --- Nested factories for common variants ---
 
