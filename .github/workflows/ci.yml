@@ -96,7 +96,7 @@ jobs:
 
       - name: Install Chrome
         id: setup-chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@v2
 
       - name: Precompile assets
         env:
