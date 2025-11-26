@@ -382,7 +382,6 @@ class PlanWizardFlow
     permitted = params_for_cost_share.permit(:applies_to,
                                              :plan_module_id,
                                              :module_benefit_id,
-                                             :linked_cost_share_id,
                                              :cost_share_type,
                                              :amount,
                                              :unit,
@@ -392,7 +391,7 @@ class PlanWizardFlow
 
     sanitized = permitted.to_h
     # Only treat this submission as a create when meaningful fields are present.
-    user_filled_any = sanitized.slice("amount", "currency", "notes", "linked_cost_share_id", "plan_module_id", "module_benefit_id").values.any?(&:present?)
+    user_filled_any = sanitized.slice("amount", "currency", "notes", "plan_module_id", "module_benefit_id").values.any?(&:present?)
     creating = step_action.in?([ "add", "next" ]) || (step_action.blank? && user_filled_any)
 
     return WizardStepResult.new(success: true, resource: plan) unless creating && user_filled_any

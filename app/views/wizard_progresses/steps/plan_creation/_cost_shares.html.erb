@@ -6,18 +6,6 @@
 <% plan_cost_shares = plan&.cost_shares&.order(:created_at) || [] %>
 <% module_cost_shares = plan&.plan_modules&.includes(:module_group, :cost_shares)&.order(:created_at) || [] %>
 <% module_benefit_cost_shares = ModuleBenefit.where(plan_module_id: Array(plan&.plan_module_ids)).includes(:benefit, :coverage_category, :cost_shares, plan_module: :module_group).order("module_benefits.plan_module_id ASC", "module_benefits.weighting ASC", "module_benefits.created_at ASC") %>
-<% available_linkable_cost_shares = begin
-     case cost_share.applies_to
-     when "plan"
-       plan_cost_shares
-     when "plan_module"
-       module_cost_shares.find { |m| m.id.to_s == cost_share.plan_module_id.to_s }&.cost_shares || []
-     when "module_benefit"
-       module_benefit_cost_shares.find { |mb| mb.id.to_s == cost_share.module_benefit_id.to_s }&.cost_shares || []
-     else
-       []
-     end
-   end %>
 <% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
 <% field_classes = lambda do |attributes, *extra_classes|
      attrs = Array(attributes)
@@ -99,18 +87,6 @@
                                          { prompt: "Select a module benefit" },
                                          class: field_classes.call(:module_benefit_id) %>
             </div>
-          </div>
-        </div>
-
-        <div>
-          <%= form.label :linked_cost_share_id, "Linked cost share (optional)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
-          <div class="mt-2">
-            <%= form.collection_select :linked_cost_share_id,
-                                       available_linkable_cost_shares,
-                                       :id,
-                                       ->(cs) { "#{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" },
-                                       { prompt: "Select a cost share to link" },
-                                       class: field_classes.call(:linked_cost_share_id) %>
           </div>
         </div>
 
