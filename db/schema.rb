@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_20_190122) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_26_210056) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -60,6 +60,17 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_190122) do
     t.text "description"
     t.string "name", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "cost_share_links", force: :cascade do |t|
+    t.bigint "cost_share_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "linked_cost_share_id", null: false
+    t.integer "relationship_type", default: 2, null: false
+    t.datetime "updated_at", null: false
+    t.index ["cost_share_id", "linked_cost_share_id"], name: "idx_cost_share_links_uniqueness", unique: true
+    t.index ["cost_share_id"], name: "index_cost_share_links_on_cost_share_id"
+    t.index ["linked_cost_share_id"], name: "index_cost_share_links_on_linked_cost_share_id"
   end
 
   create_table "cost_shares", force: :cascade do |t|
@@ -256,6 +267,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_190122) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "benefit_limit_groups", "plan_modules"
+  add_foreign_key "cost_share_links", "cost_shares"
+  add_foreign_key "cost_share_links", "cost_shares", column: "linked_cost_share_id"
   add_foreign_key "cost_shares", "cost_shares", column: "linked_cost_share_id"
   add_foreign_key "coverage_categories_plan_modules", "coverage_categories"
   add_foreign_key "coverage_categories_plan_modules", "plan_modules"
