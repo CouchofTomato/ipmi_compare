@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_26_210056) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_26_213233) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -78,14 +78,12 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_26_210056) do
     t.integer "cost_share_type", null: false
     t.datetime "created_at", null: false
     t.string "currency"
-    t.bigint "linked_cost_share_id"
     t.text "notes"
     t.integer "per", null: false
     t.bigint "scope_id", null: false
     t.string "scope_type", null: false
     t.integer "unit", null: false
     t.datetime "updated_at", null: false
-    t.index ["linked_cost_share_id"], name: "index_cost_shares_on_linked_cost_share_id"
     t.index ["scope_type", "scope_id"], name: "index_cost_shares_on_scope"
   end
 
@@ -269,7 +267,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_26_210056) do
   add_foreign_key "benefit_limit_groups", "plan_modules"
   add_foreign_key "cost_share_links", "cost_shares"
   add_foreign_key "cost_share_links", "cost_shares", column: "linked_cost_share_id"
-  add_foreign_key "cost_shares", "cost_shares", column: "linked_cost_share_id"
   add_foreign_key "coverage_categories_plan_modules", "coverage_categories"
   add_foreign_key "coverage_categories_plan_modules", "plan_modules"
   add_foreign_key "module_benefits", "benefit_limit_groups"
