@@ -94,7 +94,8 @@
                               options_for_select(cost_share_options, cost_share_link.cost_share_id),
                               { prompt: cost_share_options.empty? ? "No cost shares available" : "Select a cost share" },
                               class: field_classes.call(:cost_share_id),
-                              disabled: cost_share_options.size < 2 %>
+                              disabled: cost_share_options.size < 2,
+                              data: { test_id: "primary-cost-share-field" } %>
             </div>
           </div>
 
@@ -105,7 +106,8 @@
                               options_for_select(cost_share_options, cost_share_link.linked_cost_share_id),
                               { prompt: cost_share_options.empty? ? "No cost shares available" : "Select a cost share" },
                               class: field_classes.call(:linked_cost_share_id),
-                              disabled: cost_share_options.size < 2 %>
+                              disabled: cost_share_options.size < 2,
+                              data: { test_id: "linked-cost-share-field" } %>
             </div>
           </div>
         </div>
@@ -117,7 +119,8 @@
                             CostShareLink.relationship_types.keys.map { |key| [key.humanize, key] },
                             { prompt: "Select a relationship" },
                             class: field_classes.call(:relationship_type),
-                            disabled: cost_share_options.size < 2 %>
+                            disabled: cost_share_options.size < 2,
+                            data: { test_id: "relationship-type-field" } %>
           </div>
         </div>
       </div>
@@ -135,7 +138,8 @@
                          name: "step_action",
                          value: "add",
                          class: "inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 dark:disabled:bg-gray-700 dark:disabled:text-gray-400 dark:bg-indigo-500 dark:hover:bg-indigo-400",
-                         disabled: cost_share_options.size < 2 %>
+                         disabled: cost_share_options.size < 2,
+                         data: { test_id: "add-cost-share-link-button" } %>
           <%= button_tag "Save and continue →",
                          name: "step_action",
                          value: "next",
