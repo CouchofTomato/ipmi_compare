@@ -384,6 +384,7 @@ class PlanWizardFlow
     permitted = params_for_cost_share.permit(:applies_to,
                                              :plan_module_id,
                                              :module_benefit_id,
+                                             :benefit_limit_group_id,
                                              :cost_share_type,
                                              :amount,
                                              :unit,
@@ -393,7 +394,7 @@ class PlanWizardFlow
 
     sanitized = permitted.to_h
     # Only treat this submission as a create when meaningful fields are present.
-    user_filled_any = sanitized.slice("amount", "currency", "notes", "plan_module_id", "module_benefit_id").values.any?(&:present?)
+    user_filled_any = sanitized.slice("amount", "currency", "notes", "plan_module_id", "module_benefit_id", "benefit_limit_group_id").values.any?(&:present?)
     creating = step_action.in?([ "add", "next" ]) || (step_action.blank? && user_filled_any)
 
     return WizardStepResult.new(success: true, resource: plan) unless creating && user_filled_any
@@ -401,6 +402,7 @@ class PlanWizardFlow
     applies_to = permitted[:applies_to].presence || "plan"
     plan_module_id = permitted[:plan_module_id].presence
     module_benefit_id = permitted[:module_benefit_id].presence
+    benefit_limit_group_id = permitted[:benefit_limit_group_id].presence
 
     scope =
       case applies_to
@@ -410,14 +412,17 @@ class PlanWizardFlow
         plan.plan_modules.find_by(id: plan_module_id)
       when "module_benefit"
         ModuleBenefit.where(plan_module_id: plan.plan_module_ids).find_by(id: module_benefit_id)
+      when "benefit_limit_group"
+        BenefitLimitGroup.where(plan_module_id: plan.plan_module_ids).find_by(id: benefit_limit_group_id)
       else
         nil
       end
 
-    cost_share = CostShare.new(permitted.except(:applies_to, :plan_module_id, :module_benefit_id).merge(scope:))
+    cost_share = CostShare.new(permitted.except(:applies_to, :plan_module_id, :module_benefit_id, :benefit_limit_group_id).merge(scope:))
     cost_share.applies_to = applies_to
     cost_share.plan_module_id = plan_module_id
     cost_share.module_benefit_id = module_benefit_id
+    cost_share.benefit_limit_group_id = benefit_limit_group_id
 
     if scope.nil?
       cost_share.errors.add(:base, "Select where this cost share applies")
