@@ -1,0 +1,172 @@
+<% plan = progress.subject %>
+<% cost_share_link = local_assigns[:resource].is_a?(CostShareLink) ? local_assigns[:resource] : CostShareLink.new %>
+<% plan_cost_shares = plan&.cost_shares&.order(:created_at) || [] %>
+<% module_cost_shares = plan&.plan_modules&.includes(:module_group, :cost_shares)&.order(:created_at) || [] %>
+<% module_benefit_cost_shares = ModuleBenefit.where(plan_module_id: Array(plan&.plan_module_ids)).includes(:benefit, :coverage_category, :cost_shares, plan_module: :module_group).order("module_benefits.plan_module_id ASC", "module_benefits.weighting ASC", "module_benefits.created_at ASC") %>
+<% cost_share_link.relationship_type = nil if cost_share_link.new_record? %>
+<% display_cost_share_amount = lambda do |cs|
+     if cs.unit == "percent"
+       "#{cs.amount.to_f}%"
+     else
+       number_to_currency(cs.amount || 0, unit: cs.currency.presence || "$")
+     end
+   end %>
+<% cost_share_options = [] %>
+<% cost_share_labels = {} %>
+
+<% plan_cost_shares.each do |cs| %>
+  <% label = "Plan — #{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" %>
+  <% cost_share_options << [label, cs.id] %>
+  <% cost_share_labels[cs.id] = label %>
+<% end %>
+
+<% module_cost_shares.each do |mod| %>
+  <% scope_label = [mod.module_group&.name, mod.name].compact.join(" · ") %>
+  <% mod.cost_shares.each do |cs| %>
+    <% label = "#{scope_label} — #{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" %>
+    <% cost_share_options << [label, cs.id] %>
+    <% cost_share_labels[cs.id] = label %>
+  <% end %>
+<% end %>
+
+<% module_benefit_cost_shares.each do |mb| %>
+  <% scope_label = "#{[mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ")} — #{mb.benefit.name} (#{mb.coverage_category.name})" %>
+  <% mb.cost_shares.each do |cs| %>
+    <% label = "#{scope_label} — #{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" %>
+    <% cost_share_options << [label, cs.id] %>
+    <% cost_share_labels[cs.id] = label %>
+  <% end %>
+<% end %>
+
+<% cost_share_ids = cost_share_labels.keys %>
+<% existing_links = CostShareLink.where(cost_share_id: cost_share_ids, linked_cost_share_id: cost_share_ids).includes(:cost_share, :linked_cost_share).order(:created_at) %>
+<% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
+<% field_classes = lambda do |attributes, *extra_classes|
+     attrs = Array(attributes)
+     classes = [input_classes] + extra_classes
+     classes << "ring-red-500 focus:ring-red-500" if attrs.any? { |attr| cost_share_link.errors[attr].present? }
+     classes.compact.join(" ")
+   end %>
+
+<%= turbo_frame_tag "wizard_step" do %>
+  <div class="space-y-6">
+    <div>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Step 9: Link cost shares</h2>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Connect the cost shares you just added so their behavior is clear in the plan.</p>
+    </div>
+
+    <% has_errors = (cost_share_link.respond_to?(:errors) && cost_share_link.errors.any?) || progress.errors.any? %>
+    <% if has_errors %>
+      <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-xs dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+        <p class="font-semibold">We couldn't save this link</p>
+        <ul class="mt-2 list-disc space-y-1 pl-4">
+          <% if cost_share_link.respond_to?(:errors) && cost_share_link.errors.any? %>
+            <% cost_share_link.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          <% end %>
+          <% progress.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <%= form_with model: cost_share_link,
+                  scope: :cost_share_links,
+                  url: wizard_progress_path(progress),
+                  method: :patch,
+                  data: { turbo_frame: "wizard_step" },
+                  local: true,
+                  html: { class: "space-y-6" } do |form| %>
+      <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900">
+        <% if cost_share_options.size < 2 %>
+          <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600 dark:border-white/20 dark:bg-gray-800 dark:text-gray-200">
+            Add at least two cost shares in the previous step to create a link.
+          </div>
+        <% end %>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <%= form.label :cost_share_id, "Primary cost share", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+            <div class="mt-2">
+              <%= form.select :cost_share_id,
+                              options_for_select(cost_share_options, cost_share_link.cost_share_id),
+                              { prompt: cost_share_options.empty? ? "No cost shares available" : "Select a cost share" },
+                              class: field_classes.call(:cost_share_id),
+                              disabled: cost_share_options.size < 2 %>
+            </div>
+          </div>
+
+          <div>
+            <%= form.label :linked_cost_share_id, "Linked cost share", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+            <div class="mt-2">
+              <%= form.select :linked_cost_share_id,
+                              options_for_select(cost_share_options, cost_share_link.linked_cost_share_id),
+                              { prompt: cost_share_options.empty? ? "No cost shares available" : "Select a cost share" },
+                              class: field_classes.call(:linked_cost_share_id),
+                              disabled: cost_share_options.size < 2 %>
+            </div>
+          </div>
+        </div>
+
+        <div class="sm:w-1/2">
+          <%= form.label :relationship_type, "Relationship", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+          <div class="mt-2">
+            <%= form.select :relationship_type,
+                            CostShareLink.relationship_types.keys.map { |key| [key.humanize, key] },
+                            { prompt: "Select a relationship" },
+                            class: field_classes.call(:relationship_type),
+                            disabled: cost_share_options.size < 2 %>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+        <div class="flex gap-3">
+          <%= button_tag "← Back",
+                         name: "step_action",
+                         value: "previous",
+                         class: "inline-flex items-center gap-1 rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10 dark:focus:ring-indigo-500" %>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <%= button_tag "Add link",
+                         name: "step_action",
+                         value: "add",
+                         class: "inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 dark:disabled:bg-gray-700 dark:disabled:text-gray-400 dark:bg-indigo-500 dark:hover:bg-indigo-400",
+                         disabled: cost_share_options.size < 2 %>
+          <%= button_tag "Save and continue →",
+                         name: "step_action",
+                         value: "next",
+                         class: "inline-flex items-center gap-2 rounded-md border border-transparent px-4 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 shadow-xs hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:bg-indigo-600/20 dark:text-indigo-100 dark:hover:bg-indigo-600/30",
+                         data: { test_id: "next-step-button" } %>
+        </div>
+      </div>
+    <% end %>
+
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">Cost share links</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400"><%= pluralize(existing_links.size, "link") %></p>
+      </div>
+
+      <% if existing_links.empty? %>
+        <div class="rounded-lg border border-dashed border-gray-300 bg-white p-6 text-sm text-gray-500 shadow-xs dark:border-white/20 dark:bg-gray-900 dark:text-gray-300">
+          No links yet. Pair cost shares to indicate how they relate.
+        </div>
+      <% else %>
+        <div class="space-y-3">
+          <% existing_links.each do |link| %>
+            <div class="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-800 shadow-sm dark:border-white/10 dark:bg-gray-900 dark:text-gray-200">
+              <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"><%= link.relationship_type.humanize %></p>
+              <p class="mt-1 font-semibold text-gray-900 dark:text-gray-100"><%= cost_share_labels[link.cost_share_id] || "Cost share ##{link.cost_share_id}" %></p>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Linked to</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100"><%= cost_share_labels[link.linked_cost_share_id] || "Cost share ##{link.linked_cost_share_id}" %></p>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

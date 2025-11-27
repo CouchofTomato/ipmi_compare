@@ -15,6 +15,7 @@ class PlanWizardFlow
       module_benefits
       benefit_limit_groups
       cost_shares
+      cost_share_links
       review
     ]
   end
@@ -29,6 +30,7 @@ class PlanWizardFlow
     when "module_benefits"      then save_module_benefits(params[:benefits], params[:step_action])
     when "benefit_limit_groups" then save_benefit_limit_groups(params[:benefit_limit_groups], params[:step_action])
     when "cost_shares"   then save_cost_shares(params[:cost_shares], params[:step_action])
+    when "cost_share_links" then save_cost_share_links(params[:cost_share_links], params[:step_action])
     when "review"        then save_review(params[:review], params[:step_action])
     else
       WizardStepResult.new(success: true)
@@ -430,6 +432,54 @@ class PlanWizardFlow
     end
   end
 
+  def save_cost_share_links(cost_share_link_params, step_action = nil)
+    plan = progress.subject
+    return WizardStepResult.new(success: false, errors: [ "Plan must be created before linking cost shares" ]) unless plan.present?
+
+    params_for_cost_share_link =
+      case cost_share_link_params
+      when ActionController::Parameters then cost_share_link_params
+      when Hash then ActionController::Parameters.new(cost_share_link_params)
+      else
+        ActionController::Parameters.new
+      end
+
+    permitted = params_for_cost_share_link.permit(:cost_share_id, :linked_cost_share_id, :relationship_type)
+    sanitized = permitted.to_h
+
+    user_filled_any = sanitized.values.any?(&:present?)
+    creating = step_action.in?([ "add", "next" ]) || (step_action.blank? && user_filled_any)
+    return WizardStepResult.new(success: true, resource: plan) unless creating && user_filled_any
+
+    cost_share_link = CostShareLink.new(relationship_type: permitted[:relationship_type])
+    allowed_cost_share_ids = cost_share_ids_for_plan(plan)
+
+    cost_share = CostShare.find_by(id: permitted[:cost_share_id])
+    linked_cost_share = CostShare.find_by(id: permitted[:linked_cost_share_id])
+
+    if permitted[:cost_share_id].blank? || cost_share.nil? || !allowed_cost_share_ids.include?(cost_share.id)
+      cost_share_link.errors.add(:cost_share, "must be selected from this plan")
+    else
+      cost_share_link.cost_share = cost_share
+    end
+
+    if permitted[:linked_cost_share_id].blank? || linked_cost_share.nil? || !allowed_cost_share_ids.include?(linked_cost_share.id)
+      cost_share_link.errors.add(:linked_cost_share, "must be selected from this plan")
+    else
+      cost_share_link.linked_cost_share = linked_cost_share
+    end
+
+    if cost_share_link.errors.any?
+      return WizardStepResult.new(success: false, resource: cost_share_link, errors: cost_share_link.errors.full_messages)
+    end
+
+    if cost_share_link.save
+      WizardStepResult.new(success: true, resource: cost_share_link)
+    else
+      WizardStepResult.new(success: false, resource: cost_share_link, errors: cost_share_link.errors.full_messages)
+    end
+  end
+
   def save_review(review_params, step_action = nil)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before review" ]) unless plan.present?
@@ -445,5 +495,18 @@ class PlanWizardFlow
     else
       WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages)
     end
+  end
+
+  private
+
+  def cost_share_ids_for_plan(plan)
+    module_ids = plan.plan_module_ids
+    module_benefit_ids = ModuleBenefit.where(plan_module_id: module_ids).pluck(:id)
+
+    [
+      plan.cost_share_ids,
+      CostShare.where(scope_type: "PlanModule", scope_id: module_ids).pluck(:id),
+      CostShare.where(scope_type: "ModuleBenefit", scope_id: module_benefit_ids).pluck(:id)
+    ].flatten.uniq
   end
 end
