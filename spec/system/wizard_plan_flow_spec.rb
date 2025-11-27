@@ -93,6 +93,16 @@ RSpec.describe "Plan wizard", type: :system do
     find(:test_id, "cost-share-per-field").select "Per visit"
     find(:test_id, "add-cost-share-button").click
     expect(page).to have_content("Coinsurance")
+
+    find(:test_id, "applies-to-field").select "Benefit limit group"
+    find(:test_id, "benefit-limit-group-field").select "Core · Hospital module — Annual inpatient limit"
+    find(:test_id, "cost-share-type-field").select "Excess"
+    find(:test_id, "cost-share-amount-field").set(100)
+    find(:test_id, "cost-share-unit-field").select "Amount"
+    find(:test_id, "cost-share-per-field").select "Per condition"
+    find(:test_id, "cost-share-currency-field").set("GBP")
+    find(:test_id, "add-cost-share-button").click
+    expect(page).to have_content("Excess")
     find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 9: Link cost shares", wait: 10)
@@ -100,7 +110,7 @@ RSpec.describe "Plan wizard", type: :system do
     find(:test_id, "linked-cost-share-field").select "Core · Hospital module — Coinsurance — 20.0% (Per visit)"
     find(:test_id, "relationship-type-field").select "Shared pool"
     find(:test_id, "add-cost-share-link-button").click
-    expect(page).to have_content("SHARED POOL")
+    expect(page).to have_content("Shared pool")
     expect(page).to have_content("Plan — Deductible — USD250.00 (Per year)")
     expect(page).to have_content("Core · Hospital module — Coinsurance — 20.0% (Per visit)")
     find(:test_id, "next-step-button").click
@@ -112,6 +122,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content(benefit.name)
     expect(page).to have_content("Annual inpatient limit")
     expect(page).to have_content("Deductible")
+    expect(page).to have_content("Excess")
     expect(page).to have_content("SHARED POOL")
 
     find(:test_id, "publish-plan-button").click

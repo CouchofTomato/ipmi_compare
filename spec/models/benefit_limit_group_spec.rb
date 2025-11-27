@@ -6,6 +6,10 @@ RSpec.describe BenefitLimitGroup, type: :model do
   #== Associations =============================================================
   it { expect(benefit_limit_group).to belong_to(:plan_module) }
   it { expect(benefit_limit_group).to have_many(:module_benefits).dependent(:destroy) }
+  it { expect(benefit_limit_group).to have_many(:cost_shares).dependent(:destroy) }
+  it { expect(benefit_limit_group).to have_many(:deductibles).class_name("CostShare") }
+  it { expect(benefit_limit_group).to have_many(:coinsurances).class_name("CostShare") }
+  it { expect(benefit_limit_group).to have_many(:excesses).class_name("CostShare") }
 
   #== Validations ============================================================
   it { expect(benefit_limit_group).to validate_presence_of(:name) }
