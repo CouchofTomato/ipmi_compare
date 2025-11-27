@@ -73,7 +73,8 @@
                                          :id,
                                          ->(m) { [m.module_group&.name, m.name].compact.join(" – ") },
                                          { prompt: "Select a module" },
-                                         class: field_classes.call(:plan_module_id) %>
+                                         class: field_classes.call(:plan_module_id),
+                                         data: { test_id: "module-field" } %>
             </div>
           </div>
 

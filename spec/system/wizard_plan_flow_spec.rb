@@ -9,7 +9,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_current_path(root_path)
   end
 
-  it "walks through the full plan creation flow with modules, benefits, limits, and cost shares" do
+  it "walks through the full plan creation flow with modules, benefits, limits, cost shares, and cost share links" do
     user = create(:user, email: "wizard@example.com", password: "password123")
     insurer = create(:insurer, name: "Acme Health")
     coverage_category = create(:coverage_category, name: "Hospitalisation")
@@ -84,15 +84,35 @@ RSpec.describe "Plan wizard", type: :system do
     find(:test_id, "cost-share-currency-field").set("USD")
     find(:test_id, "add-cost-share-button").click
     expect(page).to have_content("Deductible")
+
+    find(:test_id, "applies-to-field").select "Module"
+    find(:test_id, "module-field").select "Core – Hospital module"
+    find(:test_id, "cost-share-type-field").select "Coinsurance"
+    find(:test_id, "cost-share-amount-field").set(20)
+    find(:test_id, "cost-share-unit-field").select "Percent"
+    find(:test_id, "cost-share-per-field").select "Per visit"
+    find(:test_id, "add-cost-share-button").click
+    expect(page).to have_content("Coinsurance")
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 9: Review & publish", wait: 10)
+    expect(page).to have_content("Step 9: Link cost shares", wait: 10)
+    find(:test_id, "primary-cost-share-field").select "Plan — Deductible — USD250.00 (Per year)"
+    find(:test_id, "linked-cost-share-field").select "Core · Hospital module — Coinsurance — 20.0% (Per visit)"
+    find(:test_id, "relationship-type-field").select "Shared pool"
+    find(:test_id, "add-cost-share-link-button").click
+    expect(page).to have_content("SHARED POOL")
+    expect(page).to have_content("Plan — Deductible — USD250.00 (Per year)")
+    expect(page).to have_content("Core · Hospital module — Coinsurance — 20.0% (Per visit)")
+    find(:test_id, "next-step-button").click
+
+    expect(page).to have_content("Step 10: Review & publish", wait: 10)
     expect(page).to have_content("Global Gold")
     expect(page).to have_content("Core")
     expect(page).to have_content("Hospital module")
     expect(page).to have_content(benefit.name)
     expect(page).to have_content("Annual inpatient limit")
     expect(page).to have_content("Deductible")
+    expect(page).to have_content("SHARED POOL")
 
     find(:test_id, "publish-plan-button").click
 

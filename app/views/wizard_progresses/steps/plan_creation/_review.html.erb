@@ -6,6 +6,7 @@
 <% plan_cost_shares = plan.cost_shares.order(:created_at) %>
 <% module_cost_shares = plan.plan_modules.includes(:module_group, :cost_shares).order(:created_at) %>
 <% module_benefit_cost_shares = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).includes(:benefit, :coverage_category, :cost_shares, plan_module: :module_group).order(:plan_module_id, :weighting, :created_at) %>
+<% cost_share_labels = {} %>
 <% display_cost_share_amount = lambda do |cs|
      if cs.unit == "percent"
        "#{cs.amount.to_f}%"
@@ -13,12 +14,28 @@
        number_to_currency(cs.amount || 0, unit: cs.currency.presence || "$")
      end
    end %>
+<% plan_cost_shares.each do |cs| %>
+  <% cost_share_labels[cs.id] = "Plan — #{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" %>
+<% end %>
+<% module_cost_shares.each do |mod| %>
+  <% scope_label = [mod.module_group&.name, mod.name].compact.join(" · ") %>
+  <% mod.cost_shares.each do |cs| %>
+    <% cost_share_labels[cs.id] = "#{scope_label} — #{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" %>
+  <% end %>
+<% end %>
+<% module_benefit_cost_shares.each do |mb| %>
+  <% scope_label = "#{[mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ")} — #{mb.benefit.name} (#{mb.coverage_category.name})" %>
+  <% mb.cost_shares.each do |cs| %>
+    <% cost_share_labels[cs.id] = "#{scope_label} — #{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" %>
+  <% end %>
+<% end %>
+<% cost_share_links = CostShareLink.where(cost_share_id: cost_share_labels.keys, linked_cost_share_id: cost_share_labels.keys).order(:created_at) %>
 
 <%= turbo_frame_tag "wizard_step" do %>
   <div class="space-y-6">
     <div>
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Step 9: Review & publish</h2>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Confirm the plan details, modules, benefits, and cost shares. Finish to mark the plan as published.</p>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Step 10: Review & publish</h2>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Confirm the plan details, modules, benefits, cost shares, and how they link together. Finish to mark the plan as published.</p>
     </div>
 
     <% if progress.errors.any? %>
@@ -163,6 +180,30 @@
               </div>
             <% end %>
           </div>
+        </div>
+
+        <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-gray-900 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Cost share links</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300"><%= pluralize(cost_share_links.size, "link") %></p>
+            </div>
+          </div>
+
+          <% if cost_share_links.empty? %>
+            <p class="text-sm text-gray-600 dark:text-gray-300">No links added.</p>
+          <% else %>
+            <div class="space-y-3 text-sm text-gray-800 dark:text-gray-200">
+              <% cost_share_links.each do |link| %>
+                <div class="rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-gray-800">
+                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"><%= link.relationship_type.humanize %></p>
+                  <p class="mt-1 font-semibold text-gray-900 dark:text-gray-100"><%= cost_share_labels[link.cost_share_id] || "Cost share ##{link.cost_share_id}" %></p>
+                  <p class="text-xs text-gray-600 dark:text-gray-300">Linked to</p>
+                  <p class="font-medium text-gray-900 dark:text-gray-100"><%= cost_share_labels[link.linked_cost_share_id] || "Cost share ##{link.linked_cost_share_id}" %></p>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
         </div>
       </div>
 
