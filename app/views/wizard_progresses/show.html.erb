@@ -1,5 +1,26 @@
-<div class="container mx-auto max-w-3xl p-6">
-  <h1 class="text-2xl font-semibold mb-4">Create a New Plan</h1>
+<% plan = progress.subject if progress.respond_to?(:subject) %>
+
+<div class="container mx-auto max-w-4xl p-6">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Plan wizard</h1>
+      <p class="mt-2 text-sm text-gray-700 dark:text-gray-200">
+        <% if plan.present? %>
+          Editing <span class="font-semibold"><%= plan.name %></span>. Update the plan and all connected objects using the same guided steps as creation.
+        <% else %>
+          Create and publish a plan using the guided steps below.
+        <% end %>
+      </p>
+    </div>
+
+    <% if plan.present? %>
+      <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm dark:border-white/10 dark:bg-gray-900">
+        <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Editing plan</p>
+        <p class="mt-1 font-semibold text-gray-900 dark:text-white"><%= plan.name %></p>
+        <p class="text-xs text-gray-500 dark:text-gray-400"><%= plan.insurer&.name || "Unassigned insurer" %></p>
+      </div>
+    <% end %>
+  </div>
 
   <div class="w-full bg-gray-200 h-2 rounded-full mb-6">
     <div class="bg-blue-600 h-2 rounded-full" style="width: <%= @progress.progress %>%"></div>

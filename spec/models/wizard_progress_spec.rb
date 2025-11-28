@@ -31,9 +31,10 @@ RSpec.describe WizardProgress, type: :model do
 
     it "prevents duplicates when subject is present" do
       plan = create(:plan)
-      create(:wizard_progress, wizard_type: "plan_creation", subject: plan)
+      user = create(:user)
+      create(:wizard_progress, wizard_type: "plan_creation", subject: plan, user:)
 
-      duplicate = build(:wizard_progress, wizard_type: "plan_creation", subject: plan)
+      duplicate = build(:wizard_progress, wizard_type: "plan_creation", subject: plan, user:)
       expect(duplicate).to be_invalid
       expect(duplicate.errors[:wizard_type]).to include("has already been taken")
     end

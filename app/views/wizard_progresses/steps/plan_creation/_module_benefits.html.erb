@@ -232,6 +232,15 @@
                     Weighting: <span class="font-semibold text-gray-900 dark:text-gray-100"><%= mb.weighting %></span>
                   </p>
                 </div>
+                <div>
+                  <%= button_to "Delete",
+                                wizard_progress_path(progress),
+                                method: :patch,
+                                params: { step_action: "delete", benefits: { id: mb.id } },
+                                form: { data: { turbo_frame: "wizard_step" } },
+                                class: "text-sm font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300",
+                                data: { turbo_confirm: "Delete this module benefit and any linked limits or cost shares?", test_id: "delete-module-benefit-#{mb.id}-button" } %>
+                </div>
               </div>
 
               <% if mb.coverage_description.present? %>

@@ -2,11 +2,20 @@
 
 <div class="px-4 py-10 sm:px-6 lg:px-8">
   <div class="mx-auto max-w-4xl space-y-8">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <%= link_to "Back to plans", plans_path, class: "inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300" %>
         <h1 class="mt-4 text-3xl font-semibold text-gray-900 dark:text-white"><%= @plan.name %></h1>
         <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Core plan information at a glance.</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <%= button_to "Edit in plan wizard",
+                      wizard_progresses_path(plan_id: @plan.id, wizard_type: "plan_creation"),
+                      method: :post,
+                      form: { class: "inline" },
+                      class: "inline-flex items-center gap-2 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus-visible:outline-indigo-500",
+                      data: { turbo: true, test_id: "edit-plan-with-wizard-button" } %>
       </div>
     </div>
 

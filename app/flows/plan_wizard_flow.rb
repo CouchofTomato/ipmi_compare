@@ -185,9 +185,6 @@ class PlanWizardFlow
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module groups" ]) unless plan.present?
 
-    # Only attempt to create a new module group when explicitly asked
-    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
-
     params_for_group =
       case module_group_params
       when ActionController::Parameters then module_group_params
@@ -195,6 +192,26 @@ class PlanWizardFlow
       else
         ActionController::Parameters.new
       end
+
+    if step_action == "delete"
+      group_id = params_for_group[:id].presence || params_for_group[:module_group_id].presence
+      group_id = Integer(group_id) rescue nil
+      module_group = plan.module_groups.find_by(id: group_id)
+
+      if module_group.nil?
+        module_group = ModuleGroup.new
+        module_group.errors.add(:base, "Module group not found")
+        return WizardStepResult.new(success: false, resource: module_group, errors: module_group.errors.full_messages)
+      end
+
+      module_group.destroy
+      plan.module_groups.reload
+
+      return WizardStepResult.new(success: true, resource: plan)
+    end
+
+    # Only attempt to create a new module group when explicitly asked
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
     permitted = params_for_group.permit(:name, :description, :position)
     sanitized_values = permitted.to_h
@@ -220,9 +237,6 @@ class PlanWizardFlow
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding plan modules" ]) unless plan.present?
 
-    # Only create a new module when explicitly requested
-    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
-
     params_for_module =
       case module_params
       when ActionController::Parameters then module_params
@@ -230,6 +244,26 @@ class PlanWizardFlow
       else
         ActionController::Parameters.new
       end
+
+    if step_action == "delete"
+      module_id = params_for_module[:id].presence || params_for_module[:plan_module_id].presence
+      module_id = Integer(module_id) rescue nil
+      plan_module = plan.plan_modules.find_by(id: module_id)
+
+      if plan_module.nil?
+        plan_module = PlanModule.new(plan:)
+        plan_module.errors.add(:base, "Plan module not found")
+        return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      end
+
+      plan_module.destroy
+      plan.plan_modules.reload
+
+      return WizardStepResult.new(success: true, resource: plan)
+    end
+
+    # Only create a new module when explicitly requested
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
     permitted = params_for_module.permit(:name,
                                          :module_group_id,
@@ -267,9 +301,6 @@ class PlanWizardFlow
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module benefits" ]) unless plan.present?
 
-    # Only create a new module benefit when explicitly asked
-    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
-
     params_for_benefit =
       case benefit_params
       when ActionController::Parameters then benefit_params
@@ -277,6 +308,26 @@ class PlanWizardFlow
       else
         ActionController::Parameters.new
       end
+
+    if step_action == "delete"
+      benefit_id = params_for_benefit[:id].presence || params_for_benefit[:module_benefit_id].presence
+      benefit_id = Integer(benefit_id) rescue nil
+      module_benefit = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).find_by(id: benefit_id)
+
+      if module_benefit.nil?
+        module_benefit = ModuleBenefit.new
+        module_benefit.errors.add(:base, "Module benefit not found")
+        return WizardStepResult.new(success: false, resource: module_benefit, errors: module_benefit.errors.full_messages)
+      end
+
+      module_benefit.destroy
+      plan.plan_modules.includes(:module_benefits).each { |pm| pm.module_benefits.reset }
+
+      return WizardStepResult.new(success: true, resource: plan)
+    end
+
+    # Only create a new module benefit when explicitly asked
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
     permitted = params_for_benefit.permit(:plan_module_id,
                                           :benefit_id,
@@ -321,8 +372,6 @@ class PlanWizardFlow
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding benefit limit groups" ]) unless plan.present?
 
-    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
-
     params_for_group =
       case group_params
       when ActionController::Parameters then group_params
@@ -330,6 +379,25 @@ class PlanWizardFlow
       else
         ActionController::Parameters.new
       end
+
+    if step_action == "delete"
+      group_id = params_for_group[:id].presence || params_for_group[:benefit_limit_group_id].presence
+      group_id = Integer(group_id) rescue nil
+      benefit_limit_group = BenefitLimitGroup.where(plan_module_id: plan.plan_module_ids).find_by(id: group_id)
+
+      if benefit_limit_group.nil?
+        benefit_limit_group = BenefitLimitGroup.new
+        benefit_limit_group.errors.add(:base, "Benefit limit group not found")
+        return WizardStepResult.new(success: false, resource: benefit_limit_group, errors: benefit_limit_group.errors.full_messages)
+      end
+
+      benefit_limit_group.destroy
+      plan.plan_modules.includes(:benefit_limit_groups).each { |pm| pm.benefit_limit_groups.reset }
+
+      return WizardStepResult.new(success: true, resource: plan)
+    end
+
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
     permitted = params_for_group.permit(:plan_module_id,
                                         :name,
@@ -390,10 +458,30 @@ class PlanWizardFlow
                                              :unit,
                                              :per,
                                              :currency,
-                                             :notes)
+                                             :notes,
+                                             :id)
 
     sanitized = permitted.to_h
     # Only treat this submission as a create when meaningful fields are present.
+    if step_action == "delete"
+      cost_share_id = permitted[:id].presence || params_for_cost_share[:cost_share_id].presence
+      cost_share_id = Integer(cost_share_id) rescue nil
+      cost_share = CostShare.find_by(id: cost_share_id)
+
+      allowed_ids = cost_share_ids_for_plan(plan)
+      unless cost_share && allowed_ids.include?(cost_share.id)
+        cost_share = CostShare.new
+        cost_share.errors.add(:base, "Cost share not found")
+        return WizardStepResult.new(success: false, resource: cost_share, errors: cost_share.errors.full_messages)
+      end
+
+      cost_share.destroy
+      plan.cost_shares.reset
+      plan.plan_modules.each { |pm| pm.cost_shares.reset }
+
+      return WizardStepResult.new(success: true, resource: plan)
+    end
+
     user_filled_any = sanitized.slice("amount", "currency", "notes", "plan_module_id", "module_benefit_id", "benefit_limit_group_id").values.any?(&:present?)
     creating = step_action.in?([ "add", "next" ]) || (step_action.blank? && user_filled_any)
 
@@ -449,8 +537,24 @@ class PlanWizardFlow
         ActionController::Parameters.new
       end
 
-    permitted = params_for_cost_share_link.permit(:cost_share_id, :linked_cost_share_id, :relationship_type)
+    permitted = params_for_cost_share_link.permit(:cost_share_id, :linked_cost_share_id, :relationship_type, :id)
     sanitized = permitted.to_h
+
+    if step_action == "delete"
+      link_id = permitted[:id].presence || params_for_cost_share_link[:cost_share_link_id].presence
+      link_id = Integer(link_id) rescue nil
+      allowed_ids = cost_share_ids_for_plan(plan)
+      cost_share_link = CostShareLink.find_by(id: link_id)
+
+      unless cost_share_link && allowed_ids.include?(cost_share_link.cost_share_id) && allowed_ids.include?(cost_share_link.linked_cost_share_id)
+        cost_share_link = CostShareLink.new
+        cost_share_link.errors.add(:base, "Cost share link not found")
+        return WizardStepResult.new(success: false, resource: cost_share_link, errors: cost_share_link.errors.full_messages)
+      end
+
+      cost_share_link.destroy
+      return WizardStepResult.new(success: true, resource: plan)
+    end
 
     user_filled_any = sanitized.values.any?(&:present?)
     creating = step_action.in?([ "add", "next" ]) || (step_action.blank? && user_filled_any)
@@ -507,11 +611,13 @@ class PlanWizardFlow
   def cost_share_ids_for_plan(plan)
     module_ids = plan.plan_module_ids
     module_benefit_ids = ModuleBenefit.where(plan_module_id: module_ids).pluck(:id)
+    benefit_limit_group_ids = BenefitLimitGroup.where(plan_module_id: module_ids).pluck(:id)
 
     [
       plan.cost_share_ids,
       CostShare.where(scope_type: "PlanModule", scope_id: module_ids).pluck(:id),
-      CostShare.where(scope_type: "ModuleBenefit", scope_id: module_benefit_ids).pluck(:id)
+      CostShare.where(scope_type: "ModuleBenefit", scope_id: module_benefit_ids).pluck(:id),
+      CostShare.where(scope_type: "BenefitLimitGroup", scope_id: benefit_limit_group_ids).pluck(:id)
     ].flatten.uniq
   end
 end

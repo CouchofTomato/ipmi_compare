@@ -7,11 +7,15 @@
      classes.compact.join(" ")
    end %>
 
+<% editing_plan = plan.persisted? %>
+
 <%= turbo_frame_tag "wizard_step" do %>
   <div class="space-y-6">
     <div>
       <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Step 1: Plan details</h2>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Start a new plan by entering its core attributes. You can refine the rest of the plan as you move through the wizard.</p>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+        <%= editing_plan ? "Update the core attributes for this plan before adjusting modules, benefits, and cost shares." : "Start a new plan by entering its core attributes. You can refine the rest of the plan as you move through the wizard." %>
+      </p>
     </div>
 
     <%= form_with(

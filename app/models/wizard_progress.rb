@@ -15,7 +15,7 @@ class WizardProgress < ApplicationRecord
   validates :started_at, presence: true
   validates :step_order, presence: true, numericality: { greater_than_or_equal_to: 0, only_integer: true }
   validates :wizard_type, uniqueness: {
-    scope: %i[subject_type subject_id],
+    scope: %i[subject_type subject_id user_id],
     conditions: -> { where.not(subject_id: nil) }
   }
 
