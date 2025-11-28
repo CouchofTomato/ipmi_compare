@@ -458,10 +458,30 @@ class PlanWizardFlow
                                              :unit,
                                              :per,
                                              :currency,
-                                             :notes)
+                                             :notes,
+                                             :id)
 
     sanitized = permitted.to_h
     # Only treat this submission as a create when meaningful fields are present.
+    if step_action == "delete"
+      cost_share_id = permitted[:id].presence || params_for_cost_share[:cost_share_id].presence
+      cost_share_id = Integer(cost_share_id) rescue nil
+      cost_share = CostShare.find_by(id: cost_share_id)
+
+      allowed_ids = cost_share_ids_for_plan(plan)
+      unless cost_share && allowed_ids.include?(cost_share.id)
+        cost_share = CostShare.new
+        cost_share.errors.add(:base, "Cost share not found")
+        return WizardStepResult.new(success: false, resource: cost_share, errors: cost_share.errors.full_messages)
+      end
+
+      cost_share.destroy
+      plan.cost_shares.reset
+      plan.plan_modules.each { |pm| pm.cost_shares.reset }
+
+      return WizardStepResult.new(success: true, resource: plan)
+    end
+
     user_filled_any = sanitized.slice("amount", "currency", "notes", "plan_module_id", "module_benefit_id", "benefit_limit_group_id").values.any?(&:present?)
     creating = step_action.in?([ "add", "next" ]) || (step_action.blank? && user_filled_any)
 
@@ -575,11 +595,13 @@ class PlanWizardFlow
   def cost_share_ids_for_plan(plan)
     module_ids = plan.plan_module_ids
     module_benefit_ids = ModuleBenefit.where(plan_module_id: module_ids).pluck(:id)
+    benefit_limit_group_ids = BenefitLimitGroup.where(plan_module_id: module_ids).pluck(:id)
 
     [
       plan.cost_share_ids,
       CostShare.where(scope_type: "PlanModule", scope_id: module_ids).pluck(:id),
-      CostShare.where(scope_type: "ModuleBenefit", scope_id: module_benefit_ids).pluck(:id)
+      CostShare.where(scope_type: "ModuleBenefit", scope_id: module_benefit_ids).pluck(:id),
+      CostShare.where(scope_type: "BenefitLimitGroup", scope_id: benefit_limit_group_ids).pluck(:id)
     ].flatten.uniq
   end
 end
