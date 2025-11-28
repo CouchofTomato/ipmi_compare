@@ -67,5 +67,43 @@ RSpec.describe "WizardProgresses", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "deletes a module group that has no modules" do
+      plan = wizard_progress.subject
+      module_group = create(:module_group, plan:)
+      progress = create(:wizard_progress,
+                        wizard_type: "plan_creation",
+                        subject: plan,
+                        user: wizard_progress.user,
+                        current_step: "module_groups",
+                        step_order: 3)
+
+      expect do
+        patch wizard_progress_path(progress, format: :turbo_stream),
+              params: { step_action: "delete", module_groups: { id: module_group.id } }
+      end.to change { plan.module_groups.reload.count }.by(-1)
+
+      expect(response).to have_http_status(:success)
+    end
+
+    it "deletes a module group and cascades plan modules" do
+      plan = wizard_progress.subject
+      module_group = create(:module_group, plan:)
+      plan_module = create(:plan_module, plan:, module_group:)
+      progress = create(:wizard_progress,
+                        wizard_type: "plan_creation",
+                        subject: plan,
+                        user: wizard_progress.user,
+                        current_step: "module_groups",
+                        step_order: 3)
+
+      expect do
+        patch wizard_progress_path(progress, format: :turbo_stream),
+              params: { step_action: "delete", module_groups: { id: module_group.id } }
+      end.to change { plan.module_groups.reload.count }.by(-1)
+        .and change { PlanModule.where(id: plan_module.id).count }.by(-1)
+
+      expect(response).to have_http_status(:success)
+    end
   end
 end

@@ -185,9 +185,6 @@ class PlanWizardFlow
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module groups" ]) unless plan.present?
 
-    # Only attempt to create a new module group when explicitly asked
-    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
-
     params_for_group =
       case module_group_params
       when ActionController::Parameters then module_group_params
@@ -195,6 +192,26 @@ class PlanWizardFlow
       else
         ActionController::Parameters.new
       end
+
+    if step_action == "delete"
+      group_id = params_for_group[:id].presence || params_for_group[:module_group_id].presence
+      group_id = Integer(group_id) rescue nil
+      module_group = plan.module_groups.find_by(id: group_id)
+
+      if module_group.nil?
+        module_group = ModuleGroup.new
+        module_group.errors.add(:base, "Module group not found")
+        return WizardStepResult.new(success: false, resource: module_group, errors: module_group.errors.full_messages)
+      end
+
+      module_group.destroy
+      plan.module_groups.reload
+
+      return WizardStepResult.new(success: true, resource: plan)
+    end
+
+    # Only attempt to create a new module group when explicitly asked
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
     permitted = params_for_group.permit(:name, :description, :position)
     sanitized_values = permitted.to_h
