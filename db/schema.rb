@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_26_213233) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_29_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -258,7 +258,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_26_213233) do
     t.index ["status", "updated_at"], name: "index_wizard_progresses_on_status_and_updated_at"
     t.index ["subject_type", "subject_id"], name: "index_wizard_progresses_on_subject"
     t.index ["user_id"], name: "index_wizard_progresses_on_user_id"
-    t.index ["wizard_type", "subject_type", "subject_id"], name: "index_wizard_progresses_on_type_and_subject", unique: true, where: "(subject_id IS NOT NULL)"
+    t.index ["wizard_type", "subject_type", "subject_id", "user_id"], name: "index_wizard_progresses_on_type_subject_and_user", unique: true, where: "(subject_id IS NOT NULL)"
     t.index ["wizard_type"], name: "index_wizard_progresses_on_wizard_type"
   end
 

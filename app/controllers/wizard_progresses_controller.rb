@@ -18,9 +18,9 @@ class WizardProgressesController < ApplicationController
 
     progress =
       if plan.present?
-        WizardProgress.find_or_initialize_by(wizard_type:, subject: plan)
+        current_user.wizard_progresses.find_or_initialize_by(wizard_type:, subject: plan)
       else
-        WizardProgress.new(wizard_type:)
+        current_user.wizard_progresses.new(wizard_type:)
       end
 
     progress.user ||= current_user

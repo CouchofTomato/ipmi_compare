@@ -55,6 +55,27 @@ RSpec.describe "WizardProgresses", type: :request do
       expect(progress).to be_in_progress
       expect(progress.step_order).to eq(0)
     end
+
+    it "creates a separate wizard for another user editing the same plan" do
+      plan = create(:plan)
+      other_user = create(:user, email: "other_user@example.com")
+      original = create(:wizard_progress,
+                        wizard_type: "plan_creation",
+                        subject: plan,
+                        user: other_user,
+                        current_step: "review",
+                        step_order: 9)
+
+      expect do
+        post wizard_progresses_path,
+             params: { plan_id: plan.id, wizard_type: "plan_creation" }
+      end.to change { WizardProgress.where(subject: plan).count }.by(1)
+
+      new_progress = WizardProgress.where(subject: plan, user: wizard_progress.user).last
+      expect(new_progress).to be_present
+      expect(new_progress).not_to eq(original)
+      expect(new_progress.current_step).to eq(new_progress.steps.first)
+    end
   end
 
   describe "PATCH /update" do
