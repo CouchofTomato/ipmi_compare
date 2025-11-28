@@ -147,5 +147,28 @@ RSpec.describe "WizardProgresses", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "deletes a benefit limit group and cascades its module benefits" do
+      plan = wizard_progress.subject
+      module_group = create(:module_group, plan:)
+      plan_module = create(:plan_module, plan:, module_group:)
+      benefit_limit_group = create(:benefit_limit_group, plan_module:)
+      module_benefit = create(:module_benefit, :with_deductible, plan_module:, benefit_limit_group:)
+      progress = create(:wizard_progress,
+                        wizard_type: "plan_creation",
+                        subject: plan,
+                        user: wizard_progress.user,
+                        current_step: "benefit_limit_groups",
+                        step_order: 6)
+
+      expect do
+        patch wizard_progress_path(progress, format: :turbo_stream),
+              params: { step_action: "delete", benefit_limit_groups: { id: benefit_limit_group.id } }
+      end.to change { BenefitLimitGroup.where(id: benefit_limit_group.id).count }.by(-1)
+        .and change { ModuleBenefit.where(id: module_benefit.id).count }.by(-1)
+        .and change { CostShare.where(scope: module_benefit).count }.by(-1)
+
+      expect(response).to have_http_status(:success)
+    end
   end
 end

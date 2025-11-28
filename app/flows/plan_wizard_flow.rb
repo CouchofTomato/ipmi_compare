@@ -372,8 +372,6 @@ class PlanWizardFlow
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding benefit limit groups" ]) unless plan.present?
 
-    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
-
     params_for_group =
       case group_params
       when ActionController::Parameters then group_params
@@ -381,6 +379,25 @@ class PlanWizardFlow
       else
         ActionController::Parameters.new
       end
+
+    if step_action == "delete"
+      group_id = params_for_group[:id].presence || params_for_group[:benefit_limit_group_id].presence
+      group_id = Integer(group_id) rescue nil
+      benefit_limit_group = BenefitLimitGroup.where(plan_module_id: plan.plan_module_ids).find_by(id: group_id)
+
+      if benefit_limit_group.nil?
+        benefit_limit_group = BenefitLimitGroup.new
+        benefit_limit_group.errors.add(:base, "Benefit limit group not found")
+        return WizardStepResult.new(success: false, resource: benefit_limit_group, errors: benefit_limit_group.errors.full_messages)
+      end
+
+      benefit_limit_group.destroy
+      plan.plan_modules.includes(:benefit_limit_groups).each { |pm| pm.benefit_limit_groups.reset }
+
+      return WizardStepResult.new(success: true, resource: plan)
+    end
+
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
     permitted = params_for_group.permit(:plan_module_id,
                                         :name,
