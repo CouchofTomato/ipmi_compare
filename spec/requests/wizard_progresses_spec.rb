@@ -105,5 +105,26 @@ RSpec.describe "WizardProgresses", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "deletes a plan module and cascades related objects" do
+      plan = wizard_progress.subject
+      module_group = create(:module_group, plan:)
+      plan_module = create(:plan_module, plan:, module_group:)
+      module_benefit = create(:module_benefit, plan_module:)
+      progress = create(:wizard_progress,
+                        wizard_type: "plan_creation",
+                        subject: plan,
+                        user: wizard_progress.user,
+                        current_step: "plan_modules",
+                        step_order: 4)
+
+      expect do
+        patch wizard_progress_path(progress, format: :turbo_stream),
+              params: { step_action: "delete", modules: { id: plan_module.id } }
+      end.to change { plan.plan_modules.reload.count }.by(-1)
+        .and change { ModuleBenefit.where(id: module_benefit.id).count }.by(-1)
+
+      expect(response).to have_http_status(:success)
+    end
   end
 end

@@ -237,9 +237,6 @@ class PlanWizardFlow
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding plan modules" ]) unless plan.present?
 
-    # Only create a new module when explicitly requested
-    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
-
     params_for_module =
       case module_params
       when ActionController::Parameters then module_params
@@ -247,6 +244,26 @@ class PlanWizardFlow
       else
         ActionController::Parameters.new
       end
+
+    if step_action == "delete"
+      module_id = params_for_module[:id].presence || params_for_module[:plan_module_id].presence
+      module_id = Integer(module_id) rescue nil
+      plan_module = plan.plan_modules.find_by(id: module_id)
+
+      if plan_module.nil?
+        plan_module = PlanModule.new(plan:)
+        plan_module.errors.add(:base, "Plan module not found")
+        return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      end
+
+      plan_module.destroy
+      plan.plan_modules.reload
+
+      return WizardStepResult.new(success: true, resource: plan)
+    end
+
+    # Only create a new module when explicitly requested
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
     permitted = params_for_module.permit(:name,
                                          :module_group_id,
