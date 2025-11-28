@@ -9,20 +9,36 @@ class WizardProgressesController < ApplicationController
 
   def create
     wizard_type = params.fetch(:wizard_type, "plan_creation")
+    plan = Plan.find_by(id: params[:plan_id]) if params[:plan_id].present?
 
-    progress = WizardProgress.new(
-      wizard_type:,
-      user: current_user,
-      started_at: Time.current
-    )
+    if params[:plan_id].present? && plan.nil?
+      return redirect_back fallback_location: plans_path,
+                           alert: "Plan not found. Please try again from the plan list."
+    end
 
-    progress.current_step = progress.steps.first
+    progress =
+      if plan.present?
+        WizardProgress.find_or_initialize_by(wizard_type:, subject: plan)
+      else
+        WizardProgress.new(wizard_type:)
+      end
+
+    progress.user ||= current_user
+    progress.last_actor = current_user
+    progress.subject ||= plan
+    progress.started_at = Time.current if progress.started_at.blank? || !progress.in_progress?
+
+    if !progress.in_progress? || progress.current_step.blank?
+      progress.status = :in_progress
+      progress.current_step = progress.steps.first
+    end
+
     progress.step_order = progress.current_step_index
 
     if progress.save
       redirect_to wizard_progress_path(progress)
     else
-      redirect_back fallback_location: root_path,
+      redirect_back fallback_location: plan ? plan_path(plan) : root_path,
                     alert: "Could not start the wizard: #{progress.errors.full_messages.to_sentence}"
     end
   end

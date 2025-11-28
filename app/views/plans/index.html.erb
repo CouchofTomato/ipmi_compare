@@ -51,7 +51,17 @@
                         <td class="hidden px-3 py-4 text-sm text-gray-500 lg:table-cell dark:text-gray-400"><%= plan.version_year %></td>
                         <td class="hidden px-3 py-4 text-sm text-gray-500 xl:table-cell dark:text-gray-400"><%= plan.next_review_due&.strftime("%Y-%m-%d") || "Not set" %></td>
                         <td class="py-4 pr-4 pl-3 text-right text-sm font-semibold sm:pr-6">
-                          <%= link_to "View", plan_path(plan), class: "text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300" %>
+                          <div class="flex flex-wrap justify-end gap-3">
+                            <%= link_to "View",
+                                        plan_path(plan),
+                                        class: "text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300" %>
+                            <%= button_to "Edit",
+                                          wizard_progresses_path(plan_id: plan.id, wizard_type: "plan_creation"),
+                                          method: :post,
+                                          form: { class: "inline" },
+                                          class: "inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 shadow-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10 dark:focus:ring-indigo-500",
+                                          data: { turbo: true, test_id: "edit-plan-#{plan.id}-wizard-button" } %>
+                          </div>
                         </td>
                       </tr>
                     <% end %>
