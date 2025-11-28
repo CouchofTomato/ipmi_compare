@@ -537,8 +537,24 @@ class PlanWizardFlow
         ActionController::Parameters.new
       end
 
-    permitted = params_for_cost_share_link.permit(:cost_share_id, :linked_cost_share_id, :relationship_type)
+    permitted = params_for_cost_share_link.permit(:cost_share_id, :linked_cost_share_id, :relationship_type, :id)
     sanitized = permitted.to_h
+
+    if step_action == "delete"
+      link_id = permitted[:id].presence || params_for_cost_share_link[:cost_share_link_id].presence
+      link_id = Integer(link_id) rescue nil
+      allowed_ids = cost_share_ids_for_plan(plan)
+      cost_share_link = CostShareLink.find_by(id: link_id)
+
+      unless cost_share_link && allowed_ids.include?(cost_share_link.cost_share_id) && allowed_ids.include?(cost_share_link.linked_cost_share_id)
+        cost_share_link = CostShareLink.new
+        cost_share_link.errors.add(:base, "Cost share link not found")
+        return WizardStepResult.new(success: false, resource: cost_share_link, errors: cost_share_link.errors.full_messages)
+      end
+
+      cost_share_link.destroy
+      return WizardStepResult.new(success: true, resource: plan)
+    end
 
     user_filled_any = sanitized.values.any?(&:present?)
     creating = step_action.in?([ "add", "next" ]) || (step_action.blank? && user_filled_any)
