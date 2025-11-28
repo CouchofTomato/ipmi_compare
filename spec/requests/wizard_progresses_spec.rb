@@ -126,5 +126,26 @@ RSpec.describe "WizardProgresses", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "deletes a module benefit and cascades linked cost shares" do
+      plan = wizard_progress.subject
+      module_group = create(:module_group, plan:)
+      plan_module = create(:plan_module, plan:, module_group:)
+      module_benefit = create(:module_benefit, :with_deductible, plan_module:)
+      progress = create(:wizard_progress,
+                        wizard_type: "plan_creation",
+                        subject: plan,
+                        user: wizard_progress.user,
+                        current_step: "module_benefits",
+                        step_order: 5)
+
+      expect do
+        patch wizard_progress_path(progress, format: :turbo_stream),
+              params: { step_action: "delete", benefits: { id: module_benefit.id } }
+      end.to change { ModuleBenefit.where(id: module_benefit.id).count }.by(-1)
+        .and change { CostShare.where(scope: module_benefit).count }.by(-1)
+
+      expect(response).to have_http_status(:success)
+    end
   end
 end

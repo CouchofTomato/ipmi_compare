@@ -301,9 +301,6 @@ class PlanWizardFlow
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module benefits" ]) unless plan.present?
 
-    # Only create a new module benefit when explicitly asked
-    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
-
     params_for_benefit =
       case benefit_params
       when ActionController::Parameters then benefit_params
@@ -311,6 +308,26 @@ class PlanWizardFlow
       else
         ActionController::Parameters.new
       end
+
+    if step_action == "delete"
+      benefit_id = params_for_benefit[:id].presence || params_for_benefit[:module_benefit_id].presence
+      benefit_id = Integer(benefit_id) rescue nil
+      module_benefit = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).find_by(id: benefit_id)
+
+      if module_benefit.nil?
+        module_benefit = ModuleBenefit.new
+        module_benefit.errors.add(:base, "Module benefit not found")
+        return WizardStepResult.new(success: false, resource: module_benefit, errors: module_benefit.errors.full_messages)
+      end
+
+      module_benefit.destroy
+      plan.plan_modules.includes(:module_benefits).each { |pm| pm.module_benefits.reset }
+
+      return WizardStepResult.new(success: true, resource: plan)
+    end
+
+    # Only create a new module benefit when explicitly asked
+    return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
     permitted = params_for_benefit.permit(:plan_module_id,
                                           :benefit_id,
