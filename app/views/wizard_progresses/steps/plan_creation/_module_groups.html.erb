@@ -122,7 +122,7 @@
                                 params: { step_action: "delete", module_groups: { id: group.id } },
                                 form: { data: { turbo_frame: "wizard_step" } },
                                 class: "text-sm font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300",
-                                data: { turbo_confirm: "Delete this module group? Any modules assigned here must be moved first.", test_id: "delete-module-group-#{group.id}-button" } %>
+                                data: { turbo_confirm: "Delete this module group and all linked modules and module benefits?", test_id: "delete-module-group-#{group.id}-button" } %>
                 </div>
               </div>
               <% if group.description.present? %>
