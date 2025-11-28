@@ -71,12 +71,8 @@ RSpec.describe "WizardProgresses", type: :request do
     it "deletes a module group that has no modules" do
       plan = wizard_progress.subject
       module_group = create(:module_group, plan:)
-      progress = create(:wizard_progress,
-                        wizard_type: "plan_creation",
-                        subject: plan,
-                        user: wizard_progress.user,
-                        current_step: "module_groups",
-                        step_order: 3)
+      wizard_progress.update!(current_step: "module_groups", step_order: 3, status: :in_progress)
+      progress = wizard_progress
 
       expect do
         patch wizard_progress_path(progress, format: :turbo_stream),
@@ -90,12 +86,8 @@ RSpec.describe "WizardProgresses", type: :request do
       plan = wizard_progress.subject
       module_group = create(:module_group, plan:)
       plan_module = create(:plan_module, plan:, module_group:)
-      progress = create(:wizard_progress,
-                        wizard_type: "plan_creation",
-                        subject: plan,
-                        user: wizard_progress.user,
-                        current_step: "module_groups",
-                        step_order: 3)
+      wizard_progress.update!(current_step: "module_groups", step_order: 3, status: :in_progress)
+      progress = wizard_progress
 
       expect do
         patch wizard_progress_path(progress, format: :turbo_stream),
@@ -111,12 +103,8 @@ RSpec.describe "WizardProgresses", type: :request do
       module_group = create(:module_group, plan:)
       plan_module = create(:plan_module, plan:, module_group:)
       module_benefit = create(:module_benefit, plan_module:)
-      progress = create(:wizard_progress,
-                        wizard_type: "plan_creation",
-                        subject: plan,
-                        user: wizard_progress.user,
-                        current_step: "plan_modules",
-                        step_order: 4)
+      wizard_progress.update!(current_step: "plan_modules", step_order: 4, status: :in_progress)
+      progress = wizard_progress
 
       expect do
         patch wizard_progress_path(progress, format: :turbo_stream),
@@ -132,12 +120,8 @@ RSpec.describe "WizardProgresses", type: :request do
       module_group = create(:module_group, plan:)
       plan_module = create(:plan_module, plan:, module_group:)
       module_benefit = create(:module_benefit, :with_deductible, plan_module:)
-      progress = create(:wizard_progress,
-                        wizard_type: "plan_creation",
-                        subject: plan,
-                        user: wizard_progress.user,
-                        current_step: "module_benefits",
-                        step_order: 5)
+      wizard_progress.update!(current_step: "module_benefits", step_order: 5, status: :in_progress)
+      progress = wizard_progress
 
       expect do
         patch wizard_progress_path(progress, format: :turbo_stream),
@@ -154,12 +138,8 @@ RSpec.describe "WizardProgresses", type: :request do
       plan_module = create(:plan_module, plan:, module_group:)
       benefit_limit_group = create(:benefit_limit_group, plan_module:)
       module_benefit = create(:module_benefit, :with_deductible, plan_module:, benefit_limit_group:)
-      progress = create(:wizard_progress,
-                        wizard_type: "plan_creation",
-                        subject: plan,
-                        user: wizard_progress.user,
-                        current_step: "benefit_limit_groups",
-                        step_order: 6)
+      wizard_progress.update!(current_step: "benefit_limit_groups", step_order: 6, status: :in_progress)
+      progress = wizard_progress
 
       expect do
         patch wizard_progress_path(progress, format: :turbo_stream),
@@ -183,12 +163,8 @@ RSpec.describe "WizardProgresses", type: :request do
       module_benefit_cost_share = create(:cost_share, scope: module_benefit, cost_share_type: :excess, amount: 50, per: :per_condition, currency: "USD")
       benefit_limit_cost_share = create(:cost_share, scope: benefit_limit_group, cost_share_type: :excess, amount: 75, per: :per_condition, currency: "USD")
 
-      progress = create(:wizard_progress,
-                        wizard_type: "plan_creation",
-                        subject: plan,
-                        user: wizard_progress.user,
-                        current_step: "cost_shares",
-                        step_order: 7)
+      wizard_progress.update!(current_step: "cost_shares", step_order: 7, status: :in_progress)
+      progress = wizard_progress
 
       expect do
         patch wizard_progress_path(progress, format: :turbo_stream),
@@ -223,12 +199,8 @@ RSpec.describe "WizardProgresses", type: :request do
       secondary = create(:cost_share, scope: module_benefit, cost_share_type: :coinsurance, amount: 20, unit: :percent, per: :per_visit)
       cost_share_link = create(:cost_share_link, cost_share: primary, linked_cost_share: secondary, relationship_type: :shared_pool)
 
-      progress = create(:wizard_progress,
-                        wizard_type: "plan_creation",
-                        subject: plan,
-                        user: wizard_progress.user,
-                        current_step: "cost_share_links",
-                        step_order: 8)
+      wizard_progress.update!(current_step: "cost_share_links", step_order: 8, status: :in_progress)
+      progress = wizard_progress
 
       expect do
         patch wizard_progress_path(progress, format: :turbo_stream),
