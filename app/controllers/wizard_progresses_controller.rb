@@ -2,6 +2,7 @@ class WizardProgressesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_progress, only: %i[show update]
   before_action :redirect_if_complete, only: %i[show update]
+  before_action :presenter_for_current_step, only: %i[show update]
 
   def index
     @wizard_progresses = current_user.wizard_progresses.where(status: :in_progress).order(updated_at: :desc)
@@ -44,7 +45,7 @@ class WizardProgressesController < ApplicationController
   end
 
   def show
-    render "wizard_progresses/show", locals: { progress: @progress }
+    render "wizard_progresses/show", locals: { progress: @progress, presenter: @presenter }
   end
 
   def update
@@ -68,17 +69,21 @@ class WizardProgressesController < ApplicationController
 
   private
 
+  def presenter_for_current_step
+    @presenter = @progress.flow.presenter_for(@progress.current_step)
+  end
+
   def render_current_step
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: turbo_stream.replace(
           "wizard_step",
           partial: "wizard_progresses/steps/#{@progress.wizard_type}/#{@progress.current_step}",
-          locals: { progress: @progress, resource: @resource }
+          locals: { progress: @progress, resource: @resource, presenter: @presenter }
         )
       end
 
-      format.html { redirect_to wizard_progress_path(@progress) }
+      format.html { redirect_to wizard_progress_path(@progress, resource: @resource, presenter: @presenter) }
     end
   end
 
