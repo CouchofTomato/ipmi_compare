@@ -3,6 +3,8 @@ class WizardFlow
     case wizard.wizard_type
     when "plan_creation"
       PlanWizardFlow.new(wizard)
+    when "plan_comparison"
+      ComparisonWizardFlow.new(wizard)
     else
       raise ArgumentError, "Unknown wizard type: #{wizard.wizard_type}"
     end
