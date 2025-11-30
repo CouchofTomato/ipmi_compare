@@ -37,6 +37,10 @@ class PlanWizardFlow
     end
   end
 
+  def presenter_for(current_step)
+    nil
+  end
+
   def save_plan_details(plan_params)
     raise ActionController::ParameterMissing, :plan if plan_params.nil?
     plan = progress.subject || Plan.new
