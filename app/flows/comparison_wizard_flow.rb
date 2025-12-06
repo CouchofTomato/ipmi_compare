@@ -26,11 +26,11 @@ class ComparisonWizardFlow
   def presenter_for(current_step)
     case current_step
     when "plan_selection"
-      PlanSelectionPresenter.new(progress)
+      WizardProgresses::Comparison::PlanSelectionPresenter.new(progress)
     when "module_selection"
-      ModuleSelectionPresenter.new(progress)
+      WizardProgresses::Comparison::ModuleSelectionPresenter.new(progress)
     when "comparison"
-      ComparisonPresenter.new(progress)
+      WizardProgresses::Comparison::ComparisonPresenter.new(progress)
     else
       nil
     end
