@@ -40,7 +40,7 @@ module WizardProgresses
             mod = group&.plan_modules&.find { |pm| pm.id == module_id.to_i }
             next unless group && mod
 
-            [group, mod]
+            [ group, mod ]
           end
 
           { id: selection["id"] || selection[:id] || plan_id.to_s, plan:, modules: modules }

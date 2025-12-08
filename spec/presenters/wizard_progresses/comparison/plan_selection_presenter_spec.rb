@@ -28,8 +28,8 @@ RSpec.describe WizardProgresses::Comparison::PlanSelectionPresenter do
       expect(result.size).to eq(2)
       expect(result.first[:id]).to eq("one")
       expect(result.first[:plan]).to eq(plan)
-      expect(result.first[:modules]).to eq([[group, module_a]])
-      expect(result.second[:modules]).to eq([[group, module_b]])
+      expect(result.first[:modules]).to eq([ [ group, module_a ] ])
+      expect(result.second[:modules]).to eq([ [ group, module_b ] ])
     end
 
     it "handles a hash-based state for backwards compatibility" do
@@ -45,7 +45,7 @@ RSpec.describe WizardProgresses::Comparison::PlanSelectionPresenter do
 
       expect(result.size).to eq(1)
       expect(result.first[:plan]).to eq(plan)
-      expect(result.first[:modules]).to eq([[group, module_a]])
+      expect(result.first[:modules]).to eq([ [ group, module_a ] ])
     end
   end
 end
