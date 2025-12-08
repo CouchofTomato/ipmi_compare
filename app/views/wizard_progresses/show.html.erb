@@ -26,5 +26,8 @@
     <div class="bg-blue-600 h-2 rounded-full" style="width: <%= @progress.progress %>%"></div>
   </div>
 
-  <%= render "wizard_progresses/steps/#{@progress.wizard_type}/#{@progress.current_step}", progress: @progress %>
+  <%= render "wizard_progresses/steps/#{@progress.wizard_type}/#{@progress.current_step}",
+             progress: @progress,
+             presenter: @presenter,
+             resource: @resource %>
 </div>

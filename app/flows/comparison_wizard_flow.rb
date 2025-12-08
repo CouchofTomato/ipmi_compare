@@ -8,7 +8,6 @@ class ComparisonWizardFlow
   def steps
     %w[
       plan_selection
-      module_selection
       comparison
     ]
   end
@@ -16,7 +15,6 @@ class ComparisonWizardFlow
   def handle_step(params)
     case progress.current_step
     when "plan_selection" then save_plan_selection(params[:plan_selection])
-    when "module_selection" then save_module_selection(params[:module_selection])
     when "comparison" then save_comparison(params[:comparison])
     else
       WizardStepResult.new(success: true)
@@ -34,5 +32,15 @@ class ComparisonWizardFlow
     else
       nil
     end
+  end
+
+  private
+
+  def save_plan_selection(_params)
+    WizardStepResult.new(success: true)
+  end
+
+  def save_comparison(_params)
+    WizardStepResult.new(success: true)
   end
 end
