@@ -44,6 +44,10 @@ end %>
 
     <div class="flex items-center gap-3">
       <% if user_signed_in? %>
+        <%= link_to "New comparison",
+                    wizard_progresses_path(wizard_type: "plan_comparison"),
+                    data: { turbo_method: :post },
+                    class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400" %>
         <span class="hidden text-sm text-gray-600 sm:inline dark:text-gray-300">
           Signed in as <%= current_user.email %>
         </span>

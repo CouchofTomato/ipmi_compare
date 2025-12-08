@@ -18,5 +18,14 @@ FactoryBot.define do
     trait :with_last_actor do
       after(:build) { |wizard| wizard.last_actor_id ||= create(:user).id }
     end
+
+    trait :plan_comparison do
+      wizard_type { "plan_comparison" }
+      subject { nil }
+      current_step { "plan_selection" }
+      step_order { 0 }
+      metadata { {} }
+      state { {} }
+    end
   end
 end
