@@ -1,9 +1,8 @@
 <% plan = progress.subject %>
 <% module_benefit = local_assigns[:resource].is_a?(ModuleBenefit) ? local_assigns[:resource] : ModuleBenefit.new %>
 <% available_modules = plan&.plan_modules&.joins(:module_group)&.includes(:module_group)&.order("module_groups.position ASC", "plan_modules.created_at ASC") || [] %>
-<% available_benefits = Benefit.order(:name) %>
-<% available_categories = CoverageCategory.order(:position, :name) %>
-<% existing_benefits = ModuleBenefit.where(plan_module_id: Array(plan&.plan_module_ids)).includes(:benefit, :coverage_category, :benefit_limit_group, plan_module: :module_group).order(:weighting, :created_at) %>
+<% available_benefits = Benefit.includes(:coverage_category).order(:name) %>
+<% existing_benefits = ModuleBenefit.where(plan_module_id: Array(plan&.plan_module_ids)).includes(benefit: :coverage_category, plan_module: :module_group, benefit_limit_group: {}).order(:weighting, :created_at) %>
 <% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
 <% field_classes = lambda do |attributes, *extra_classes|
      attrs = Array(attributes)
@@ -71,22 +70,6 @@
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= (module_benefit.errors[:plan_module] + module_benefit.errors[:plan_module_id]).uniq.to_sentence %></p>
             <% end %>
           </div>
-
-          <div>
-            <%= form.label :coverage_category_id, "Coverage category", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
-            <div class="mt-2">
-              <%= form.collection_select :coverage_category_id,
-                                         available_categories,
-                                         :id,
-                                         :name,
-                                         { prompt: "Select a category" },
-                                         class: field_classes.call(:coverage_category),
-                                         data: { test_id: "coverage-category-field" } %>
-            </div>
-            <% if module_benefit.errors[:coverage_category].present? || module_benefit.errors[:coverage_category_id].present? %>
-              <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= (module_benefit.errors[:coverage_category] + module_benefit.errors[:coverage_category_id]).uniq.to_sentence %></p>
-            <% end %>
-          </div>
         </div>
 
         <div>
@@ -95,7 +78,7 @@
             <%= form.collection_select :benefit_id,
                                        available_benefits,
                                        :id,
-                                       :name,
+                                       ->(benefit) { "#{benefit.name} (#{benefit.coverage_category.name})" },
                                        { prompt: "Select a benefit" },
                                        class: field_classes.call(:benefit),
                                        data: { test_id: "benefit-field" } %>
@@ -223,7 +206,7 @@
                     <%= [mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ") %>
                   </p>
                   <p class="text-base font-semibold text-gray-900 dark:text-gray-100"><%= mb.benefit.name %></p>
-                  <p class="text-sm text-gray-600 dark:text-gray-300"><%= mb.coverage_category.name %></p>
+                  <p class="text-sm text-gray-600 dark:text-gray-300"><%= mb.benefit.coverage_category.name %></p>
                   <% if mb.benefit_limit_group.present? %>
                     <p class="text-xs font-semibold text-indigo-700 dark:text-indigo-200">Shared limit: <%= mb.benefit_limit_group.name %></p>
                   <% end %>

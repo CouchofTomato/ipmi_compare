@@ -29,6 +29,21 @@
     </div>
 
     <div>
+      <%= form.label :coverage_category_id, "Coverage category" %>
+      <div class="mt-2">
+        <%= form.collection_select :coverage_category_id,
+                                   CoverageCategory.order(:position, :name),
+                                   :id,
+                                   :name,
+                                   { prompt: "Select a category" },
+                                   class: input_classes %>
+      </div>
+      <% if benefit.errors[:coverage_category].present? || benefit.errors[:coverage_category_id].present? %>
+        <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= (benefit.errors[:coverage_category] + benefit.errors[:coverage_category_id]).uniq.to_sentence %></p>
+      <% end %>
+    </div>
+
+    <div>
       <%= form.label :description %>
       <div class="mt-2">
         <%= form.text_area :description, class: "#{input_classes} min-h-[120px]", placeholder: "Describe what this benefit covers" %>

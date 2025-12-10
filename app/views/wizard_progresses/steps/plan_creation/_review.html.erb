@@ -1,11 +1,11 @@
 <% plan = progress.subject %>
 <% module_groups = plan.module_groups.order(:position, :created_at) %>
 <% plan_modules = plan.plan_modules.includes(:module_group).order(:created_at) %>
-<% module_benefits = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).includes(:benefit, :coverage_category, :benefit_limit_group, plan_module: :module_group).order(:plan_module_id, :weighting, :created_at) %>
+<% module_benefits = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).includes(:benefit_limit_group, benefit: :coverage_category, plan_module: :module_group).order(:plan_module_id, :weighting, :created_at) %>
 <% limit_groups = BenefitLimitGroup.where(plan_module_id: plan.plan_module_ids).includes(plan_module: :module_group).order(:created_at) %>
 <% plan_cost_shares = plan.cost_shares.order(:created_at) %>
 <% module_cost_shares = plan.plan_modules.includes(:module_group, :cost_shares).order(:created_at) %>
-<% module_benefit_cost_shares = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).includes(:benefit, :coverage_category, :cost_shares, plan_module: :module_group).order(:plan_module_id, :weighting, :created_at) %>
+<% module_benefit_cost_shares = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).includes(:cost_shares, benefit: :coverage_category, plan_module: :module_group).order(:plan_module_id, :weighting, :created_at) %>
 <% benefit_limit_group_cost_shares = BenefitLimitGroup.where(plan_module_id: plan.plan_module_ids).includes(:cost_shares, plan_module: :module_group).order(:created_at) %>
 <% cost_share_labels = {} %>
 <% display_cost_share_amount = lambda do |cs|
@@ -25,7 +25,7 @@
   <% end %>
 <% end %>
 <% module_benefit_cost_shares.each do |mb| %>
-  <% scope_label = "#{[mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ")} — #{mb.benefit.name} (#{mb.coverage_category.name})" %>
+  <% scope_label = "#{[mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ")} — #{mb.benefit.name} (#{mb.benefit.coverage_category.name})" %>
   <% mb.cost_shares.each do |cs| %>
     <% cost_share_labels[cs.id] = "#{scope_label} — #{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" %>
   <% end %>
@@ -115,7 +115,7 @@
               <div class="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800 dark:border-white/10 dark:bg-gray-800 dark:text-gray-200">
                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"><%= [mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ") %></p>
                 <p class="font-semibold text-gray-900 dark:text-gray-100"><%= mb.benefit.name %></p>
-                <p class="text-xs text-gray-600 dark:text-gray-300"><%= mb.coverage_category.name %></p>
+                <p class="text-xs text-gray-600 dark:text-gray-300"><%= mb.benefit.coverage_category.name %></p>
                 <% if mb.benefit_limit_group.present? %>
                   <p class="text-[11px] text-indigo-700 dark:text-indigo-200">Shared limit: <%= mb.benefit_limit_group.name %></p>
                 <% end %>
@@ -178,7 +178,7 @@
               <% next if mb.cost_shares.empty? %>
               <div class="rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-gray-800">
                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"><%= [mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ") %></p>
-                <p class="text-xs text-gray-600 dark:text-gray-300"><%= mb.benefit.name %> (<%= mb.coverage_category.name %>)</p>
+                <p class="text-xs text-gray-600 dark:text-gray-300"><%= mb.benefit.name %> (<%= mb.benefit.coverage_category.name %>)</p>
                 <ul class="mt-2 space-y-1">
                   <% mb.cost_shares.each do |cs| %>
                     <li><%= cs.cost_share_type.humanize %> — <%= display_cost_share_amount.call(cs) %> (<%= cs.per.humanize %>)</li>
