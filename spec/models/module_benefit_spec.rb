@@ -6,7 +6,6 @@ RSpec.describe ModuleBenefit, type: :model do
   #== Associations ===========================================================
   it { expect(module_benefit).to belong_to(:plan_module) }
   it { expect(module_benefit).to belong_to(:benefit) }
-  it { expect(module_benefit).to belong_to(:coverage_category) }
   it { expect(module_benefit).to belong_to(:benefit_limit_group).optional(true) }
 
   it { expect(module_benefit).to have_many(:cost_shares).dependent(:destroy) }
@@ -20,7 +19,6 @@ RSpec.describe ModuleBenefit, type: :model do
 
   #== Validations ===========================================================
 
-  it { expect(module_benefit).to validate_presence_of(:coverage_category) }
   it { expect(module_benefit).to validate_presence_of(:benefit) }
   it { expect(module_benefit).to validate_presence_of(:plan_module) }
   it { expect(module_benefit).to validate_numericality_of(:weighting).only_integer }
@@ -71,6 +69,16 @@ RSpec.describe ModuleBenefit, type: :model do
         )
         expect(module_benefit).to be_valid
       end
+    end
+  end
+
+  describe "#coverage_category" do
+    it "delegates to the benefit" do
+      category = create(:coverage_category, name: "Inpatient")
+      benefit = create(:benefit, coverage_category: category)
+      module_benefit = create(:module_benefit, benefit: benefit)
+
+      expect(module_benefit.coverage_category).to eq(category)
     end
   end
 end

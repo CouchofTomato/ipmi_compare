@@ -2,11 +2,14 @@ require "system_helper"
 
 RSpec.describe "Benefits", type: :system do
   it "allows creating a benefit" do
+    coverage_category = create(:coverage_category, name: "Inpatient")
+
     visit benefits_path
     click_link "Add benefit"
 
     fill_in "Name", with: "Ambulatory care"
     fill_in "Description", with: "Covers day surgery and outpatient visits."
+    select coverage_category.name, from: "Coverage category"
 
     click_button "Create benefit"
 

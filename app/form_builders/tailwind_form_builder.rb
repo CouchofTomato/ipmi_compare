@@ -27,6 +27,10 @@ class TailwindFormBuilder < ActionView::Helpers::FormBuilder
     base: "block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500"
   )
 
+  NUMBER_FIELD_CLASSES = ClassVariants.build(
+    base: "block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500"
+  )
+
   def check_box(method, options = {}, checked_value = "1", unchecked_value = "0")
     super(method, options.reverse_merge(class: CHECK_BOX_CLASSES.render), checked_value, unchecked_value)
   end
@@ -57,5 +61,9 @@ class TailwindFormBuilder < ActionView::Helpers::FormBuilder
 
   def text_field(method, options = {})
     super(method, options.reverse_merge(class: TEXT_FIELD_CLASSES.render))
+  end
+
+  def number_field(method, options = {})
+    super(method, options.reverse_merge(class: NUMBER_FIELD_CLASSES.render))
   end
 end

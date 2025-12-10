@@ -335,7 +335,6 @@ class PlanWizardFlow
 
     permitted = params_for_benefit.permit(:plan_module_id,
                                           :benefit_id,
-                                          :coverage_category_id,
                                           :coverage_description,
                                           :limit_usd,
                                           :limit_gbp,

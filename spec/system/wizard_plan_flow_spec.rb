@@ -13,7 +13,7 @@ RSpec.describe "Plan wizard", type: :system do
     user = create(:user, email: "wizard@example.com", password: "password123")
     insurer = create(:insurer, name: "Acme Health")
     coverage_category = create(:coverage_category, name: "Hospitalisation")
-    benefit = create(:benefit, name: "Inpatient care")
+    benefit = create(:benefit, name: "Inpatient care", coverage_category: coverage_category)
     area = create(:geographic_cover_area, name: "Europe", code: "EU")
 
     sign_in(email: user.email, password: "password123")
@@ -57,7 +57,6 @@ RSpec.describe "Plan wizard", type: :system do
 
     expect(page).to have_content("Step 6: Module benefits", wait: 10)
     find(:test_id, "module-field").select "Core – Hospital module"
-    find(:test_id, "coverage-category-field").select coverage_category.name
     find(:test_id, "benefit-field").select benefit.name
     find(:test_id, "coverage-description-field").set("Covers inpatient stays and surgery.")
     find(:test_id, "interaction-type-field").select "Replace"

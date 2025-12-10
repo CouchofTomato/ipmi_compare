@@ -6,7 +6,8 @@ RSpec.describe CoverageCategory, type: :model do
   #== Associations ===========================================================
 
   it { should have_and_belong_to_many(:plan_modules) }
-  it { should have_many(:module_benefits) }
+  it { should have_many(:benefits).dependent(:restrict_with_exception) }
+  it { should have_many(:module_benefits).through(:benefits) }
 
   #== Validations =============================================================
 
