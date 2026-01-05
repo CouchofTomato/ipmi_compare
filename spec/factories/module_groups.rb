@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :module_group do
-    plan
+    plan_version
     name { "MyString" }
     description { "MyText" }
   end

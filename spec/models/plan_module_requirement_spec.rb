@@ -1,29 +1,29 @@
 require 'rails_helper'
 
 RSpec.describe PlanModuleRequirement, type: :model do
-  subject(:requirement) { create(:plan_module_requirement, plan: plan, dependent_module: dependent_module, required_module: required_module) }
-  let(:plan) { create(:plan) }
-  let(:dependent_module) { create(:plan_module, plan: plan) }
-  let(:required_module) { create(:plan_module, plan: plan) }
+  subject(:requirement) { create(:plan_module_requirement, plan_version: plan_version, dependent_module: dependent_module, required_module: required_module) }
+  let(:plan_version) { create(:plan_version) }
+  let(:dependent_module) { create(:plan_module, plan_version:, module_group: create(:module_group, plan_version:)) }
+  let(:required_module) { create(:plan_module, plan_version:, module_group: create(:module_group, plan_version:)) }
 
   #== Associations ===========================================================
   describe 'associations' do
-    it { is_expected.to belong_to(:plan) }
+    it { is_expected.to belong_to(:plan_version) }
     it { is_expected.to belong_to(:dependent_module).class_name('PlanModule') }
     it { is_expected.to belong_to(:required_module).class_name('PlanModule') }
   end
 
     #== Validations ===========================================================
-    it { is_expected.to validate_presence_of(:plan_id) }
+    it { is_expected.to validate_presence_of(:plan_version_id) }
     it { is_expected.to validate_presence_of(:dependent_module_id) }
     it { is_expected.to validate_presence_of(:required_module_id) }
   describe 'modules_belong_to_plan' do
     context 'when the dependent module does not have the same plan as the plan module requirement' do
-      subject(:requirement) { build(:plan_module_requirement, plan: plan, dependent_module: dependent_module, required_module: required_module) }
-      let(:plan) { create(:plan) }
-      let(:dependent_module) { create(:plan_module, plan: dependent_module_plan) }
-      let(:dependent_module_plan) { create(:plan) }
-      let(:required_module) { create(:plan_module, plan: plan) }
+      subject(:requirement) { build(:plan_module_requirement, plan_version: plan_version, dependent_module: dependent_module, required_module: required_module) }
+      let(:plan_version) { create(:plan_version) }
+      let(:dependent_module_plan_version) { create(:plan_version) }
+      let(:dependent_module) { create(:plan_module, plan_version: dependent_module_plan_version, module_group: create(:module_group, plan_version: dependent_module_plan_version)) }
+      let(:required_module) { create(:plan_module, plan_version:, module_group: create(:module_group, plan_version:)) }
 
       it 'is invalid' do
         requirement.validate
@@ -32,15 +32,15 @@ RSpec.describe PlanModuleRequirement, type: :model do
 
       it 'logs the appropriate error' do
         requirement.validate
-        expect(requirement.errors[:base]).to include("Dependent and required modules must belong to the same plan")
+        expect(requirement.errors[:base]).to include("Dependent and required modules must belong to the same plan version")
       end
     end
 
     context 'when the required module does not have the same plan as the plan module requirement' do
-      subject(:requirement) { build(:plan_module_requirement, plan: plan, dependent_module: required_module) }
-      let(:plan) { create(:plan) }
-      let(:required_module) { create(:plan_module, plan: required_module_plan) }
-      let(:required_module_plan) { create(:plan) }
+      subject(:requirement) { build(:plan_module_requirement, plan_version: plan_version, dependent_module: required_module) }
+      let(:plan_version) { create(:plan_version) }
+      let(:required_module_plan_version) { create(:plan_version) }
+      let(:required_module) { create(:plan_module, plan_version: required_module_plan_version, module_group: create(:module_group, plan_version: required_module_plan_version)) }
 
       it 'is invalid' do
         requirement.validate
@@ -49,15 +49,15 @@ RSpec.describe PlanModuleRequirement, type: :model do
 
       it 'logs the appropriate error' do
         requirement.validate
-        expect(requirement.errors[:base]).to include("Dependent and required modules must belong to the same plan")
+        expect(requirement.errors[:base]).to include("Dependent and required modules must belong to the same plan version")
       end
     end
 
     context 'when both modules belong to the same plan as the plan module requirement' do
-      subject(:requirement) { build(:plan_module_requirement, plan: plan, dependent_module: dependent_module, required_module: required_module) }
-      let(:plan) { create(:plan) }
-      let(:dependent_module) { create(:plan_module, plan: plan) }
-      let(:required_module) { create(:plan_module, plan: plan) }
+      subject(:requirement) { build(:plan_module_requirement, plan_version: plan_version, dependent_module: dependent_module, required_module: required_module) }
+      let(:plan_version) { create(:plan_version) }
+      let(:dependent_module) { create(:plan_module, plan_version:, module_group: create(:module_group, plan_version:)) }
+      let(:required_module) { create(:plan_module, plan_version:, module_group: create(:module_group, plan_version:)) }
 
       it 'is valid' do
         requirement.validate
@@ -68,9 +68,9 @@ RSpec.describe PlanModuleRequirement, type: :model do
 
   describe 'not self referencing' do
     context 'when the dependent module is the same as the required module' do
-      subject(:requirement) { build(:plan_module_requirement, plan: plan, dependent_module: same_module, required_module: same_module) }
-      let(:plan) { create(:plan) }
-      let(:same_module) { create(:plan_module, plan: plan) }
+      subject(:requirement) { build(:plan_module_requirement, plan_version: plan_version, dependent_module: same_module, required_module: same_module) }
+      let(:plan_version) { create(:plan_version) }
+      let(:same_module) { create(:plan_module, plan_version:, module_group: create(:module_group, plan_version:)) }
 
       it 'is invalid' do
         requirement.validate
@@ -84,9 +84,9 @@ RSpec.describe PlanModuleRequirement, type: :model do
     end
 
     context 'when the dependent module is different from the required module' do
-      subject(:requirement) { build(:plan_module_requirement, plan: plan, dependent_module: dependent_module, required_module: required_module) }
-      let(:dependent_module) { create(:plan_module, plan: plan) }
-      let(:required_module) { create(:plan_module, plan: plan) }
+      subject(:requirement) { build(:plan_module_requirement, plan_version: plan_version, dependent_module: dependent_module, required_module: required_module) }
+      let(:dependent_module) { create(:plan_module, plan_version:, module_group: create(:module_group, plan_version:)) }
+      let(:required_module) { create(:plan_module, plan_version:, module_group: create(:module_group, plan_version:)) }
 
       it 'is valid' do
         requirement.validate
@@ -99,14 +99,14 @@ RSpec.describe PlanModuleRequirement, type: :model do
     context 'when the required module requires the dependent module and the dependent module requires the required module' do
       before do
         create(:plan_module_requirement,
-              plan: plan,
+              plan_version: plan_version,
               dependent_module: dependent_module,
               required_module: required_module)
       end
 
-      subject(:requirement) { build(:plan_module_requirement, plan: plan, dependent_module: required_module, required_module: dependent_module) }
-      let(:dependent_module) { create(:plan_module, plan: plan) }
-      let(:required_module) { create(:plan_module, plan: plan) }
+      subject(:requirement) { build(:plan_module_requirement, plan_version: plan_version, dependent_module: required_module, required_module: dependent_module) }
+      let(:dependent_module) { create(:plan_module, plan_version:, module_group: create(:module_group, plan_version:)) }
+      let(:required_module) { create(:plan_module, plan_version:, module_group: create(:module_group, plan_version:)) }
 
       it 'is invalid' do
         requirement.validate

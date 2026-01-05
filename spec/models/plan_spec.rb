@@ -5,25 +5,21 @@ RSpec.describe Plan, type: :model do
 
   #== Associations ===========================================================
   it { expect(plan).to belong_to :insurer }
-  it { expect(plan).to have_many(:plan_geographic_cover_areas).dependent(:destroy) }
-  it { expect(plan).to have_many(:geographic_cover_areas).through(:plan_geographic_cover_areas) }
-  it { expect(plan).to have_many(:plan_residency_eligibilities).dependent(:destroy) }
-  it { expect(plan).to have_many(:cost_shares).dependent(:destroy) }
-  it { expect(plan).to have_many(:deductibles).class_name("CostShare") }
-  it { expect(plan).to have_many(:coinsurances).class_name("CostShare") }
-  it { expect(plan).to have_many(:excesses).class_name("CostShare") }
-  it { expect(plan).to have_many(:plan_modules).dependent(:destroy) }
-  it { expect(plan).to have_many(:module_groups).dependent(:destroy) }
+  it { expect(plan).to have_many(:plan_versions).dependent(:destroy) }
+  it { expect(plan).to have_one(:current_plan_version).dependent(:destroy) }
 
   #== Validations ===========================================================
   it { expect(plan).to validate_presence_of :name }
-  it { expect(plan).to validate_presence_of :min_age }
-  it { expect(plan).to validate_numericality_of(:min_age).is_greater_than_or_equal_to(0).only_integer }
-  it { expect(plan).to validate_numericality_of(:max_age).is_greater_than_or_equal_to(0).only_integer.allow_nil }
-  it { expect(plan).to validate_presence_of :version_year }
-  it { expect(plan).to validate_presence_of :policy_type }
-  it { expect(plan).to validate_presence_of :next_review_due  }
 
-  #== Enums ===================================================================
-  it { should define_enum_for(:policy_type).with_values(individual: 0, company: 1, corporate: 2) }
+  describe "delegation to current plan version" do
+    it "returns values from the current plan version" do
+      version = plan.current_plan_version
+
+      expect(plan.version_year).to eq(version.version_year)
+      expect(plan.policy_type).to eq(version.policy_type)
+      expect(plan.min_age).to eq(version.min_age)
+      expect(plan.max_age).to eq(version.max_age)
+      expect(plan.next_review_due).to eq(version.next_review_due)
+    end
+  end
 end

@@ -4,7 +4,7 @@ RSpec.describe PlanResidencyEligibility, type: :model do
   subject (:plan_residency_eligibility) { create(:plan_residency_eligibility) }
 
   #== Associations ===========================================================
-  it { expect(plan_residency_eligibility).to belong_to(:plan) }
+  it { expect(plan_residency_eligibility).to belong_to(:plan_version) }
 
   #== Validations ===========================================================
   it { expect(plan_residency_eligibility).to validate_presence_of(:country_code) }

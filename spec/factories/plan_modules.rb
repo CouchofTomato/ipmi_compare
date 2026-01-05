@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :plan_module do
-    plan
-    module_group
+    plan_version { association :plan_version }
+    module_group { association :module_group, plan_version: plan_version }
     name { "MyString" }
     is_core { false }
 
@@ -26,7 +26,7 @@ FactoryBot.define do
 
     trait :with_dependencies do
       after(:create) do |plan_module|
-        create(:plan_module, plan: plan_module.plan, module_group: plan_module.module_group)
+        create(:plan_module, plan_version: plan_module.plan_version, module_group: plan_module.module_group)
       end
     end
 

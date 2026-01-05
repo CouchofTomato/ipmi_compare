@@ -8,14 +8,16 @@ module WizardProgresses
       end
 
       def plans
-        Plan.includes(:plan_modules).order(:name)
+        Plan.includes(:insurer, current_plan_version: { module_groups: :plan_modules })
+          .joins(:current_plan_version)
+          .order(:name)
       end
 
       def search(query)
         return Plan.none if query.blank?
         term = "%#{query.strip}%"
-        Plan.includes(module_groups: :plan_modules)
-          .joins(:insurer)
+        Plan.includes(:insurer, current_plan_version: { module_groups: :plan_modules })
+          .joins(:insurer, :current_plan_version)
           .where("plans.name ILIKE :term OR insurers.name ILIKE :term", term:)
           .distinct
           .order("plans.name ASC")
@@ -26,7 +28,7 @@ module WizardProgresses
         return [] if selections.empty?
 
         plan_ids = selections.map { |s| s["plan_id"] }.compact
-        plans_by_id = Plan.includes(module_groups: :plan_modules).where(id: plan_ids).index_by(&:id)
+        plans_by_id = Plan.includes(current_plan_version: { module_groups: :plan_modules }).where(id: plan_ids).index_by(&:id)
 
         selections.filter_map do |selection|
           plan_id = selection["plan_id"].to_i

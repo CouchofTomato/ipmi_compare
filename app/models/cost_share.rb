@@ -2,6 +2,7 @@ class CostShare < ApplicationRecord
   # Virtual attributes used only for the wizard form selections
   attr_accessor :applies_to, :plan_module_id, :module_benefit_id, :benefit_limit_group_id
 
+  # Scope can be a PlanVersion, PlanModule, ModuleBenefit, or BenefitLimitGroup
   belongs_to :scope, polymorphic: true
 
   has_many :cost_share_links, dependent: :destroy

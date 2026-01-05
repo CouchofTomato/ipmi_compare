@@ -91,7 +91,8 @@ RSpec.describe "WizardProgresses", type: :request do
 
     it "deletes a module group that has no modules" do
       plan = wizard_progress.subject
-      module_group = create(:module_group, plan:)
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
       wizard_progress.update!(current_step: "module_groups", step_order: 3, status: :in_progress)
       progress = wizard_progress
 
@@ -105,8 +106,9 @@ RSpec.describe "WizardProgresses", type: :request do
 
     it "deletes a module group and cascades plan modules" do
       plan = wizard_progress.subject
-      module_group = create(:module_group, plan:)
-      plan_module = create(:plan_module, plan:, module_group:)
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      plan_module = create(:plan_module, plan_version:, module_group:)
       wizard_progress.update!(current_step: "module_groups", step_order: 3, status: :in_progress)
       progress = wizard_progress
 
@@ -121,8 +123,9 @@ RSpec.describe "WizardProgresses", type: :request do
 
     it "deletes a plan module and cascades related objects" do
       plan = wizard_progress.subject
-      module_group = create(:module_group, plan:)
-      plan_module = create(:plan_module, plan:, module_group:)
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      plan_module = create(:plan_module, plan_version:, module_group:)
       module_benefit = create(:module_benefit, plan_module:)
       wizard_progress.update!(current_step: "plan_modules", step_order: 4, status: :in_progress)
       progress = wizard_progress
@@ -138,10 +141,11 @@ RSpec.describe "WizardProgresses", type: :request do
 
     it "deletes a module benefit and cascades linked cost shares" do
       plan = wizard_progress.subject
-      module_group = create(:module_group, plan:)
-      plan_module = create(:plan_module, plan:, module_group:)
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      plan_module = create(:plan_module, plan_version:, module_group:)
       module_benefit = create(:module_benefit, :with_deductible, plan_module:)
-      wizard_progress.update!(current_step: "module_benefits", step_order: 5, status: :in_progress)
+      wizard_progress.update!(current_step: "module_benefits", step_order: 6, status: :in_progress)
       progress = wizard_progress
 
       expect do
@@ -155,11 +159,12 @@ RSpec.describe "WizardProgresses", type: :request do
 
     it "deletes a benefit limit group and cascades its module benefits" do
       plan = wizard_progress.subject
-      module_group = create(:module_group, plan:)
-      plan_module = create(:plan_module, plan:, module_group:)
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      plan_module = create(:plan_module, plan_version:, module_group:)
       benefit_limit_group = create(:benefit_limit_group, plan_module:)
       module_benefit = create(:module_benefit, :with_deductible, plan_module:, benefit_limit_group:)
-      wizard_progress.update!(current_step: "benefit_limit_groups", step_order: 6, status: :in_progress)
+      wizard_progress.update!(current_step: "benefit_limit_groups", step_order: 7, status: :in_progress)
       progress = wizard_progress
 
       expect do
@@ -174,17 +179,18 @@ RSpec.describe "WizardProgresses", type: :request do
 
     it "deletes a cost share regardless of scope" do
       plan = wizard_progress.subject
-      module_group = create(:module_group, plan:)
-      plan_module = create(:plan_module, plan:, module_group:)
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      plan_module = create(:plan_module, plan_version:, module_group:)
       module_benefit = create(:module_benefit, plan_module:)
       benefit_limit_group = create(:benefit_limit_group, plan_module:)
 
-      plan_cost_share = create(:cost_share, scope: plan, cost_share_type: :deductible, amount: 100, per: :per_year, currency: "USD")
+      plan_cost_share = create(:cost_share, scope: plan_version, cost_share_type: :deductible, amount: 100, per: :per_year, currency: "USD")
       module_cost_share = create(:cost_share, scope: plan_module, cost_share_type: :coinsurance, amount: 10, unit: :percent, per: :per_visit)
       module_benefit_cost_share = create(:cost_share, scope: module_benefit, cost_share_type: :excess, amount: 50, per: :per_condition, currency: "USD")
       benefit_limit_cost_share = create(:cost_share, scope: benefit_limit_group, cost_share_type: :excess, amount: 75, per: :per_condition, currency: "USD")
 
-      wizard_progress.update!(current_step: "cost_shares", step_order: 7, status: :in_progress)
+      wizard_progress.update!(current_step: "cost_shares", step_order: 8, status: :in_progress)
       progress = wizard_progress
 
       expect do
@@ -212,15 +218,16 @@ RSpec.describe "WizardProgresses", type: :request do
 
     it "deletes a cost share link" do
       plan = wizard_progress.subject
-      module_group = create(:module_group, plan:)
-      plan_module = create(:plan_module, plan:, module_group:)
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      plan_module = create(:plan_module, plan_version:, module_group:)
       module_benefit = create(:module_benefit, plan_module:)
 
-      primary = create(:cost_share, scope: plan, cost_share_type: :deductible, amount: 100, per: :per_year, currency: "USD")
+      primary = create(:cost_share, scope: plan_version, cost_share_type: :deductible, amount: 100, per: :per_year, currency: "USD")
       secondary = create(:cost_share, scope: module_benefit, cost_share_type: :coinsurance, amount: 20, unit: :percent, per: :per_visit)
       cost_share_link = create(:cost_share_link, cost_share: primary, linked_cost_share: secondary, relationship_type: :shared_pool)
 
-      wizard_progress.update!(current_step: "cost_share_links", step_order: 8, status: :in_progress)
+      wizard_progress.update!(current_step: "cost_share_links", step_order: 9, status: :in_progress)
       progress = wizard_progress
 
       expect do

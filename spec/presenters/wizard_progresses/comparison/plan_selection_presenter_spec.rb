@@ -2,9 +2,10 @@ require "rails_helper"
 
 RSpec.describe WizardProgresses::Comparison::PlanSelectionPresenter do
   let(:plan) { create(:plan) }
-  let(:group) { create(:module_group, plan:) }
-  let(:module_a) { create(:plan_module, plan:, module_group: group, name: "A") }
-  let(:module_b) { create(:plan_module, plan:, module_group: group, name: "B") }
+  let(:plan_version) { plan.current_plan_version }
+  let(:group) { create(:module_group, plan_version:) }
+  let(:module_a) { create(:plan_module, plan_version:, module_group: group, name: "A") }
+  let(:module_b) { create(:plan_module, plan_version:, module_group: group, name: "B") }
 
   let(:progress) do
     create(
