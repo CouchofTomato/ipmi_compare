@@ -63,7 +63,7 @@
           <div>
             <%= form.label :policy_type %>
             <div class="mt-2">
-              <%= form.select :policy_type, Plan.policy_types.keys.map { |type| [type.humanize, type] }, { prompt: "Select a policy type" }, class: field_classes.call(:policy_type), data: { test_id: "policy-type-field" } %>
+              <%= form.select :policy_type, PlanVersion.policy_types.keys.map { |type| [type.humanize, type] }, { prompt: "Select a policy type" }, class: field_classes.call(:policy_type), data: { test_id: "policy-type-field" } %>
             </div>
             <% if plan.errors[:policy_type].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:policy_type].to_sentence %></p>

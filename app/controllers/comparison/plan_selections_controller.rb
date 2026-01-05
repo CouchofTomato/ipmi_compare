@@ -13,7 +13,7 @@ class Comparison::PlanSelectionsController < ApplicationController
   end
 
   def add
-    plan = Plan.includes(module_groups: :plan_modules).find_by(id: params[:plan_id])
+    plan = Plan.includes(current_plan_version: { module_groups: :plan_modules }).find_by(id: params[:plan_id])
 
     unless plan
       return redirect_back fallback_location: wizard_progress_path(@wizard_progress),

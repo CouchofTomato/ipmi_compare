@@ -4,7 +4,7 @@ RSpec.describe PlanModule, type: :model do
   subject(:plan_module) { create(:plan_module) }
 
   #== Associations ===========================================================
-  it { (expect(plan_module)).to belong_to(:plan) }
+  it { (expect(plan_module)).to belong_to(:plan_version) }
   it { (expect(plan_module)).to belong_to(:module_group) }
   it { (expect(plan_module)).to have_many(:module_benefits).dependent(:destroy) }
   it { (expect(plan_module)).to have_many(:benefits).through(:module_benefits) }

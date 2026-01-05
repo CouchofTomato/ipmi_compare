@@ -2,7 +2,7 @@ class PlansController < ApplicationController
   before_action :set_plan, only: %i[show]
 
   def index
-    @plans = Plan.includes(:insurer).order(:name)
+    @plans = Plan.includes(:insurer, :current_plan_version).order(:name)
   end
 
   def show

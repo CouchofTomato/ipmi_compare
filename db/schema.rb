@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_05_000010) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_16_220000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -143,30 +143,30 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_05_000010) do
     t.datetime "created_at", null: false
     t.text "description"
     t.string "name", null: false
-    t.bigint "plan_id", null: false
+    t.bigint "plan_version_id", null: false
     t.integer "position", default: 0, null: false
     t.datetime "updated_at", null: false
-    t.index ["plan_id"], name: "index_module_groups_on_plan_id"
+    t.index ["plan_version_id"], name: "index_module_groups_on_plan_version_id"
   end
 
   create_table "plan_geographic_cover_areas", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "geographic_cover_area_id", null: false
-    t.bigint "plan_id", null: false
+    t.bigint "plan_version_id", null: false
     t.datetime "updated_at", null: false
     t.index ["geographic_cover_area_id"], name: "index_plan_geographic_cover_areas_on_geographic_cover_area_id"
-    t.index ["plan_id"], name: "index_plan_geographic_cover_areas_on_plan_id"
+    t.index ["plan_version_id"], name: "index_plan_geographic_cover_areas_on_plan_version_id"
   end
 
   create_table "plan_module_requirements", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "dependent_module_id", null: false
-    t.bigint "plan_id", null: false
+    t.bigint "plan_version_id", null: false
     t.bigint "required_module_id", null: false
     t.datetime "updated_at", null: false
     t.index ["dependent_module_id"], name: "index_plan_module_requirements_on_dependent_module_id"
-    t.index ["plan_id", "dependent_module_id", "required_module_id"], name: "idx_pmr_plan_module_requires_unique", unique: true
-    t.index ["plan_id"], name: "index_plan_module_requirements_on_plan_id"
+    t.index ["plan_version_id", "dependent_module_id", "required_module_id"], name: "idx_pmr_plan_version_module_requires_unique", unique: true
+    t.index ["plan_version_id"], name: "index_plan_module_requirements_on_plan_version_id"
     t.index ["required_module_id"], name: "index_plan_module_requirements_on_required_module_id"
   end
 
@@ -180,35 +180,44 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_05_000010) do
     t.text "overall_limit_notes"
     t.string "overall_limit_unit"
     t.decimal "overall_limit_usd", precision: 12, scale: 2
-    t.bigint "plan_id", null: false
+    t.bigint "plan_version_id", null: false
     t.datetime "updated_at", null: false
     t.index ["module_group_id"], name: "index_plan_modules_on_module_group_id"
-    t.index ["plan_id"], name: "index_plan_modules_on_plan_id"
+    t.index ["plan_version_id"], name: "index_plan_modules_on_plan_version_id"
   end
 
   create_table "plan_residency_eligibilities", force: :cascade do |t|
     t.string "country_code", null: false
     t.datetime "created_at", null: false
     t.text "notes"
-    t.bigint "plan_id", null: false
+    t.bigint "plan_version_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["plan_id"], name: "index_plan_residency_eligibilities_on_plan_id"
+    t.index ["plan_version_id"], name: "index_plan_residency_eligibilities_on_plan_version_id"
   end
 
-  create_table "plans", force: :cascade do |t|
+  create_table "plan_versions", force: :cascade do |t|
     t.boolean "children_only_allowed", default: false, null: false
     t.datetime "created_at", null: false
-    t.bigint "insurer_id", null: false
+    t.boolean "current", default: false, null: false
     t.date "last_reviewed_at"
     t.integer "max_age"
-    t.integer "min_age", default: 0, null: false
-    t.string "name", null: false
+    t.integer "min_age"
     t.date "next_review_due", null: false
+    t.bigint "plan_id", null: false
     t.integer "policy_type", null: false
     t.boolean "published", default: false, null: false
     t.text "review_notes"
     t.datetime "updated_at", null: false
     t.integer "version_year", null: false
+    t.index ["plan_id"], name: "index_plan_versions_on_plan_id"
+    t.index ["plan_id"], name: "index_plan_versions_on_plan_id_current", unique: true, where: "current"
+  end
+
+  create_table "plans", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "insurer_id", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
     t.index ["insurer_id"], name: "index_plans_on_insurer_id"
   end
 
@@ -274,15 +283,16 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_05_000010) do
   add_foreign_key "module_benefits", "benefit_limit_groups"
   add_foreign_key "module_benefits", "benefits"
   add_foreign_key "module_benefits", "plan_modules"
-  add_foreign_key "module_groups", "plans"
+  add_foreign_key "module_groups", "plan_versions"
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"
-  add_foreign_key "plan_geographic_cover_areas", "plans"
+  add_foreign_key "plan_geographic_cover_areas", "plan_versions"
   add_foreign_key "plan_module_requirements", "plan_modules", column: "dependent_module_id"
   add_foreign_key "plan_module_requirements", "plan_modules", column: "required_module_id"
-  add_foreign_key "plan_module_requirements", "plans"
+  add_foreign_key "plan_module_requirements", "plan_versions"
   add_foreign_key "plan_modules", "module_groups"
-  add_foreign_key "plan_modules", "plans"
-  add_foreign_key "plan_residency_eligibilities", "plans"
+  add_foreign_key "plan_modules", "plan_versions"
+  add_foreign_key "plan_residency_eligibilities", "plan_versions"
+  add_foreign_key "plan_versions", "plans"
   add_foreign_key "plans", "insurers"
   add_foreign_key "wizard_progresses", "users"
   add_foreign_key "wizard_progresses", "users", column: "last_actor_id"

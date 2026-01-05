@@ -55,7 +55,11 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content("Hospital module")
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 6: Module benefits", wait: 10)
+    expect(page).to have_content("Step 6: Module requirements", wait: 10)
+    expect(page).to have_content("No other modules to require.")
+    find(:test_id, "next-step-button").click
+
+    expect(page).to have_content("Step 7: Module benefits", wait: 10)
     find(:test_id, "module-field").select "Core – Hospital module"
     find(:test_id, "benefit-field").select benefit.name
     find(:test_id, "coverage-description-field").set("Covers inpatient stays and surgery.")
@@ -64,7 +68,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content(benefit.name)
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 7: Benefit limit groups", wait: 10)
+    expect(page).to have_content("Step 8: Benefit limit groups", wait: 10)
     find(:test_id, "module-field").select "Core – Hospital module"
     find(:test_id, "limit-group-name-field").set("Annual inpatient limit")
     find(:test_id, "limit-usd-field").set(10_000)
@@ -74,7 +78,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content("Annual inpatient limit")
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 8: Cost shares", wait: 10)
+    expect(page).to have_content("Step 9: Cost shares", wait: 10)
     find(:test_id, "applies-to-field").select "Plan"
     find(:test_id, "cost-share-type-field").select "Deductible"
     find(:test_id, "cost-share-amount-field").set(250)
@@ -104,7 +108,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content("Excess")
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 9: Link cost shares", wait: 10)
+    expect(page).to have_content("Step 10: Link cost shares", wait: 10)
     find(:test_id, "primary-cost-share-field").select "Plan — Deductible — USD250.00 (Per year)"
     find(:test_id, "linked-cost-share-field").select "Core · Hospital module — Coinsurance — 20.0% (Per visit)"
     find(:test_id, "relationship-type-field").select "Shared pool"
@@ -114,7 +118,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content("Core · Hospital module — Coinsurance — 20.0% (Per visit)")
     find(:test_id, "next-step-button").click
 
-    expect(page).to have_content("Step 10: Review & publish", wait: 10)
+    expect(page).to have_content("Step 11: Review & publish", wait: 10)
     expect(page).to have_content("Global Gold")
     expect(page).to have_content("Core")
     expect(page).to have_content("Hospital module")

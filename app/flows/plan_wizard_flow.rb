@@ -12,6 +12,7 @@ class PlanWizardFlow
       geographic_cover_areas
       module_groups
       plan_modules
+      plan_module_requirements
       module_benefits
       benefit_limit_groups
       cost_shares
@@ -27,6 +28,7 @@ class PlanWizardFlow
     when "geographic_cover_areas" then save_geographic_cover_areas(params[:areas])
     when "module_groups" then save_module_groups(params[:module_groups], params[:step_action])
     when "plan_modules"       then save_plan_modules(params[:modules], params[:step_action])
+    when "plan_module_requirements" then save_plan_module_requirements(params[:requirements], params[:step_action])
     when "module_benefits"      then save_module_benefits(params[:benefits], params[:step_action])
     when "benefit_limit_groups" then save_benefit_limit_groups(params[:benefit_limit_groups], params[:step_action])
     when "cost_shares"   then save_cost_shares(params[:cost_shares], params[:step_action])
@@ -301,6 +303,75 @@ class PlanWizardFlow
     end
   end
 
+  def save_plan_module_requirements(requirements_params, step_action = nil)
+    plan = progress.subject
+    return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module requirements" ]) unless plan.present?
+
+    plan_version = plan.current_plan_version
+    return WizardStepResult.new(success: false, errors: [ "Plan version is missing" ]) unless plan_version.present?
+
+    params_for_requirements =
+      case requirements_params
+      when ActionController::Parameters then requirements_params
+      when Hash then ActionController::Parameters.new(requirements_params)
+      else
+        ActionController::Parameters.new
+      end
+
+    raw_requirements =
+      params_for_requirements[:requirements] ||
+      params_for_requirements["requirements"] ||
+      params_for_requirements
+
+    raw_requirements = raw_requirements.to_unsafe_h if raw_requirements.respond_to?(:to_unsafe_h)
+    raw_requirements ||= {}
+
+    plan_modules = plan.plan_modules.index_by(&:id)
+    allowed_ids = plan_modules.keys
+
+    normalized = {}
+    raw_requirements.each do |dependent_id, required_ids|
+      dep_id = Integer(dependent_id) rescue nil
+      next unless dep_id && allowed_ids.include?(dep_id)
+
+      req_ids = Array(required_ids).map { |value| Integer(value) rescue nil }.compact.uniq
+      normalized[dep_id] = req_ids & allowed_ids
+    end
+
+    errors = []
+    failing_requirement = nil
+
+    ActiveRecord::Base.transaction do
+      PlanModuleRequirement.where(plan_version: plan_version).delete_all
+
+      normalized.each do |dep_id, req_ids|
+        req_ids.each do |req_id|
+          next if dep_id == req_id
+
+          requirement = PlanModuleRequirement.new(
+            plan_version: plan_version,
+            dependent_module_id: dep_id,
+            required_module_id: req_id
+          )
+
+          unless requirement.save
+            errors.concat(requirement.errors.full_messages)
+            failing_requirement ||= requirement
+            raise ActiveRecord::Rollback
+          end
+        end
+      end
+    end
+
+    if errors.any?
+      WizardStepResult.new(success: false, resource: failing_requirement, errors: errors.presence || [ "Could not save module requirements" ])
+    else
+      WizardStepResult.new(success: true, resource: plan)
+    end
+  rescue ActiveRecord::RecordInvalid => e
+    WizardStepResult.new(success: false, resource: e.record, errors: e.record.errors.full_messages.presence || [ "Could not save module requirements" ])
+  end
+
   def save_module_benefits(benefit_params, step_action = nil)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module benefits" ]) unless plan.present?
@@ -479,7 +550,7 @@ class PlanWizardFlow
       end
 
       cost_share.destroy
-      plan.cost_shares.reset
+      plan.current_plan_version&.cost_shares&.reset
       plan.plan_modules.each { |pm| pm.cost_shares.reset }
 
       return WizardStepResult.new(success: true, resource: plan)
@@ -490,6 +561,12 @@ class PlanWizardFlow
 
     return WizardStepResult.new(success: true, resource: plan) unless creating && user_filled_any
 
+    plan_version = plan.current_plan_version
+    unless plan_version
+      plan.errors.add(:base, "Plan version is missing")
+      return WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages)
+    end
+
     applies_to = permitted[:applies_to].presence || "plan"
     plan_module_id = permitted[:plan_module_id].presence
     module_benefit_id = permitted[:module_benefit_id].presence
@@ -498,7 +575,7 @@ class PlanWizardFlow
     scope =
       case applies_to
       when "plan"
-        plan
+        plan_version
       when "plan_module"
         plan.plan_modules.find_by(id: plan_module_id)
       when "module_benefit"
