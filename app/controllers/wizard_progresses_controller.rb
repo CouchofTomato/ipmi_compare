@@ -67,6 +67,13 @@ class WizardProgressesController < ApplicationController
     render_current_step
   end
 
+  def destroy
+    progress = current_user.wizard_progresses.find(params[:id])
+    progress.destroy
+
+    redirect_to wizard_progresses_path, notice: "Wizard session deleted."
+  end
+
   private
 
   def presenter_for_current_step
