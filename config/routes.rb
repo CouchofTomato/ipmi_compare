@@ -24,7 +24,7 @@ Rails.application.routes.draw do
   resources :coverage_categories
   resources :insurers
   resources :geographic_cover_areas
-  resources :wizard_progresses, only: %i[index create show update]
+  resources :wizard_progresses, only: %i[index create show update destroy]
   namespace :comparison do
     resources :plan_selections, only: [], param: :wizard_progress_id do
       get :search, on: :member
