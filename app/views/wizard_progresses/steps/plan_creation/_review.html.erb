@@ -119,6 +119,9 @@
                 <% if mb.benefit_limit_group.present? %>
                   <p class="text-[11px] text-indigo-700 dark:text-indigo-200">Shared limit: <%= mb.benefit_limit_group.name %></p>
                 <% end %>
+                <% if mb.waiting_period_months.present? %>
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400">Waiting period: <%= pluralize(mb.waiting_period_months, "month") %></p>
+                <% end %>
               </div>
             <% end %>
           </div>
