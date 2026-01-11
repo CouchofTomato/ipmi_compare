@@ -2,7 +2,8 @@
 <% module_benefit = local_assigns[:resource].is_a?(ModuleBenefit) ? local_assigns[:resource] : ModuleBenefit.new %>
 <% available_modules = plan&.plan_modules&.joins(:module_group)&.includes(:module_group)&.order("module_groups.position ASC", "plan_modules.created_at ASC") || [] %>
 <% available_benefits = Benefit.includes(:coverage_category).order(:name) %>
-<% existing_benefits = ModuleBenefit.where(plan_module_id: Array(plan&.plan_module_ids)).includes(benefit: :coverage_category, plan_module: :module_group, benefit_limit_group: {}).order(:weighting, :created_at) %>
+<% existing_benefits = ModuleBenefit.where(plan_module_id: Array(plan&.plan_module_ids)).includes(benefit: :coverage_category, plan_module: :module_group, benefit_limit_group: {}).order(:plan_module_id, :weighting, :created_at) %>
+<% grouped_benefits = existing_benefits.group_by(&:plan_module_id) %>
 <% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
 <% field_classes = lambda do |attributes, *extra_classes|
      attrs = Array(attributes)
@@ -197,56 +198,74 @@
           No module benefits yet. Add your first benefit to continue.
         </div>
       <% else %>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <% existing_benefits.each do |mb| %>
+        <div class="space-y-6">
+          <% available_modules.each do |mod| %>
+            <% module_benefits = grouped_benefits[mod.id] || [] %>
             <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-gray-900">
-              <div class="flex items-start justify-between gap-3">
-                <div class="space-y-1">
-                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    <%= [mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ") %>
-                  </p>
-                  <p class="text-base font-semibold text-gray-900 dark:text-gray-100"><%= mb.benefit.name %></p>
-                  <p class="text-sm text-gray-600 dark:text-gray-300"><%= mb.benefit.coverage_category.name %></p>
-                  <% if mb.benefit_limit_group.present? %>
-                    <p class="text-xs font-semibold text-indigo-700 dark:text-indigo-200">Shared limit: <%= mb.benefit_limit_group.name %></p>
-                  <% end %>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    Interaction: <span class="font-semibold text-gray-900 dark:text-gray-100"><%= mb.interaction_type.humanize %></span>,
-                    Weighting: <span class="font-semibold text-gray-900 dark:text-gray-100"><%= mb.weighting %></span>
-                  </p>
-                </div>
+              <div class="flex items-center justify-between gap-3">
                 <div>
-                  <%= button_to "Delete",
-                                wizard_progress_path(progress),
-                                method: :patch,
-                                params: { step_action: "delete", benefits: { id: mb.id } },
-                                form: { data: { turbo_frame: "wizard_step" } },
-                                class: "text-sm font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300",
-                                data: { turbo_confirm: "Delete this module benefit and any linked limits or cost shares?", test_id: "delete-module-benefit-#{mb.id}-button" } %>
+                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Module</p>
+                  <p class="text-base font-semibold text-gray-900 dark:text-gray-100">
+                    <%= [mod.module_group&.name, mod.name].compact.join(" · ") %>
+                  </p>
                 </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400"><%= pluralize(module_benefits.size, "benefit") %></p>
               </div>
 
-              <% if mb.coverage_description.present? %>
-                <p class="mt-3 text-sm text-gray-700 dark:text-gray-200"><%= mb.coverage_description %></p>
-              <% end %>
+              <% if module_benefits.empty? %>
+                <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">No benefits added yet for this module.</p>
+              <% else %>
+                <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                  <% module_benefits.each do |mb| %>
+                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-gray-900">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="space-y-1">
+                          <p class="text-base font-semibold text-gray-900 dark:text-gray-100"><%= mb.benefit.name %></p>
+                          <p class="text-sm text-gray-600 dark:text-gray-300"><%= mb.benefit.coverage_category.name %></p>
+                          <% if mb.benefit_limit_group.present? %>
+                            <p class="text-xs font-semibold text-indigo-700 dark:text-indigo-200">Shared limit: <%= mb.benefit_limit_group.name %></p>
+                          <% end %>
+                          <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Interaction: <span class="font-semibold text-gray-900 dark:text-gray-100"><%= mb.interaction_type.humanize %></span>,
+                            Weighting: <span class="font-semibold text-gray-900 dark:text-gray-100"><%= mb.weighting %></span>
+                          </p>
+                        </div>
+                        <div>
+                          <%= button_to "Delete",
+                                        wizard_progress_path(progress),
+                                        method: :patch,
+                                        params: { step_action: "delete", benefits: { id: mb.id } },
+                                        form: { data: { turbo_frame: "wizard_step" } },
+                                        class: "text-sm font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300",
+                                        data: { turbo_confirm: "Delete this module benefit and any linked limits or cost shares?", test_id: "delete-module-benefit-#{mb.id}-button" } %>
+                        </div>
+                      </div>
 
-              <% if mb.sub_limit_description.present? %>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400"><%= mb.sub_limit_description %></p>
-              <% end %>
+                      <% if mb.coverage_description.present? %>
+                        <p class="mt-3 text-sm text-gray-700 dark:text-gray-200"><%= mb.coverage_description %></p>
+                      <% end %>
 
-              <% if mb.limit_usd.present? || mb.limit_gbp.present? || mb.limit_eur.present? || mb.limit_unit.present? %>
-                <div class="mt-3 rounded-lg bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                  <% if mb.limit_usd.present? %>
-                    <p><span class="font-semibold">USD:</span> <%= number_to_currency(mb.limit_usd, unit: "$") %></p>
-                  <% end %>
-                  <% if mb.limit_gbp.present? %>
-                    <p><span class="font-semibold">GBP:</span> <%= number_to_currency(mb.limit_gbp, unit: "£") %></p>
-                  <% end %>
-                  <% if mb.limit_eur.present? %>
-                    <p><span class="font-semibold">EUR:</span> <%= number_to_currency(mb.limit_eur, unit: "€") %></p>
-                  <% end %>
-                  <% if mb.limit_unit.present? %>
-                    <p><span class="font-semibold">Unit:</span> <%= mb.limit_unit %></p>
+                      <% if mb.sub_limit_description.present? %>
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400"><%= mb.sub_limit_description %></p>
+                      <% end %>
+
+                      <% if mb.limit_usd.present? || mb.limit_gbp.present? || mb.limit_eur.present? || mb.limit_unit.present? %>
+                        <div class="mt-3 rounded-lg bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                          <% if mb.limit_usd.present? %>
+                            <p><span class="font-semibold">USD:</span> <%= number_to_currency(mb.limit_usd, unit: "$") %></p>
+                          <% end %>
+                          <% if mb.limit_gbp.present? %>
+                            <p><span class="font-semibold">GBP:</span> <%= number_to_currency(mb.limit_gbp, unit: "£") %></p>
+                          <% end %>
+                          <% if mb.limit_eur.present? %>
+                            <p><span class="font-semibold">EUR:</span> <%= number_to_currency(mb.limit_eur, unit: "€") %></p>
+                          <% end %>
+                          <% if mb.limit_unit.present? %>
+                            <p><span class="font-semibold">Unit:</span> <%= mb.limit_unit %></p>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
                   <% end %>
                 </div>
               <% end %>
