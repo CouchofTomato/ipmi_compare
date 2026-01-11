@@ -411,6 +411,7 @@ class PlanWizardFlow
                                           :limit_gbp,
                                           :limit_eur,
                                           :limit_unit,
+                                          :waiting_period_months,
                                           :sub_limit_description,
                                           :interaction_type,
                                           :weighting)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_16_220000) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_11_201928) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -131,6 +131,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_16_220000) do
     t.bigint "plan_module_id", null: false
     t.string "sub_limit_description"
     t.datetime "updated_at", null: false
+    t.integer "waiting_period_months"
     t.integer "weighting", default: 0, null: false
     t.index ["benefit_id"], name: "index_module_benefits_on_benefit_id"
     t.index ["benefit_limit_group_id"], name: "index_module_benefits_on_benefit_limit_group_id"

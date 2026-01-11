@@ -8,6 +8,7 @@ FactoryBot.define do
     limit_eur { nil }
     limit_unit { nil }
     sub_limit_description { nil }
+    waiting_period_months { nil }
     benefit_limit_group { nil }
     interaction_type { :append } # append
     weighting { 0 }
