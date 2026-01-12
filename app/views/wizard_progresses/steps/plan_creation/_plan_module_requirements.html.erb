@@ -1,6 +1,6 @@
 <% plan = progress.subject %>
-<% plan_version = plan&.current_plan_version %>
-<% plan_modules = plan&.plan_modules&.includes(:module_group)&.order("module_groups.position ASC NULLS LAST", "plan_modules.created_at ASC") || [] %>
+<% plan_version = progress.plan_version || plan&.current_plan_version %>
+<% plan_modules = plan_version&.plan_modules&.includes(:module_group)&.order("module_groups.position ASC NULLS LAST", "plan_modules.created_at ASC") || [] %>
 <% existing_requirements = PlanModuleRequirement.where(plan_version: plan_version).group_by(&:dependent_module_id) %>
 <% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
 

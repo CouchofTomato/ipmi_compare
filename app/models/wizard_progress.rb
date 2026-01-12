@@ -42,4 +42,12 @@ class WizardProgress < ApplicationRecord
   def progress
     ((current_step_index.to_f / (steps.size - 1)) * 100).round
   end
+
+  def plan_version
+    return unless subject.is_a?(Plan)
+
+    version_id = metadata&.fetch("plan_version_id", nil)
+    version = subject.plan_versions.find_by(id: version_id) if version_id.present?
+    version || subject.current_plan_version
+  end
 end

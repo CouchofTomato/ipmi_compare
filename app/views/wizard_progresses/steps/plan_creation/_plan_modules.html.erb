@@ -1,8 +1,9 @@
 <% plan = progress.subject %>
-<% plan_module = local_assigns[:resource].is_a?(PlanModule) ? local_assigns[:resource] : PlanModule.new(plan_version: plan.current_plan_version) %>
-<% available_groups = plan&.module_groups&.order(:position) || [] %>
+<% plan_version = progress.plan_version || plan&.current_plan_version %>
+<% plan_module = local_assigns[:resource].is_a?(PlanModule) ? local_assigns[:resource] : PlanModule.new(plan_version: plan_version) %>
+<% available_groups = plan_version&.module_groups&.order(:position) || [] %>
 <% available_categories = CoverageCategory.order(:position, :name) %>
-<% existing_modules = plan&.plan_modules&.includes(:module_group, :coverage_categories)&.order(:created_at) || [] %>
+<% existing_modules = plan_version&.plan_modules&.includes(:module_group, :coverage_categories)&.order(:created_at) || [] %>
 <% grouped_modules = existing_modules.group_by(&:module_group) %>
 <% ordered_groups = available_groups.to_a %>
 <% ungrouped_modules = grouped_modules.delete(nil) %>

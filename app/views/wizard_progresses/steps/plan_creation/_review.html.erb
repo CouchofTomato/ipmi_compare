@@ -1,12 +1,13 @@
 <% plan = progress.subject %>
-<% module_groups = plan.module_groups.order(:position, :created_at) %>
-<% plan_modules = plan.plan_modules.includes(:module_group).order(:created_at) %>
-<% module_benefits = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).includes(:benefit_limit_group, benefit: :coverage_category, plan_module: :module_group).order(:plan_module_id, :weighting, :created_at) %>
-<% limit_groups = BenefitLimitGroup.where(plan_module_id: plan.plan_module_ids).includes(plan_module: :module_group).order(:created_at) %>
-<% plan_cost_shares = plan.cost_shares.order(:created_at) %>
-<% module_cost_shares = plan.plan_modules.includes(:module_group, :cost_shares).order(:created_at) %>
-<% module_benefit_cost_shares = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).includes(:cost_shares, benefit: :coverage_category, plan_module: :module_group).order(:plan_module_id, :weighting, :created_at) %>
-<% benefit_limit_group_cost_shares = BenefitLimitGroup.where(plan_module_id: plan.plan_module_ids).includes(:cost_shares, plan_module: :module_group).order(:created_at) %>
+<% plan_version = progress.plan_version || plan&.current_plan_version %>
+<% module_groups = plan_version&.module_groups&.order(:position, :created_at) || [] %>
+<% plan_modules = plan_version&.plan_modules&.includes(:module_group)&.order(:created_at) || [] %>
+<% module_benefits = ModuleBenefit.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(:benefit_limit_group, benefit: :coverage_category, plan_module: :module_group).order(:plan_module_id, :weighting, :created_at) %>
+<% limit_groups = BenefitLimitGroup.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(plan_module: :module_group).order(:created_at) %>
+<% plan_cost_shares = plan_version&.cost_shares&.order(:created_at) || [] %>
+<% module_cost_shares = plan_version&.plan_modules&.includes(:module_group, :cost_shares)&.order(:created_at) || [] %>
+<% module_benefit_cost_shares = ModuleBenefit.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(:cost_shares, benefit: :coverage_category, plan_module: :module_group).order(:plan_module_id, :weighting, :created_at) %>
+<% benefit_limit_group_cost_shares = BenefitLimitGroup.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(:cost_shares, plan_module: :module_group).order(:created_at) %>
 <% cost_share_labels = {} %>
 <% display_cost_share_amount = lambda do |cs|
      if cs.unit == "percent"
@@ -63,9 +64,9 @@
             <div>
               <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Plan</p>
               <p class="text-lg font-semibold text-gray-900 dark:text-gray-100"><%= plan.name %></p>
-              <p class="text-sm text-gray-600 dark:text-gray-300"><%= plan.insurer.name %> · <%= plan.policy_type.humanize %> · <%= plan.version_year %></p>
+              <p class="text-sm text-gray-600 dark:text-gray-300"><%= plan.insurer.name %> · <%= (plan_version&.policy_type || plan.policy_type).to_s.humanize %> · <%= plan_version&.version_year || plan.version_year %></p>
             </div>
-            <% if plan.published? %>
+            <% if plan_version&.published? %>
               <span class="inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:bg-green-600/20 dark:text-green-100">Published</span>
             <% else %>
               <span class="inline-flex items-center rounded-full bg-yellow-50 px-3 py-1 text-xs font-semibold text-yellow-700 dark:bg-yellow-600/20 dark:text-yellow-100">Draft</span>
@@ -74,11 +75,11 @@
           <div class="mt-3 grid gap-3 sm:grid-cols-2">
             <div class="rounded-md bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-200">
               <p class="font-semibold text-gray-900 dark:text-gray-100">Residency</p>
-              <p class="mt-1"><%= plan.plan_residency_eligibilities.pluck(:country_code).presence&.join(", ") || "Not set" %></p>
+              <p class="mt-1"><%= plan_version&.plan_residency_eligibilities&.pluck(:country_code).presence&.join(", ") || "Not set" %></p>
             </div>
             <div class="rounded-md bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-200">
               <p class="font-semibold text-gray-900 dark:text-gray-100">Geographic coverage</p>
-              <p class="mt-1"><%= plan.geographic_cover_areas.pluck(:name).presence&.join(", ") || "Not set" %></p>
+              <p class="mt-1"><%= plan_version&.geographic_cover_areas&.pluck(:name).presence&.join(", ") || "Not set" %></p>
             </div>
           </div>
         </div>

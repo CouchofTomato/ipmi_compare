@@ -61,6 +61,12 @@
                                           form: { class: "inline" },
                                           class: "inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 shadow-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10 dark:focus:ring-indigo-500",
                                           data: { turbo: true, test_id: "edit-plan-#{plan.id}-wizard-button" } %>
+                            <%= button_to "New version",
+                                          wizard_progresses_path(plan_id: plan.id, wizard_type: "plan_creation", new_version: true),
+                                          method: :post,
+                                          form: { class: "inline" },
+                                          class: "inline-flex items-center rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-semibold text-indigo-700 shadow-xs hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-100 dark:hover:bg-indigo-500/20 dark:focus:ring-indigo-500",
+                                          data: { turbo: true, test_id: "new-plan-version-#{plan.id}-wizard-button" } %>
                           </div>
                         </td>
                       </tr>

@@ -1,13 +1,14 @@
 <% plan = progress.subject || Plan.new %>
+<% plan_version = progress.plan_version || plan.current_plan_version %>
 <% residency_resource = local_assigns[:resource] %>
 <% selected_country_codes =
      case residency_resource
      when Hash
        Array(residency_resource[:country_codes] || residency_resource["country_codes"])
      when Plan
-       residency_resource.plan_residency_eligibilities.map(&:country_code)
+       plan_version&.plan_residency_eligibilities&.map(&:country_code) || []
      else
-       plan.plan_residency_eligibilities.map(&:country_code)
+       plan_version&.plan_residency_eligibilities&.map(&:country_code) || []
      end
 %>
 <% countries_by_region = ISO3166::Country.all.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |country, memo|

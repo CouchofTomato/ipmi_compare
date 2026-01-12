@@ -34,6 +34,7 @@ RSpec.describe "WizardProgresses", type: :request do
       expect(progress).to be_present
       expect(progress.current_step).to eq(progress.steps.first)
       expect(progress).to be_in_progress
+      expect(progress.metadata["plan_version_id"]).to be_nil
       expect(response).to redirect_to(wizard_progress_path(progress))
     end
 
@@ -54,6 +55,7 @@ RSpec.describe "WizardProgresses", type: :request do
       expect(progress.current_step).to eq(progress.steps.first)
       expect(progress).to be_in_progress
       expect(progress.step_order).to eq(0)
+      expect(progress.metadata["plan_version_id"]).to be_nil
     end
 
     it "creates a separate wizard for another user editing the same plan" do
@@ -76,6 +78,21 @@ RSpec.describe "WizardProgresses", type: :request do
       expect(new_progress).not_to eq(original)
       expect(new_progress.current_step).to eq(new_progress.steps.first)
     end
+
+    it "creates a new draft plan version when requested" do
+      plan = create(:plan)
+
+      expect do
+        post wizard_progresses_path,
+             params: { plan_id: plan.id, wizard_type: "plan_creation", new_version: true }
+      end.to change { plan.plan_versions.reload.count }.by(1)
+
+      progress = WizardProgress.find_by(subject: plan, user: wizard_progress.user)
+      expect(progress.metadata["plan_version_id"]).to be_present
+      draft_version = plan.plan_versions.find(progress.metadata["plan_version_id"])
+      expect(draft_version).not_to eq(plan.current_plan_version)
+      expect(draft_version).not_to be_current
+    end
   end
 
   describe "PATCH /update" do
@@ -87,6 +104,27 @@ RSpec.describe "WizardProgresses", type: :request do
         .from("plan_residency").to("geographic_cover_areas")
 
       expect(response).to have_http_status(:success)
+    end
+
+    it "targets the plan version stored in metadata when editing" do
+      plan = wizard_progress.subject
+      draft_version = PlanVersionDuplicator.call(plan.current_plan_version)
+      current_group = create(:module_group, plan_version: plan.current_plan_version)
+      draft_group = create(:module_group, plan_version: draft_version)
+
+      wizard_progress.update!(
+        current_step: "module_groups",
+        step_order: 3,
+        status: :in_progress,
+        metadata: wizard_progress.metadata.merge("plan_version_id" => draft_version.id)
+      )
+
+      expect do
+        patch wizard_progress_path(wizard_progress, format: :turbo_stream),
+              params: { step_action: "delete", module_groups: { id: draft_group.id } }
+      end.to change { ModuleGroup.where(id: draft_group.id).count }.by(-1)
+
+      expect(ModuleGroup.where(id: current_group.id)).to exist
     end
 
     it "deletes a module group that has no modules" do

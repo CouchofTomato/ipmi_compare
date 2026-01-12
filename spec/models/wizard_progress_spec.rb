@@ -58,4 +58,21 @@ RSpec.describe WizardProgress, type: :model do
       expect(wizard_progress.progress).to be_between(0, 100)
     end
   end
+
+  describe "#plan_version" do
+    it "returns the version stored in metadata when present" do
+      plan = create(:plan)
+      draft_version = PlanVersionDuplicator.call(plan.current_plan_version)
+      progress = create(:wizard_progress, wizard_type: "plan_creation", subject: plan, metadata: { "plan_version_id" => draft_version.id })
+
+      expect(progress.plan_version).to eq(draft_version)
+    end
+
+    it "falls back to the current plan version when metadata is missing" do
+      plan = create(:plan)
+      progress = create(:wizard_progress, wizard_type: "plan_creation", subject: plan, metadata: {})
+
+      expect(progress.plan_version).to eq(plan.current_plan_version)
+    end
+  end
 end
