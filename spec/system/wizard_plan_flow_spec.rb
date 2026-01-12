@@ -51,8 +51,10 @@ RSpec.describe "Plan wizard", type: :system do
     find(:test_id, "module-name-field").set("Hospital module")
     find(:test_id, "module-group-field").select "Core"
     find(:test_id, "is-core-checkbox").check
+    find(:test_id, "coverage-category-#{coverage_category.id}-checkbox").check
     find(:test_id, "add-module-button").click
     expect(page).to have_content("Hospital module")
+    expect(page).to have_content(coverage_category.name)
     find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 6: Module requirements", wait: 10)

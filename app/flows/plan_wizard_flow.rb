@@ -283,11 +283,43 @@ class PlanWizardFlow
                                          :overall_limit_gbp,
                                          :overall_limit_eur,
                                          :overall_limit_unit,
-                                         :overall_limit_notes)
+                                         :overall_limit_notes,
+                                         coverage_category_ids: [])
     sanitized_values = permitted.to_h
     sanitized_values["is_core"] = ActiveModel::Type::Boolean.new.cast(sanitized_values["is_core"])
 
     plan_module = plan.plan_modules.build(sanitized_values)
+    raw_category_ids = Array(permitted[:coverage_category_ids])
+    category_ids = []
+    invalid_category_inputs = []
+
+    raw_category_ids.each do |value|
+      next if value.blank?
+
+      begin
+        category_ids << Integer(value)
+      rescue ArgumentError, TypeError
+        invalid_category_inputs << value
+      end
+    end
+
+    if invalid_category_inputs.any?
+      plan_module.errors.add(:coverage_categories, "contain invalid selections")
+      return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+    end
+
+    category_ids.uniq!
+    existing_category_ids = CoverageCategory.where(id: category_ids).pluck(:id)
+    missing_category_ids = category_ids - existing_category_ids
+
+    if missing_category_ids.any?
+      missing_category_ids.each do |value|
+        plan_module.errors.add(:coverage_categories, "selection #{value} could not be found")
+      end
+      return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+    end
+
+    plan_module.coverage_category_ids = existing_category_ids
 
     # Guard against selecting a module group from another plan
     if plan_module.module_group_id.present? && !plan.module_groups.exists?(id: plan_module.module_group_id)
