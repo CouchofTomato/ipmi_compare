@@ -1,9 +1,10 @@
 <% plan = progress.subject %>
+<% plan_version = progress.plan_version || plan&.current_plan_version %>
 <% cost_share_link = local_assigns[:resource].is_a?(CostShareLink) ? local_assigns[:resource] : CostShareLink.new %>
-<% plan_cost_shares = plan&.cost_shares&.order(:created_at) || [] %>
-<% module_cost_shares = plan&.plan_modules&.includes(:module_group, :cost_shares)&.order(:created_at) || [] %>
-<% module_benefit_cost_shares = ModuleBenefit.where(plan_module_id: Array(plan&.plan_module_ids)).includes(:cost_shares, benefit: :coverage_category, plan_module: :module_group).order("module_benefits.plan_module_id ASC", "module_benefits.weighting ASC", "module_benefits.created_at ASC") %>
-<% benefit_limit_group_cost_shares = BenefitLimitGroup.where(plan_module_id: Array(plan&.plan_module_ids)).includes(:cost_shares, plan_module: :module_group).order(:created_at) %>
+<% plan_cost_shares = plan_version&.cost_shares&.order(:created_at) || [] %>
+<% module_cost_shares = plan_version&.plan_modules&.includes(:module_group, :cost_shares)&.order(:created_at) || [] %>
+<% module_benefit_cost_shares = ModuleBenefit.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(:cost_shares, benefit: :coverage_category, plan_module: :module_group).order("module_benefits.plan_module_id ASC", "module_benefits.weighting ASC", "module_benefits.created_at ASC") %>
+<% benefit_limit_group_cost_shares = BenefitLimitGroup.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(:cost_shares, plan_module: :module_group).order(:created_at) %>
 <% cost_share_link.relationship_type = nil if cost_share_link.new_record? %>
 <% display_cost_share_amount = lambda do |cs|
      if cs.unit == "percent"

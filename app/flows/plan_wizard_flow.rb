@@ -46,7 +46,7 @@ class PlanWizardFlow
   def save_plan_details(plan_params)
     raise ActionController::ParameterMissing, :plan if plan_params.nil?
     plan = progress.subject || Plan.new
-    plan.assign_attributes(
+    permitted =
       plan_params.permit(
         :insurer_id,
         :name,
@@ -66,21 +66,48 @@ class PlanWizardFlow
         :overall_limit_notes,
         :overall_limit_unlimited
       )
-    )
+
+    explicit_version = explicit_plan_version_for(plan)
+    if plan.persisted? && explicit_version.present?
+      plan.assign_attributes(permitted.slice(:insurer_id, :name))
+      explicit_version.assign_attributes(permitted.except(:insurer_id, :name))
+    else
+      plan.assign_attributes(permitted)
+    end
+
+    errors = nil
 
     ActiveRecord::Base.transaction do
-      if plan.save
-        progress.update!(subject: plan)
-        WizardStepResult.new(success: true, resource: plan)
-      else
-        WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages)
+      unless plan.save
+        errors = plan.errors.full_messages
+        raise ActiveRecord::Rollback
       end
+
+      if plan.persisted? && explicit_version.present?
+        unless explicit_version.save
+          explicit_version.errors.each do |error|
+            plan.errors.add(error.attribute, error.message)
+          end
+          errors = plan.errors.full_messages
+          raise ActiveRecord::Rollback
+        end
+      end
+
+      progress.update!(subject: plan)
+    end
+
+    if errors
+      WizardStepResult.new(success: false, resource: plan, errors: errors)
+    else
+      WizardStepResult.new(success: true, resource: plan)
     end
   end
 
   def save_plan_residency(residency_params)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before setting residency eligibility" ]) unless plan.present?
+    plan_version = plan_version_for(plan)
+    return WizardStepResult.new(success: false, errors: [ "Plan version is missing" ]) unless plan_version.present?
 
     params_for_residency = residency_params.is_a?(ActionController::Parameters) ? residency_params : ActionController::Parameters.new
     permitted = params_for_residency.permit(country_codes: [])
@@ -100,13 +127,13 @@ class PlanWizardFlow
     end
 
     ActiveRecord::Base.transaction do
-      plan.plan_residency_eligibilities.where.not(country_code: country_codes).destroy_all
+      plan_version.plan_residency_eligibilities.where.not(country_code: country_codes).destroy_all
       country_codes.each do |code|
-        plan.plan_residency_eligibilities.find_or_create_by!(country_code: code)
+        plan_version.plan_residency_eligibilities.find_or_create_by!(country_code: code)
       end
     end
 
-    plan.plan_residency_eligibilities.reload
+    plan_version.plan_residency_eligibilities.reload
 
     WizardStepResult.new(success: true, resource: plan)
   rescue ActiveRecord::RecordInvalid => e
@@ -119,6 +146,8 @@ class PlanWizardFlow
   def save_geographic_cover_areas(areas_params)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before selecting geographic cover areas" ]) unless plan.present?
+    plan_version = plan_version_for(plan)
+    return WizardStepResult.new(success: false, errors: [ "Plan version is missing" ]) unless plan_version.present?
 
     params_for_areas =
       case areas_params
@@ -163,17 +192,17 @@ class PlanWizardFlow
 
     ActiveRecord::Base.transaction do
       if existing_ids.empty?
-        plan.plan_geographic_cover_areas.destroy_all
+        plan_version.plan_geographic_cover_areas.destroy_all
       else
-        plan.plan_geographic_cover_areas.where.not(geographic_cover_area_id: existing_ids).destroy_all
+        plan_version.plan_geographic_cover_areas.where.not(geographic_cover_area_id: existing_ids).destroy_all
         existing_ids.each do |area_id|
-          plan.plan_geographic_cover_areas.find_or_create_by!(geographic_cover_area_id: area_id)
+          plan_version.plan_geographic_cover_areas.find_or_create_by!(geographic_cover_area_id: area_id)
         end
       end
     end
 
-    plan.plan_geographic_cover_areas.reload
-    plan.geographic_cover_areas.reset
+    plan_version.plan_geographic_cover_areas.reload
+    plan_version.geographic_cover_areas.reset
 
     WizardStepResult.new(success: true, resource: plan)
   rescue ActiveRecord::RecordInvalid => e
@@ -190,6 +219,8 @@ class PlanWizardFlow
   def save_module_groups(module_group_params, step_action = nil)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module groups" ]) unless plan.present?
+    plan_version = plan_version_for(plan)
+    return WizardStepResult.new(success: false, errors: [ "Plan version is missing" ]) unless plan_version.present?
 
     params_for_group =
       case module_group_params
@@ -202,7 +233,7 @@ class PlanWizardFlow
     if step_action == "delete"
       group_id = params_for_group[:id].presence || params_for_group[:module_group_id].presence
       group_id = Integer(group_id) rescue nil
-      module_group = plan.module_groups.find_by(id: group_id)
+      module_group = plan_version.module_groups.find_by(id: group_id)
 
       if module_group.nil?
         module_group = ModuleGroup.new
@@ -211,7 +242,7 @@ class PlanWizardFlow
       end
 
       module_group.destroy
-      plan.module_groups.reload
+      plan_version.module_groups.reload
 
       return WizardStepResult.new(success: true, resource: plan)
     end
@@ -222,8 +253,8 @@ class PlanWizardFlow
     permitted = params_for_group.permit(:name, :description, :position)
     sanitized_values = permitted.to_h
 
-    module_group = plan.module_groups.build(sanitized_values)
-    module_group.position ||= plan.module_groups.maximum(:position).to_i + 1
+    module_group = plan_version.module_groups.build(sanitized_values)
+    module_group.position ||= plan_version.module_groups.maximum(:position).to_i + 1
 
     if sanitized_values["name"].to_s.strip.blank?
       module_group.validate
@@ -232,7 +263,7 @@ class PlanWizardFlow
     end
 
     if module_group.save
-      plan.module_groups.reload
+      plan_version.module_groups.reload
       WizardStepResult.new(success: true, resource: module_group)
     else
       WizardStepResult.new(success: false, resource: module_group, errors: module_group.errors.full_messages)
@@ -242,6 +273,8 @@ class PlanWizardFlow
   def save_plan_modules(module_params, step_action = nil)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding plan modules" ]) unless plan.present?
+    plan_version = plan_version_for(plan)
+    return WizardStepResult.new(success: false, errors: [ "Plan version is missing" ]) unless plan_version.present?
 
     params_for_module =
       case module_params
@@ -254,7 +287,7 @@ class PlanWizardFlow
     if step_action == "delete"
       module_id = params_for_module[:id].presence || params_for_module[:plan_module_id].presence
       module_id = Integer(module_id) rescue nil
-      plan_module = plan.plan_modules.find_by(id: module_id)
+      plan_module = plan_version.plan_modules.find_by(id: module_id)
 
       if plan_module.nil?
         plan_module = PlanModule.new(plan:)
@@ -263,7 +296,7 @@ class PlanWizardFlow
       end
 
       plan_module.destroy
-      plan.plan_modules.reload
+      plan_version.plan_modules.reload
 
       return WizardStepResult.new(success: true, resource: plan)
     end
@@ -288,7 +321,7 @@ class PlanWizardFlow
     sanitized_values = permitted.to_h
     sanitized_values["is_core"] = ActiveModel::Type::Boolean.new.cast(sanitized_values["is_core"])
 
-    plan_module = plan.plan_modules.build(sanitized_values)
+    plan_module = plan_version.plan_modules.build(sanitized_values)
     raw_category_ids = Array(permitted[:coverage_category_ids])
     category_ids = []
     invalid_category_inputs = []
@@ -322,13 +355,13 @@ class PlanWizardFlow
     plan_module.coverage_category_ids = existing_category_ids
 
     # Guard against selecting a module group from another plan
-    if plan_module.module_group_id.present? && !plan.module_groups.exists?(id: plan_module.module_group_id)
+    if plan_module.module_group_id.present? && !plan_version.module_groups.exists?(id: plan_module.module_group_id)
       plan_module.errors.add(:module_group, "must belong to this plan")
       return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
     end
 
     if plan_module.save
-      plan.plan_modules.reload
+      plan_version.plan_modules.reload
       WizardStepResult.new(success: true, resource: plan_module)
     else
       WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
@@ -339,7 +372,7 @@ class PlanWizardFlow
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module requirements" ]) unless plan.present?
 
-    plan_version = plan.current_plan_version
+    plan_version = plan_version_for(plan)
     return WizardStepResult.new(success: false, errors: [ "Plan version is missing" ]) unless plan_version.present?
 
     params_for_requirements =
@@ -358,7 +391,7 @@ class PlanWizardFlow
     raw_requirements = raw_requirements.to_unsafe_h if raw_requirements.respond_to?(:to_unsafe_h)
     raw_requirements ||= {}
 
-    plan_modules = plan.plan_modules.index_by(&:id)
+    plan_modules = plan_version.plan_modules.index_by(&:id)
     allowed_ids = plan_modules.keys
 
     normalized = {}
@@ -407,6 +440,8 @@ class PlanWizardFlow
   def save_module_benefits(benefit_params, step_action = nil)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding module benefits" ]) unless plan.present?
+    plan_version = plan_version_for(plan)
+    return WizardStepResult.new(success: false, errors: [ "Plan version is missing" ]) unless plan_version.present?
 
     params_for_benefit =
       case benefit_params
@@ -419,7 +454,7 @@ class PlanWizardFlow
     if step_action == "delete"
       benefit_id = params_for_benefit[:id].presence || params_for_benefit[:module_benefit_id].presence
       benefit_id = Integer(benefit_id) rescue nil
-      module_benefit = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).find_by(id: benefit_id)
+      module_benefit = ModuleBenefit.where(plan_module_id: plan_version.plan_module_ids).find_by(id: benefit_id)
 
       if module_benefit.nil?
         module_benefit = ModuleBenefit.new
@@ -428,7 +463,7 @@ class PlanWizardFlow
       end
 
       module_benefit.destroy
-      plan.plan_modules.includes(:module_benefits).each { |pm| pm.module_benefits.reset }
+      plan_version.plan_modules.includes(:module_benefits).each { |pm| pm.module_benefits.reset }
 
       return WizardStepResult.new(success: true, resource: plan)
     end
@@ -451,7 +486,7 @@ class PlanWizardFlow
     sanitized_values = permitted.to_h
     sanitized_values["weighting"] = sanitized_values["weighting"].presence || nil
 
-    plan_module = plan.plan_modules.find_by(id: sanitized_values["plan_module_id"])
+    plan_module = plan_version.plan_modules.find_by(id: sanitized_values["plan_module_id"])
 
     unless plan_module
       module_benefit = ModuleBenefit.new
@@ -463,7 +498,7 @@ class PlanWizardFlow
 
     # default weighting to next available slot if not provided
     if module_benefit.weighting.nil?
-      max_weighting = ModuleBenefit.where(plan_module_id: plan.plan_module_ids).maximum(:weighting)
+      max_weighting = ModuleBenefit.where(plan_module_id: plan_version.plan_module_ids).maximum(:weighting)
       module_benefit.weighting = max_weighting ? max_weighting + 1 : 0
     end
 
@@ -478,6 +513,8 @@ class PlanWizardFlow
   def save_benefit_limit_groups(group_params, step_action = nil)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding benefit limit groups" ]) unless plan.present?
+    plan_version = plan_version_for(plan)
+    return WizardStepResult.new(success: false, errors: [ "Plan version is missing" ]) unless plan_version.present?
 
     params_for_group =
       case group_params
@@ -490,7 +527,7 @@ class PlanWizardFlow
     if step_action == "delete"
       group_id = params_for_group[:id].presence || params_for_group[:benefit_limit_group_id].presence
       group_id = Integer(group_id) rescue nil
-      benefit_limit_group = BenefitLimitGroup.where(plan_module_id: plan.plan_module_ids).find_by(id: group_id)
+      benefit_limit_group = BenefitLimitGroup.where(plan_module_id: plan_version.plan_module_ids).find_by(id: group_id)
 
       if benefit_limit_group.nil?
         benefit_limit_group = BenefitLimitGroup.new
@@ -499,7 +536,7 @@ class PlanWizardFlow
       end
 
       benefit_limit_group.destroy
-      plan.plan_modules.includes(:benefit_limit_groups).each { |pm| pm.benefit_limit_groups.reset }
+      plan_version.plan_modules.includes(:benefit_limit_groups).each { |pm| pm.benefit_limit_groups.reset }
 
       return WizardStepResult.new(success: true, resource: plan)
     end
@@ -523,7 +560,7 @@ class PlanWizardFlow
         .compact
         .uniq
 
-    plan_module = plan.plan_modules.find_by(id: sanitized_values["plan_module_id"])
+    plan_module = plan_version.plan_modules.find_by(id: sanitized_values["plan_module_id"])
     unless plan_module
       benefit_limit_group = BenefitLimitGroup.new
       benefit_limit_group.module_benefit_ids = module_benefit_ids
@@ -547,6 +584,8 @@ class PlanWizardFlow
   def save_cost_shares(cost_share_params, step_action = nil)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before adding cost shares" ]) unless plan.present?
+    plan_version = plan_version_for(plan)
+    return WizardStepResult.new(success: false, errors: [ "Plan version is missing" ]) unless plan_version.present?
 
     params_for_cost_share =
       case cost_share_params
@@ -575,7 +614,7 @@ class PlanWizardFlow
       cost_share_id = Integer(cost_share_id) rescue nil
       cost_share = CostShare.find_by(id: cost_share_id)
 
-      allowed_ids = cost_share_ids_for_plan(plan)
+      allowed_ids = cost_share_ids_for_plan(plan_version)
       unless cost_share && allowed_ids.include?(cost_share.id)
         cost_share = CostShare.new
         cost_share.errors.add(:base, "Cost share not found")
@@ -583,8 +622,8 @@ class PlanWizardFlow
       end
 
       cost_share.destroy
-      plan.current_plan_version&.cost_shares&.reset
-      plan.plan_modules.each { |pm| pm.cost_shares.reset }
+      plan_version.cost_shares.reset
+      plan_version.plan_modules.each { |pm| pm.cost_shares.reset }
 
       return WizardStepResult.new(success: true, resource: plan)
     end
@@ -593,12 +632,6 @@ class PlanWizardFlow
     creating = step_action.in?([ "add", "next" ]) || (step_action.blank? && user_filled_any)
 
     return WizardStepResult.new(success: true, resource: plan) unless creating && user_filled_any
-
-    plan_version = plan.current_plan_version
-    unless plan_version
-      plan.errors.add(:base, "Plan version is missing")
-      return WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages)
-    end
 
     applies_to = permitted[:applies_to].presence || "plan"
     plan_module_id = permitted[:plan_module_id].presence
@@ -610,11 +643,11 @@ class PlanWizardFlow
       when "plan"
         plan_version
       when "plan_module"
-        plan.plan_modules.find_by(id: plan_module_id)
+        plan_version.plan_modules.find_by(id: plan_module_id)
       when "module_benefit"
-        ModuleBenefit.where(plan_module_id: plan.plan_module_ids).find_by(id: module_benefit_id)
+        ModuleBenefit.where(plan_module_id: plan_version.plan_module_ids).find_by(id: module_benefit_id)
       when "benefit_limit_group"
-        BenefitLimitGroup.where(plan_module_id: plan.plan_module_ids).find_by(id: benefit_limit_group_id)
+        BenefitLimitGroup.where(plan_module_id: plan_version.plan_module_ids).find_by(id: benefit_limit_group_id)
       else
         nil
       end
@@ -641,6 +674,8 @@ class PlanWizardFlow
   def save_cost_share_links(cost_share_link_params, step_action = nil)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before linking cost shares" ]) unless plan.present?
+    plan_version = plan_version_for(plan)
+    return WizardStepResult.new(success: false, errors: [ "Plan version is missing" ]) unless plan_version.present?
 
     params_for_cost_share_link =
       case cost_share_link_params
@@ -656,7 +691,7 @@ class PlanWizardFlow
     if step_action == "delete"
       link_id = permitted[:id].presence || params_for_cost_share_link[:cost_share_link_id].presence
       link_id = Integer(link_id) rescue nil
-      allowed_ids = cost_share_ids_for_plan(plan)
+      allowed_ids = cost_share_ids_for_plan(plan_version)
       cost_share_link = CostShareLink.find_by(id: link_id)
 
       unless cost_share_link && allowed_ids.include?(cost_share_link.cost_share_id) && allowed_ids.include?(cost_share_link.linked_cost_share_id)
@@ -674,7 +709,7 @@ class PlanWizardFlow
     return WizardStepResult.new(success: true, resource: plan) unless creating && user_filled_any
 
     cost_share_link = CostShareLink.new(relationship_type: permitted[:relationship_type])
-    allowed_cost_share_ids = cost_share_ids_for_plan(plan)
+    allowed_cost_share_ids = cost_share_ids_for_plan(plan_version)
 
     cost_share = CostShare.find_by(id: permitted[:cost_share_id])
     linked_cost_share = CostShare.find_by(id: permitted[:linked_cost_share_id])
@@ -705,32 +740,55 @@ class PlanWizardFlow
   def save_review(review_params, step_action = nil)
     plan = progress.subject
     return WizardStepResult.new(success: false, errors: [ "Plan must be created before review" ]) unless plan.present?
+    plan_version = plan_version_for(plan)
+    return WizardStepResult.new(success: false, errors: [ "Plan version is missing" ]) unless plan_version.present?
 
     # Only act when finishing the wizard
     return WizardStepResult.new(success: true, resource: plan) unless step_action == "complete"
 
     publish_now = ActiveModel::Type::Boolean.new.cast(review_params&.[](:publish_now))
-    plan.published = true if publish_now
+    if publish_now
+      plan_version.published = true
+      plan_version.current = true
+    end
 
-    if plan.save
+    if plan_version.save
       WizardStepResult.new(success: true, resource: plan)
     else
+      plan_version.errors.each do |error|
+        plan.errors.add(error.attribute, error.message)
+      end
       WizardStepResult.new(success: false, resource: plan, errors: plan.errors.full_messages)
     end
   end
 
   private
 
-  def cost_share_ids_for_plan(plan)
-    module_ids = plan.plan_module_ids
+  def cost_share_ids_for_plan(plan_version)
+    return [] unless plan_version
+
+    module_ids = plan_version.plan_module_ids
     module_benefit_ids = ModuleBenefit.where(plan_module_id: module_ids).pluck(:id)
     benefit_limit_group_ids = BenefitLimitGroup.where(plan_module_id: module_ids).pluck(:id)
 
     [
-      plan.cost_share_ids,
+      plan_version.cost_share_ids,
       CostShare.where(scope_type: "PlanModule", scope_id: module_ids).pluck(:id),
       CostShare.where(scope_type: "ModuleBenefit", scope_id: module_benefit_ids).pluck(:id),
       CostShare.where(scope_type: "BenefitLimitGroup", scope_id: benefit_limit_group_ids).pluck(:id)
     ].flatten.uniq
+  end
+
+  def plan_version_for(plan)
+    progress.plan_version || plan&.current_plan_version
+  end
+
+  def explicit_plan_version_for(plan)
+    return unless plan.is_a?(Plan)
+
+    version_id = progress.metadata&.fetch("plan_version_id", nil)
+    return if version_id.blank?
+
+    plan.plan_versions.find_by(id: version_id)
   end
 end

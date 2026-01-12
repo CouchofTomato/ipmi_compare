@@ -1,4 +1,5 @@
 <% plan = progress.subject %>
+<% plan_version = progress.plan_version || plan&.current_plan_version %>
 <% resource = local_assigns[:resource] %>
 <% new_area = local_assigns[:new_geographic_cover_area] || GeographicCoverArea.new %>
 <% selected_area_ids =
@@ -6,9 +7,9 @@
      when Hash
        Array(resource[:geographic_cover_area_ids] || resource["geographic_cover_area_ids"] || resource[:area_ids] || resource["area_ids"]).map(&:to_s)
     when Plan
-      resource.geographic_cover_area_ids.map(&:to_s)
+      plan_version&.geographic_cover_area_ids&.map(&:to_s) || []
     else
-      Array(plan&.geographic_cover_area_ids).map(&:to_s)
+      plan_version&.geographic_cover_area_ids&.map(&:to_s) || []
     end
 %>
 <% available_areas = GeographicCoverArea.order(:name) %>

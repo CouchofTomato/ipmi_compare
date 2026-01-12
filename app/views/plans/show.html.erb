@@ -16,6 +16,12 @@
                       form: { class: "inline" },
                       class: "inline-flex items-center gap-2 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus-visible:outline-indigo-500",
                       data: { turbo: true, test_id: "edit-plan-with-wizard-button" } %>
+        <%= button_to "Create new version",
+                      wizard_progresses_path(plan_id: @plan.id, wizard_type: "plan_creation", new_version: true),
+                      method: :post,
+                      form: { class: "inline" },
+                      class: "inline-flex items-center gap-2 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 shadow-xs hover:bg-indigo-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-100 dark:hover:bg-indigo-500/20 dark:focus-visible:outline-indigo-500",
+                      data: { turbo: true, test_id: "create-plan-version-with-wizard-button" } %>
       </div>
     </div>
 

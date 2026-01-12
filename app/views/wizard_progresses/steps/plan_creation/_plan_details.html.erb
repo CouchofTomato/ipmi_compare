@@ -1,4 +1,5 @@
 <% plan = local_assigns[:resource] || progress.subject || Plan.new %>
+<% plan_version = progress.plan_version || plan.current_plan_version %>
 <% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
 <% field_classes = lambda do |attributes, *extra_classes|
      attrs = Array(attributes)
@@ -53,7 +54,7 @@
           <div>
             <%= form.label :version_year %>
             <div class="mt-2">
-              <%= form.number_field :version_year, class: field_classes.call(:version_year), min: 1900, data: { test_id: "version-year-field" } %>
+              <%= form.number_field :version_year, value: plan_version&.version_year, class: field_classes.call(:version_year), min: 1900, data: { test_id: "version-year-field" } %>
             </div>
             <% if plan.errors[:version_year].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:version_year].to_sentence %></p>
@@ -63,7 +64,7 @@
           <div>
             <%= form.label :policy_type %>
             <div class="mt-2">
-              <%= form.select :policy_type, PlanVersion.policy_types.keys.map { |type| [type.humanize, type] }, { prompt: "Select a policy type" }, class: field_classes.call(:policy_type), data: { test_id: "policy-type-field" } %>
+              <%= form.select :policy_type, PlanVersion.policy_types.keys.map { |type| [type.humanize, type] }, { prompt: "Select a policy type", selected: plan_version&.policy_type }, class: field_classes.call(:policy_type), data: { test_id: "policy-type-field" } %>
             </div>
             <% if plan.errors[:policy_type].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:policy_type].to_sentence %></p>
@@ -75,7 +76,7 @@
           <div>
             <%= form.label :min_age %>
             <div class="mt-2">
-              <%= form.number_field :min_age, class: field_classes.call(:min_age), min: 0, data: { test_id: "min-age-field" } %>
+              <%= form.number_field :min_age, value: plan_version&.min_age, class: field_classes.call(:min_age), min: 0, data: { test_id: "min-age-field" } %>
             </div>
             <% if plan.errors[:min_age].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:min_age].to_sentence %></p>
@@ -85,7 +86,7 @@
           <div>
             <%= form.label :max_age %>
             <div class="mt-2">
-              <%= form.number_field :max_age, class: field_classes.call(:max_age), min: 0, data: { test_id: "max-age-field" } %>
+              <%= form.number_field :max_age, value: plan_version&.max_age, class: field_classes.call(:max_age), min: 0, data: { test_id: "max-age-field" } %>
             </div>
             <% if plan.errors[:max_age].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:max_age].to_sentence %></p>
@@ -97,7 +98,7 @@
           <div>
             <%= form.label :next_review_due %>
             <div class="mt-2">
-              <%= form.date_field :next_review_due, class: field_classes.call(:next_review_due), data: { test_id: "next-review-due-field" } %>
+              <%= form.date_field :next_review_due, value: plan_version&.next_review_due, class: field_classes.call(:next_review_due), data: { test_id: "next-review-due-field" } %>
             </div>
             <% if plan.errors[:next_review_due].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:next_review_due].to_sentence %></p>
@@ -107,7 +108,7 @@
           <div>
             <%= form.label :last_reviewed_at %>
             <div class="mt-2">
-              <%= form.date_field :last_reviewed_at, class: field_classes.call(:last_reviewed_at), data: { test_id: "last-reviewed-at-field" } %>
+              <%= form.date_field :last_reviewed_at, value: plan_version&.last_reviewed_at, class: field_classes.call(:last_reviewed_at), data: { test_id: "last-reviewed-at-field" } %>
             </div>
             <% if plan.errors[:last_reviewed_at].present? %>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:last_reviewed_at].to_sentence %></p>
@@ -118,18 +119,18 @@
         <div>
           <%= form.label :review_notes %>
           <div class="mt-2">
-            <%= form.text_area :review_notes, class: field_classes.call(:review_notes, "min-h-[120px]"), placeholder: "Internal notes about this plan's review status", data: { test_id: "review-notes-field" } %>
+            <%= form.text_area :review_notes, value: plan_version&.review_notes, class: field_classes.call(:review_notes, "min-h-[120px]"), placeholder: "Internal notes about this plan's review status", data: { test_id: "review-notes-field" } %>
           </div>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="flex items-center gap-3">
-            <%= form.check_box :children_only_allowed, class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" %>
+            <%= form.check_box :children_only_allowed, checked: plan_version&.children_only_allowed, class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" %>
             <%= form.label :children_only_allowed, "Children only plan" %>
           </div>
 
           <div class="flex items-center gap-3">
-            <%= form.check_box :published, class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" %>
+            <%= form.check_box :published, checked: plan_version&.published, class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" %>
             <%= form.label :published %>
           </div>
         </div>

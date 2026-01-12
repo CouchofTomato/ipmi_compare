@@ -24,6 +24,8 @@ class WizardProgressesController < ApplicationController
         current_user.wizard_progresses.new(wizard_type:)
       end
 
+    was_in_progress = progress.in_progress?
+
     progress.user ||= current_user
     progress.last_actor = current_user
     progress.subject ||= plan
@@ -35,6 +37,8 @@ class WizardProgressesController < ApplicationController
     end
 
     progress.step_order = progress.current_step_index
+
+    assign_plan_version_metadata(progress, plan, was_in_progress, params[:new_version].present?)
 
     if progress.save
       redirect_to wizard_progress_path(progress)
@@ -78,6 +82,23 @@ class WizardProgressesController < ApplicationController
 
   def presenter_for_current_step
     @presenter = @progress.flow.presenter_for(@progress.current_step)
+  end
+
+  def assign_plan_version_metadata(progress, plan, was_in_progress, create_new_version)
+    return unless plan.present?
+    return unless progress.wizard_type == "plan_creation"
+    unless create_new_version
+      progress.metadata = progress.metadata.except("plan_version_id") if progress.metadata&.key?("plan_version_id")
+      return
+    end
+    return if was_in_progress && progress.metadata["plan_version_id"].present?
+
+    source_version = plan.current_plan_version || plan.plan_versions.current.first || plan.plan_versions.first
+    return unless source_version
+
+    draft_version = PlanVersionDuplicator.call(source_version)
+    progress.metadata ||= {}
+    progress.metadata = progress.metadata.merge("plan_version_id" => draft_version.id)
   end
 
   def render_current_step
