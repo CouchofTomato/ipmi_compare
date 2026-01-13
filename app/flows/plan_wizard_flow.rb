@@ -54,6 +54,8 @@ class PlanWizardFlow
         :max_age,
         :children_only_allowed,
         :version_year,
+        :effective_on,
+        :effective_through,
         :published,
         :policy_type,
         :last_reviewed_at,
@@ -747,12 +749,25 @@ class PlanWizardFlow
     return WizardStepResult.new(success: true, resource: plan) unless step_action == "complete"
 
     publish_now = ActiveModel::Type::Boolean.new.cast(review_params&.[](:publish_now))
-    if publish_now
-      plan_version.published = true
-      plan_version.current = true
+    errors = nil
+
+    ActiveRecord::Base.transaction do
+      if publish_now
+        plan_version.published = true
+        plan_version.current = true
+        unless close_previous_published_version(plan_version)
+          errors = plan_version.errors.full_messages
+          raise ActiveRecord::Rollback
+        end
+      end
+
+      unless plan_version.save
+        errors = plan_version.errors.full_messages
+        raise ActiveRecord::Rollback
+      end
     end
 
-    if plan_version.save
+    if errors.nil?
       WizardStepResult.new(success: true, resource: plan)
     else
       plan_version.errors.each do |error|
@@ -781,6 +796,36 @@ class PlanWizardFlow
 
   def plan_version_for(plan)
     progress.plan_version || plan&.current_plan_version
+  end
+
+  def close_previous_published_version(plan_version)
+    return true if plan_version.effective_on.blank?
+
+    previous_version =
+      plan_version.plan.plan_versions
+        .where(published: true)
+        .where.not(id: plan_version.id)
+        .order(effective_on: :desc)
+        .first
+
+    return true if previous_version.nil?
+
+    if plan_version.effective_on <= previous_version.effective_on
+      plan_version.errors.add(:effective_on, "must be after #{previous_version.effective_on}")
+      return false
+    end
+
+    unless previous_version.update(
+      effective_through: plan_version.effective_on - 1.day,
+      current: false
+    )
+      previous_version.errors.full_messages.each do |message|
+        plan_version.errors.add(:base, message)
+      end
+      return false
+    end
+
+    true
   end
 
   def explicit_plan_version_for(plan)

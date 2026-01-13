@@ -200,6 +200,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_11_201928) do
     t.boolean "children_only_allowed", default: false, null: false
     t.datetime "created_at", null: false
     t.boolean "current", default: false, null: false
+    t.date "effective_on", null: false
+    t.date "effective_through"
     t.date "last_reviewed_at"
     t.integer "max_age"
     t.integer "min_age"

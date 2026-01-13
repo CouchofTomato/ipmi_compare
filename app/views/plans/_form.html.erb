@@ -63,6 +63,28 @@
 
     <div class="grid gap-6 sm:grid-cols-2">
       <div>
+        <%= form.label :effective_on, "Effective on" %>
+        <div class="mt-2">
+          <%= form.date_field :effective_on, class: input_classes %>
+        </div>
+        <% if plan.errors[:effective_on].present? %>
+          <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:effective_on].to_sentence %></p>
+        <% end %>
+      </div>
+
+      <div>
+        <%= form.label :effective_through, "Effective through" %>
+        <div class="mt-2">
+          <%= form.date_field :effective_through, class: input_classes %>
+        </div>
+        <% if plan.errors[:effective_through].present? %>
+          <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:effective_through].to_sentence %></p>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2">
+      <div>
         <%= form.label :min_age %>
         <div class="mt-2">
           <%= form.number_field :min_age, class: input_classes, min: 0 %>

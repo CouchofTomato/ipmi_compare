@@ -7,6 +7,8 @@ FactoryBot.define do
       build_version { true }
       skip_autobuild { false }
       version_year { 1 }
+      effective_on { Date.new(version_year, 1, 1) }
+      effective_through { nil }
       min_age { 1 }
       max_age { 1 }
       children_only_allowed { false }
@@ -23,6 +25,8 @@ FactoryBot.define do
 
       plan.build_current_plan_version(
         version_year: evaluator.version_year,
+        effective_on: evaluator.effective_on,
+        effective_through: evaluator.effective_through,
         min_age: evaluator.min_age,
         max_age: evaluator.max_age,
         children_only_allowed: evaluator.children_only_allowed,

@@ -36,6 +36,8 @@ class PlansController < ApplicationController
         :max_age,
         :children_only_allowed,
         :version_year,
+        :effective_on,
+        :effective_through,
         :published,
         :policy_type,
         :last_reviewed_at,

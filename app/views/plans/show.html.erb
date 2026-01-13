@@ -40,6 +40,14 @@
           <dd><%= @plan.version_year %></dd>
         </div>
         <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Effective on</dt>
+          <dd><%= @plan.effective_on&.strftime("%Y-%m-%d") || "Not set" %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
+          <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Effective through</dt>
+          <dd><%= @plan.effective_through&.strftime("%Y-%m-%d") || "Not set" %></dd>
+        </div>
+        <div class="grid gap-2 px-6 py-4 sm:grid-cols-2">
           <dt class="font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Min age</dt>
           <dd><%= @plan.min_age %></dd>
         </div>
