@@ -2,6 +2,8 @@ FactoryBot.define do
   factory :plan_version do
     association :plan, build_version: false, skip_autobuild: true
     version_year { 2025 }
+    effective_on { Date.new(version_year, 1, 1) }
+    effective_through { nil }
     min_age { 0 }
     max_age { 65 }
     children_only_allowed { false }

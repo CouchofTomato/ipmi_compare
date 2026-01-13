@@ -16,6 +16,8 @@ class Plan < ApplicationRecord
   validates :name, presence: true
 
   delegate :version_year,
+           :effective_on,
+           :effective_through,
            :children_only_allowed,
            :children_only_allowed?,
            :min_age,
@@ -81,6 +83,14 @@ class Plan < ApplicationRecord
 
   def version_year=(value)
     plan_version_for_assignment.version_year = value
+  end
+
+  def effective_on=(value)
+    plan_version_for_assignment.effective_on = value
+  end
+
+  def effective_through=(value)
+    plan_version_for_assignment.effective_through = value
   end
 
   def children_only_allowed=(value)

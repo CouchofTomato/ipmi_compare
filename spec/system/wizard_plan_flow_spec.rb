@@ -27,6 +27,7 @@ RSpec.describe "Plan wizard", type: :system do
     find(:test_id, "min-age-field").set(0)
     find(:test_id, "max-age-field").set(65)
     find(:test_id, "version-year-field").set(Date.current.year)
+    find(:test_id, "effective-on-field").set(Date.current.strftime("%Y-%m-%d"))
     find(:test_id, "policy-type-field").select "Individual"
     find(:test_id, "next-review-due-field").set(Date.current.next_year.strftime('%Y-%m-%d'))
     find(:test_id, "last-reviewed-at-field").set(Date.current.strftime('%Y-%m-%d'))

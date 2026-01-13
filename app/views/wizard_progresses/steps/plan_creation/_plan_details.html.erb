@@ -74,6 +74,28 @@
 
         <div class="grid gap-6 sm:grid-cols-2">
           <div>
+            <%= form.label :effective_on, "Effective on" %>
+            <div class="mt-2">
+              <%= form.date_field :effective_on, value: plan_version&.effective_on, class: field_classes.call(:effective_on), data: { test_id: "effective-on-field" } %>
+            </div>
+            <% if plan.errors[:effective_on].present? %>
+              <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:effective_on].to_sentence %></p>
+            <% end %>
+          </div>
+
+          <div>
+            <%= form.label :effective_through, "Effective through" %>
+            <div class="mt-2">
+              <%= form.date_field :effective_through, value: plan_version&.effective_through, class: field_classes.call(:effective_through), data: { test_id: "effective-through-field" } %>
+            </div>
+            <% if plan.errors[:effective_through].present? %>
+              <p class="mt-2 text-sm text-red-600 dark:text-red-400"><%= plan.errors[:effective_through].to_sentence %></p>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="grid gap-6 sm:grid-cols-2">
+          <div>
             <%= form.label :min_age %>
             <div class="mt-2">
               <%= form.number_field :min_age, value: plan_version&.min_age, class: field_classes.call(:min_age), min: 0, data: { test_id: "min-age-field" } %>

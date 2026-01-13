@@ -18,12 +18,15 @@ class PlanVersion < ApplicationRecord
   has_many :plan_modules, dependent: :destroy
 
   validates :version_year, presence: true
+  validates :effective_on, presence: true
   validates :min_age, numericality: { greater_than_or_equal_to: 0, only_integer: true, allow_nil: true }
   validates :max_age, numericality: { greater_than_or_equal_to: 0, only_integer: true, allow_nil: true }
   validates_inclusion_of :children_only_allowed, in: [ true, false ]
   validates_inclusion_of :published, in: [ true, false ]
   validates :policy_type, presence: true
   validates :next_review_due, presence: true
+  validate :effective_through_on_or_after_effective_on
+  validate :effective_date_ranges_do_not_overlap, if: -> { published? }
 
   enum :policy_type, {
     individual: 0,
@@ -39,5 +42,27 @@ class PlanVersion < ApplicationRecord
 
   def ensure_single_current
     PlanVersion.where(plan_id:, current: true).where.not(id: id).update_all(current: false)
+  end
+
+  def effective_through_on_or_after_effective_on
+    return if effective_through.blank? || effective_on.blank?
+    return if effective_through >= effective_on
+
+    errors.add(:effective_through, "must be on or after effective on")
+  end
+
+  def effective_date_ranges_do_not_overlap
+    return if effective_on.blank?
+
+    range_end = effective_through || Date.new(9999, 12, 31)
+    overlap =
+      PlanVersion.where(plan_id: plan_id, published: true)
+        .where.not(id: id)
+        .where("effective_on <= ?", range_end)
+        .where("effective_through IS NULL OR effective_through >= ?", effective_on)
+
+    return unless overlap.exists?
+
+    errors.add(:base, "Effective dates overlap another published version")
   end
 end
