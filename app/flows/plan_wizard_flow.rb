@@ -803,8 +803,9 @@ class PlanWizardFlow
 
     previous_version =
       plan_version.plan.plan_versions
-        .where(published: true)
+        .where(published: true, effective_through: nil)
         .where.not(id: plan_version.id)
+        .where("effective_on <= ?", plan_version.effective_on)
         .order(effective_on: :desc)
         .first
 
