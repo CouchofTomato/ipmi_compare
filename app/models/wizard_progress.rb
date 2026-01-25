@@ -50,4 +50,31 @@ class WizardProgress < ApplicationRecord
     version = subject.plan_versions.find_by(id: version_id) if version_id.present?
     version || subject.current_plan_version
   end
+
+  def comparison_name_from_state
+    return unless wizard_type == "plan_comparison"
+
+    selections = state.fetch("plan_selections", [])
+    list =
+      case selections
+      when Hash then selections.values
+      when Array then selections
+      else []
+      end
+
+    plan_ids = list.map { |selection| selection["plan_id"] }.compact.uniq
+    return if plan_ids.empty?
+
+    plans_by_id = Plan.where(id: plan_ids).index_by(&:id)
+    names = plan_ids.filter_map { |id| plans_by_id[id]&.name }
+    return if names.empty?
+
+    if names.size == 1
+      "Comparison - #{names.first}"
+    elsif names.size == 2
+      "#{names[0]} vs #{names[1]}"
+    else
+      "#{names[0]} vs #{names[1]} +#{names.size - 2}"
+    end
+  end
 end

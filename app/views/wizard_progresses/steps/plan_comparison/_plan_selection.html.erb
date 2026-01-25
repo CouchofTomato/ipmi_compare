@@ -30,8 +30,11 @@
         <% if presenter.saved_plan_selections.empty? %>
           <p class="text-sm text-slate-500 dark:text-slate-400">No plans selected yet.</p>
         <% else %>
+          <% option_index = 0 %>
           <ul class="space-y-3">
             <% presenter.saved_plan_selections.each do |selection| %>
+              <% option_index += 1 %>
+              <% option_label = "Option #{option_index}" %>
               <li class="rounded-lg border border-slate-100 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800">
                 <div class="flex items-start justify-between gap-2">
                   <div>
@@ -39,7 +42,7 @@
                     <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"><%= selection[:plan].insurer.name %></p>
                   </div>
                   <div class="flex items-center gap-2">
-                    <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 shadow-inner dark:bg-slate-900 dark:text-slate-200">Plan #<%= selection[:plan].id %></span>
+                    <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 shadow-inner dark:bg-slate-900 dark:text-slate-200"><%= option_label %></span>
                     <%= button_to remove_comparison_plan_selection_path(progress, selection_id: selection[:id], plan_id: selection[:plan].id),
                                   method: :delete,
                                   data: { turbo_frame: "plan_selection" },
@@ -69,7 +72,7 @@
     </div>
 
     <div class="mt-6 flex justify-end">
-      <%= button_to "Continue to modules →",
+      <%= button_to "Continue to comparison →",
                     wizard_progress_path(progress),
                     method: :patch,
                     params: { step_action: "next" },

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_11_201928) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_25_205747) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -258,6 +258,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_11_201928) do
     t.string "last_event"
     t.datetime "last_interaction_at"
     t.jsonb "metadata", default: {}, null: false
+    t.string "name"
     t.datetime "started_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
     t.jsonb "state", default: {}, null: false
     t.string "status", default: "in_progress", null: false

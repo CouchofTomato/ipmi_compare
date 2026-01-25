@@ -1,11 +1,16 @@
 <% plan = progress.subject if progress.respond_to?(:subject) %>
+<% comparison = progress.wizard_type == "plan_comparison" %>
 
 <div class="container mx-auto max-w-4xl p-6">
   <div class="flex items-start justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Plan wizard</h1>
+      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
+        <%= comparison ? "Plan comparison" : "Plan wizard" %>
+      </h1>
       <p class="mt-2 text-sm text-gray-700 dark:text-gray-200">
-        <% if plan.present? %>
+        <% if comparison %>
+          Compare selected plans and modules, then archive the comparison when you're done.
+        <% elsif plan.present? %>
           Editing <span class="font-semibold"><%= plan.name %></span>. Update the plan and all connected objects using the same guided steps as creation.
         <% else %>
           Create and publish a plan using the guided steps below.
@@ -13,7 +18,18 @@
       </p>
     </div>
 
-    <% if plan.present? %>
+    <% if comparison %>
+      <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm dark:border-white/10 dark:bg-gray-900">
+        <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Comparison name</p>
+        <%= form_with model: progress, url: wizard_progress_path(progress), method: :patch, local: true, class: "mt-2 flex items-center gap-2" do |form| %>
+          <%= form.text_field :name,
+                              value: progress.name,
+                              placeholder: "Untitled comparison",
+                              class: "w-56 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-white/10 dark:bg-gray-900 dark:text-gray-100" %>
+          <%= form.submit "Save", class: "rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900" %>
+        <% end %>
+      </div>
+    <% elsif plan.present? %>
       <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm dark:border-white/10 dark:bg-gray-900">
         <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Editing plan</p>
         <p class="mt-1 font-semibold text-gray-900 dark:text-white"><%= plan.name %></p>

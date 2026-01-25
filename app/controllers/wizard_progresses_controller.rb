@@ -5,7 +5,8 @@ class WizardProgressesController < ApplicationController
   before_action :presenter_for_current_step, only: %i[show update]
 
   def index
-    @wizard_progresses = current_user.wizard_progresses.where(status: :in_progress).order(updated_at: :desc)
+    @status = params[:status].presence_in(%w[in_progress complete]) || "in_progress"
+    @wizard_progresses = current_user.wizard_progresses.where(status: @status).order(updated_at: :desc)
   end
 
   def create
@@ -53,13 +54,20 @@ class WizardProgressesController < ApplicationController
   end
 
   def update
+    if params[:wizard_progress].is_a?(Hash) && params[:wizard_progress].key?(:name)
+      @progress.update!(name: params[:wizard_progress][:name])
+    end
+
     result = @progress.flow.handle_step(params)
 
     if result.success?
       case params[:step_action]
-      when "next"     then @progress.update!(current_step: @progress.next_step)
+      when "next"
+        next_step = @progress.next_step
+        @progress.update!(current_step: next_step)
+        update_comparison_name_if_ready(next_step)
       when "previous" then @progress.update!(current_step: @progress.previous_step)
-      when "complete" then @progress.update!(status: :complete)
+      when "complete" then @progress.update!(status: :complete, completed_at: Time.current)
       end
     else
       @resource = result.resource
@@ -101,6 +109,17 @@ class WizardProgressesController < ApplicationController
     progress.metadata = progress.metadata.merge("plan_version_id" => draft_version.id)
   end
 
+  def update_comparison_name_if_ready(next_step)
+    return unless @progress.wizard_type == "plan_comparison"
+    return unless next_step == "comparison"
+    return unless @progress.name.blank?
+
+    generated_name = @progress.comparison_name_from_state
+    return if generated_name.blank?
+
+    @progress.update!(name: generated_name)
+  end
+
   def render_current_step
     respond_to do |format|
       format.turbo_stream do
@@ -124,21 +143,42 @@ class WizardProgressesController < ApplicationController
   end
 
   def redirect_to_plan_if_complete
-    return false unless @progress.complete? && @progress.subject.is_a?(Plan)
+    return false unless @progress.complete?
 
-    respond_to do |format|
-      format.turbo_stream do
-        redirect_to plan_path(@progress.subject),
-                    notice: "Plan published and wizard completed",
-                    status: :see_other
+    if @progress.subject.is_a?(Plan)
+      respond_to do |format|
+        format.turbo_stream do
+          redirect_to plan_path(@progress.subject),
+                      notice: "Plan published and wizard completed",
+                      status: :see_other
+        end
+        format.html do
+          redirect_to plan_path(@progress.subject),
+                      notice: "Plan published and wizard completed",
+                      status: :see_other
+        end
       end
-      format.html do
-        redirect_to plan_path(@progress.subject),
-                    notice: "Plan published and wizard completed",
-                    status: :see_other
-      end
+
+      return true
     end
 
-    true
+    if @progress.wizard_type == "plan_comparison" && !request.get?
+      respond_to do |format|
+        format.turbo_stream do
+          redirect_to wizard_progresses_path(status: "complete"),
+                      notice: "Comparison archived",
+                      status: :see_other
+        end
+        format.html do
+          redirect_to wizard_progresses_path(status: "complete"),
+                      notice: "Comparison archived",
+                      status: :see_other
+        end
+      end
+
+      return true
+    end
+
+    false
   end
 end
