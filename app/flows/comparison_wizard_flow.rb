@@ -26,7 +26,7 @@ class ComparisonWizardFlow
     when "plan_selection"
       WizardProgresses::Comparison::PlanSelectionPresenter.new(progress)
     when "module_selection"
-      WizardProgresses::Comparison::ModuleSelectionPresenter.new(progress)
+      WizardProgresses::Comparison::PlanSelectionPresenter.new(progress)
     when "comparison"
       WizardProgresses::Comparison::ComparisonPresenter.new(progress)
     else
