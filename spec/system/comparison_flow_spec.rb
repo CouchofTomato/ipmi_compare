@@ -69,7 +69,9 @@ RSpec.describe "Plan comparison flow", type: :system do
 
     expect(page).to have_content("Remove Me")
     within(:xpath, "//div[contains(@class,'rounded-full')][.//span[contains(.,'Remove Me')]]") do
-      click_button "Remove"
+      accept_confirm do
+        click_button "Remove"
+      end
     end
 
     expect(page).to have_content("No plans selected yet", wait: 10)

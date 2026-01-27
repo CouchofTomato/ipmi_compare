@@ -36,7 +36,7 @@
                 <%= button_to "Remove",
                               remove_comparison_plan_selection_path(progress, selection_id: selection[:id], plan_id: selection[:plan].id),
                               method: :delete,
-                              data: { turbo_confirm: "Remove this plan from the comparison?", turbo: false },
+                              data: { turbo_confirm: "Remove this plan from the comparison?", turbo_frame: "wizard_step" },
                               form: { class: "inline" },
                               class: "ml-1 text-[11px] font-semibold text-rose-700 hover:text-rose-800 dark:text-rose-300 dark:hover:text-rose-200" %>
               </div>
