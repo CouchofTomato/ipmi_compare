@@ -7,39 +7,70 @@
       </p>
     </div>
 
-    <% if presenter.saved_plan_selections.empty? %>
+    <% comparison_data = presenter.comparison_data %>
+    <% if comparison_data[:plan_versions].empty? %>
       <div class="rounded-lg border border-dashed border-gray-300 bg-white p-6 text-sm text-gray-600 shadow-sm dark:border-white/10 dark:bg-gray-900 dark:text-gray-200">
         <p>No plans selected yet. Head back to choose plans for this comparison.</p>
       </div>
     <% else %>
-      <% option_index = 0 %>
-      <div class="space-y-3">
-        <% presenter.saved_plan_selections.each do |selection| %>
-          <% option_index += 1 %>
-          <% option_label = "Option #{option_index}" %>
-          <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <div class="flex items-start justify-between gap-2">
-              <div>
-                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100"><%= selection[:plan].name %></p>
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"><%= selection[:plan].insurer.name %></p>
-              </div>
-              <span class="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200"><%= option_label %></span>
-            </div>
-
-            <% if selection[:modules].any? %>
-              <ul class="mt-3 space-y-1.5">
-                <% selection[:modules].each do |group, mod| %>
-                  <li class="flex items-center justify-between rounded-md bg-white px-2.5 py-2 text-xs text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">
-                    <span class="font-semibold text-slate-900 dark:text-slate-100"><%= group.name %></span>
-                    <span class="text-slate-600 dark:text-slate-300"><%= mod.name %></span>
-                  </li>
-                <% end %>
-              </ul>
-            <% else %>
-              <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">No modules selected.</p>
+      <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <table class="min-w-full text-left text-sm text-slate-700 dark:text-slate-200">
+          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800/60 dark:text-slate-300">
+            <tr>
+              <th class="px-4 py-3 font-semibold">Benefit</th>
+              <% comparison_data[:plan_versions].each do |plan_version| %>
+                <th class="px-4 py-3 font-semibold">
+                  <div class="text-sm font-semibold text-slate-900 dark:text-slate-100"><%= plan_version[:plan_name] %></div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400"><%= plan_version[:insurer_name] %></div>
+                </th>
+              <% end %>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+            <% comparison_data[:categories].each do |category| %>
+              <tr class="bg-slate-100/80 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800/50 dark:text-slate-300">
+                <td class="px-4 py-3 font-semibold" colspan="<%= comparison_data[:plan_versions].size + 1 %>"><%= category[:name] %></td>
+              </tr>
+              <% category[:benefits].each do |benefit| %>
+                <tr class="bg-white dark:bg-slate-900">
+                  <td class="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100"><%= benefit[:name] %></td>
+                  <% comparison_data[:plan_versions].each do |plan_version| %>
+                    <% entries = benefit[:per_plan][plan_version[:plan_version_id]] || [] %>
+                    <td class="px-4 py-3 align-top">
+                      <% if entries.empty? %>
+                        <span class="text-xs text-slate-400">Not included</span>
+                      <% else %>
+                        <div class="space-y-2">
+                          <% entries.each do |entry| %>
+                            <div class="rounded-md border border-slate-200 bg-slate-50/70 px-2.5 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200">
+                              <p class="font-semibold text-slate-900 dark:text-slate-100"><%= entry[:plan_module_name] %></p>
+                              <% if entry[:coverage_description].present? %>
+                                <p class="text-slate-600 dark:text-slate-300"><%= entry[:coverage_description] %></p>
+                              <% end %>
+                              <% if entry[:limit_unit].present? %>
+                                <p class="text-slate-600 dark:text-slate-300">
+                                  Limit:
+                                  <%= [entry[:limit_gbp], entry[:limit_usd], entry[:limit_eur]].compact.first || "N/A" %>
+                                  <%= entry[:limit_unit] %>
+                                </p>
+                              <% end %>
+                              <% if entry[:waiting_period_months].present? %>
+                                <p class="text-slate-600 dark:text-slate-300">Waiting: <%= entry[:waiting_period_months] %> months</p>
+                              <% end %>
+                              <% if entry[:benefit_limit_group_name].present? %>
+                                <p class="text-slate-600 dark:text-slate-300">Shared limit: <%= entry[:benefit_limit_group_name] %></p>
+                              <% end %>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </td>
+                  <% end %>
+                </tr>
+              <% end %>
             <% end %>
-          </div>
-        <% end %>
+          </tbody>
+        </table>
       </div>
     <% end %>
 
