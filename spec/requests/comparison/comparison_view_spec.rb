@@ -6,6 +6,8 @@ RSpec.describe "Plan comparison view", type: :request do
 
   before do
     sign_in user, scope: :user
+    allow_any_instance_of(ActionView::Base).to receive(:javascript_include_tag).and_return("")
+    allow_any_instance_of(ActionView::Base).to receive(:stylesheet_link_tag).and_return("")
   end
 
   it "renders comparison data grouped by coverage category" do
