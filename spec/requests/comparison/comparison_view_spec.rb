@@ -5,7 +5,7 @@ RSpec.describe "Plan comparison view", type: :request do
   let(:progress) { create(:wizard_progress, :plan_comparison, user: user, current_step: "comparison") }
 
   before do
-    sign_in user
+    sign_in user, scope: :user
   end
 
   it "renders comparison data grouped by coverage category" do
