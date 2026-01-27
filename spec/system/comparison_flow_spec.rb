@@ -74,4 +74,40 @@ RSpec.describe "Plan comparison flow", type: :system do
 
     expect(page).to have_content("No plans selected yet", wait: 10)
   end
+
+  it "shows separate columns for the same plan with different module selections" do
+    user = create(:user, email: "compare-dupe@example.com", password: "password123")
+    plan = create(:plan, name: "Dual Plan")
+    plan_version = plan.current_plan_version
+    group = create(:module_group, plan_version: plan_version, name: "Core")
+    module_a = create(:plan_module, plan_version: plan_version, module_group: group, name: "Module A")
+    module_b = create(:plan_module, plan_version: plan_version, module_group: group, name: "Module B")
+
+    category = create(:coverage_category, name: "Outpatient", position: 1)
+    benefit = create(:benefit, name: "Consultations", coverage_category: category)
+    create(:module_benefit, plan_module: module_a, benefit: benefit, coverage_description: "A coverage")
+    create(:module_benefit, plan_module: module_b, benefit: benefit, coverage_description: "B coverage")
+
+    progress = create(
+      :wizard_progress,
+      :plan_comparison,
+      user: user,
+      current_step: "comparison",
+      state: {
+        "plan_selections" => [
+          { "id" => "sel-a", "plan_id" => plan.id, "module_groups" => { group.id.to_s => module_a.id } },
+          { "id" => "sel-b", "plan_id" => plan.id, "module_groups" => { group.id.to_s => module_b.id } }
+        ]
+      }
+    )
+
+    sign_in(email: user.email, password: "password123")
+    visit wizard_progress_path(progress)
+
+    expect(page).to have_content("Dual Plan")
+    expect(page).to have_text(/outpatient/i)
+    expect(page).to have_content("Consultations")
+    expect(page).to have_content("A coverage")
+    expect(page).to have_content("B coverage")
+  end
 end
