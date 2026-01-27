@@ -4,7 +4,7 @@ class ComparisonBuilder
   end
 
   def build
-    selections = normalized_plan_selections
+    selections = progress.comparison_plan_selections
     return empty_payload if selections.empty?
 
     plans_by_id =
@@ -14,6 +14,7 @@ class ComparisonBuilder
 
     plan_versions = []
     selected_module_ids_by_plan_version = Hash.new { |hash, key| hash[key] = [] }
+    selected_module_ids_by_plan = progress.comparison_selected_module_ids_by_plan
 
     selections.each do |selection|
       plan = plans_by_id[selection["plan_id"].to_i]
@@ -22,7 +23,7 @@ class ComparisonBuilder
       plan_version = plan.current_plan_version
       plan_versions << plan_version unless plan_versions.include?(plan_version)
 
-      module_ids = selection.fetch("module_groups", {}).to_h.values.map(&:to_i).uniq
+      module_ids = selected_module_ids_by_plan[plan.id] || []
       selected_module_ids_by_plan_version[plan_version.id] |= module_ids
     end
 
@@ -102,15 +103,6 @@ class ComparisonBuilder
       insurer_name: plan_version.plan.insurer.name,
       policy_type: plan_version.policy_type
     }
-  end
-
-  def normalized_plan_selections
-    raw = progress.state["plan_selections"]
-    case raw
-    when Hash then raw.values
-    when Array then raw
-    else []
-    end
   end
 
   def empty_payload

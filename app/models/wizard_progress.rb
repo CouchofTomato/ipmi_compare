@@ -77,4 +77,36 @@ class WizardProgress < ApplicationRecord
       "#{names[0]} vs #{names[1]} +#{names.size - 2}"
     end
   end
+
+  def comparison_plan_selections
+    return [] unless wizard_type == "plan_comparison"
+
+    raw = state["plan_selections"]
+    list =
+      case raw
+      when Hash then raw.values
+      when Array then raw
+      else []
+      end
+
+    list.filter_map do |selection|
+      next unless selection.is_a?(Hash)
+
+      selection = selection.deep_dup
+      selection["id"] ||= SecureRandom.uuid
+      selection["plan_id"] = selection["plan_id"].to_i if selection["plan_id"].present?
+      selection["module_groups"] = selection["module_groups"].to_h.stringify_keys
+      selection
+    end
+  end
+
+  def comparison_selected_module_ids_by_plan
+    comparison_plan_selections.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |selection, acc|
+      plan_id = selection["plan_id"].to_i
+      next if plan_id.zero?
+
+      module_ids = selection.fetch("module_groups", {}).values.map(&:to_i).uniq
+      acc[plan_id] |= module_ids
+    end
+  end
 end
