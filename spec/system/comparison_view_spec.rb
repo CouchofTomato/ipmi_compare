@@ -34,7 +34,7 @@ RSpec.describe "Plan comparison view", type: :system do
     sign_in(email: user.email, password: "password123")
     visit wizard_progress_path(progress)
 
-    expect(page).to have_text(/inpatient/i, visible: :all)
+    expect(page).to have_text(/inpatient/i)
     expect(page).to have_content("Hospital stay")
     expect(page).to have_content("Covered")
   end
