@@ -1,3 +1,5 @@
+require "set"
+
 class ComparisonBuilder
   def initialize(progress)
     @progress = progress
@@ -12,14 +14,21 @@ class ComparisonBuilder
         .where(id: selections.map { |selection| selection["plan_id"] }.compact)
         .index_by(&:id)
 
+    seen_selection_ids = Set.new
+
     selection_columns = selections.filter_map do |selection|
       plan = plans_by_id[selection["plan_id"].to_i]
       next unless plan&.current_plan_version
 
+      selection_id = selection["id"]
+      next unless selection_id.present?
+      next if seen_selection_ids.include?(selection_id)
+
+      seen_selection_ids << selection_id
       module_ids = selection.fetch("module_groups", {}).to_h.values.map(&:to_i).uniq
 
       {
-        selection_id: selection["id"],
+        selection_id: selection_id,
         plan_id: plan.id,
         plan_version_id: plan.current_plan_version.id,
         plan_name: plan.name,
