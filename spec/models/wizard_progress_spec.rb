@@ -75,4 +75,38 @@ RSpec.describe WizardProgress, type: :model do
       expect(progress.plan_version).to eq(plan.current_plan_version)
     end
   end
+
+  describe "comparison selection helpers" do
+    let(:plan) { create(:plan) }
+    let(:group) { create(:module_group, plan_version: plan.current_plan_version) }
+    let(:module_a) { create(:plan_module, plan_version: plan.current_plan_version, module_group: group) }
+    let(:module_b) { create(:plan_module, plan_version: plan.current_plan_version, module_group: group) }
+
+    let(:progress) do
+      create(
+        :wizard_progress,
+        :plan_comparison,
+        state: {
+          "plan_selections" => {
+            "legacy" => { "plan_id" => plan.id, "module_groups" => { group.id.to_s => module_a.id } },
+            "new" => { "id" => "abc", "plan_id" => plan.id, "module_groups" => { group.id.to_s => module_b.id } }
+          }
+        }
+      )
+    end
+
+    it "normalizes plan selections for plan comparison progress" do
+      selections = progress.comparison_plan_selections
+
+      expect(selections.size).to eq(2)
+      expect(selections.all? { |sel| sel["id"].present? }).to eq(true)
+      expect(selections.first["module_groups"]).to eq(group.id.to_s => module_a.id)
+    end
+
+    it "returns selected module ids grouped by plan id" do
+      result = progress.comparison_selected_module_ids_by_plan
+
+      expect(result[plan.id]).to contain_exactly(module_a.id, module_b.id)
+    end
+  end
 end

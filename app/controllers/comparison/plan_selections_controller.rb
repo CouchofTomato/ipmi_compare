@@ -85,11 +85,19 @@ class Comparison::PlanSelectionsController < ApplicationController
 
     respond_to do |format|
       format.turbo_stream do
-        render turbo_stream: turbo_stream.replace(
-          "plan_selection",
-          partial: "wizard_progresses/steps/plan_comparison/plan_selection",
-          locals: { progress: @wizard_progress, presenter: @presenter }
-        )
+        if @wizard_progress.current_step == "comparison" || request.headers["Turbo-Frame"] == "wizard_step"
+          render turbo_stream: turbo_stream.replace(
+            "wizard_step",
+            partial: "wizard_progresses/steps/plan_comparison/comparison",
+            locals: { progress: @wizard_progress, presenter: WizardProgresses::Comparison::ComparisonPresenter.new(@wizard_progress) }
+          )
+        else
+          render turbo_stream: turbo_stream.replace(
+            "plan_selection",
+            partial: "wizard_progresses/steps/plan_comparison/plan_selection",
+            locals: { progress: @wizard_progress, presenter: @presenter }
+          )
+        end
       end
 
       format.html { redirect_to wizard_progress_path(@wizard_progress), notice: "Plan selection removed." }
