@@ -13,13 +13,13 @@
         <p>No plans selected yet. Head back to choose plans for this comparison.</p>
       </div>
     <% else %>
-      <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div class="relative overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <table class="min-w-full text-left text-sm text-slate-700 dark:text-slate-200">
           <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800/60 dark:text-slate-300">
             <tr>
-              <th class="px-4 py-3 font-semibold">Benefit</th>
+              <th class="sticky left-0 top-0 z-30 bg-slate-50 px-4 py-3 font-semibold shadow-sm dark:bg-slate-800/60">Benefit</th>
               <% comparison_data[:plan_versions].each do |plan_version| %>
-                <th class="px-4 py-3 font-semibold">
+                <th class="sticky top-0 z-20 bg-slate-50 px-4 py-3 font-semibold shadow-sm dark:bg-slate-800/60">
                   <div class="text-sm font-semibold text-slate-900 dark:text-slate-100"><%= plan_version[:plan_name] %></div>
                   <div class="text-xs text-slate-500 dark:text-slate-400"><%= plan_version[:insurer_name] %></div>
                 </th>
@@ -29,11 +29,11 @@
           <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
             <% comparison_data[:categories].each do |category| %>
               <tr class="bg-slate-100/80 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800/50 dark:text-slate-300">
-                <td class="px-4 py-3 font-semibold" colspan="<%= comparison_data[:plan_versions].size + 1 %>"><%= category[:name] %></td>
+                <td class="sticky left-0 z-10 bg-slate-100/80 px-4 py-3 font-semibold shadow-sm dark:bg-slate-800/50" colspan="<%= comparison_data[:plan_versions].size + 1 %>"><%= category[:name] %></td>
               </tr>
               <% category[:benefits].each do |benefit| %>
                 <tr class="bg-white dark:bg-slate-900">
-                  <td class="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100"><%= benefit[:name] %></td>
+                  <td class="sticky left-0 z-10 bg-white px-4 py-3 font-semibold text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"><%= benefit[:name] %></td>
                   <% comparison_data[:plan_versions].each do |plan_version| %>
                     <% entries = benefit[:per_plan][plan_version[:plan_version_id]] || [] %>
                     <td class="px-4 py-3 align-top">
@@ -45,12 +45,21 @@
                             <div class="rounded-md border border-slate-200 bg-slate-50/70 px-2.5 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200">
                               <p class="font-semibold text-slate-900 dark:text-slate-100"><%= entry[:plan_module_name] %></p>
                               <% if entry[:coverage_description].present? %>
-                                <p class="text-slate-600 dark:text-slate-300"><%= entry[:coverage_description] %></p>
+                                <p class="text-slate-600 dark:text-slate-300 leading-snug"><%= entry[:coverage_description] %></p>
                               <% end %>
-                              <% if entry[:limit_unit].present? %>
+                              <% limit_value = entry[:limit_gbp] || entry[:limit_usd] || entry[:limit_eur] %>
+                              <% limit_currency =
+                                   if entry[:limit_gbp].present?
+                                     "GBP"
+                                   elsif entry[:limit_usd].present?
+                                     "USD"
+                                   elsif entry[:limit_eur].present?
+                                     "EUR"
+                                   end %>
+                              <% if limit_value.present? || entry[:limit_unit].present? %>
                                 <p class="text-slate-600 dark:text-slate-300">
                                   Limit:
-                                  <%= [entry[:limit_gbp], entry[:limit_usd], entry[:limit_eur]].compact.first || "N/A" %>
+                                  <%= limit_currency %><%= limit_value || "N/A" %>
                                   <%= entry[:limit_unit] %>
                                 </p>
                               <% end %>
