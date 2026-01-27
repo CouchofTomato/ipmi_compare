@@ -29,8 +29,8 @@ RSpec.describe ComparisonBuilder do
       user: user,
       state: {
         "plan_selections" => [
-          { "plan_id" => plan_one.id, "module_groups" => { group_one.id.to_s => module_one.id } },
-          { "plan_id" => plan_two.id, "module_groups" => { group_two.id.to_s => module_two.id } }
+          { "id" => "sel-one", "plan_id" => plan_one.id, "module_groups" => { group_one.id.to_s => module_one.id } },
+          { "id" => "sel-two", "plan_id" => plan_two.id, "module_groups" => { group_two.id.to_s => module_two.id } }
         ]
       }
     )
@@ -46,15 +46,15 @@ RSpec.describe ComparisonBuilder do
     it "returns comparison data grouped by coverage category using selected modules" do
       result = described_class.new(progress).build
 
-      expect(result[:plan_versions].size).to eq(2)
+      expect(result[:selections].size).to eq(2)
       expect(result[:categories].map { |cat| cat[:name] }).to eq([ "Inpatient", "Outpatient" ])
 
       inpatient = result[:categories].first
       expect(inpatient[:benefits].map { |b| b[:name] }).to eq([ "Hospital stay" ])
 
-      per_plan = inpatient[:benefits].first[:per_plan]
-      expect(per_plan[version_one.id].first[:coverage_description]).to eq("Covered")
-      expect(per_plan[version_two.id]).to eq([])
+      per_selection = inpatient[:benefits].first[:per_selection]
+      expect(per_selection["sel-one"].first[:coverage_description]).to eq("Covered")
+      expect(per_selection["sel-two"]).to eq([])
     end
 
     it "skips categories with no selected benefits" do

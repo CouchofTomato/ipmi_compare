@@ -12,38 +12,40 @@ class ComparisonBuilder
         .where(id: selections.map { |selection| selection["plan_id"] }.compact)
         .index_by(&:id)
 
-    plan_versions = []
-    selected_module_ids_by_plan_version = Hash.new { |hash, key| hash[key] = [] }
-    selected_module_ids_by_plan = progress.comparison_selected_module_ids_by_plan
-
-    selections.each do |selection|
+    selection_columns = selections.filter_map do |selection|
       plan = plans_by_id[selection["plan_id"].to_i]
       next unless plan&.current_plan_version
 
-      plan_version = plan.current_plan_version
-      plan_versions << plan_version unless plan_versions.include?(plan_version)
+      module_ids = selection.fetch("module_groups", {}).to_h.values.map(&:to_i).uniq
 
-      module_ids = selected_module_ids_by_plan[plan.id] || []
-      selected_module_ids_by_plan_version[plan_version.id] |= module_ids
+      {
+        selection_id: selection["id"],
+        plan_id: plan.id,
+        plan_version_id: plan.current_plan_version.id,
+        plan_name: plan.name,
+        insurer_name: plan.insurer.name,
+        policy_type: plan.current_plan_version.policy_type,
+        module_ids: module_ids
+      }
     end
 
-    module_benefits_by_plan_version =
-      plan_versions.to_h do |plan_version|
-        selected_module_ids = selected_module_ids_by_plan_version[plan_version.id]
-        modules = plan_version.plan_modules.select { |plan_module| selected_module_ids.include?(plan_module.id) }
-        [ plan_version.id, modules.flat_map(&:module_benefits) ]
+    module_benefits_by_selection =
+      selection_columns.to_h do |selection|
+        plan = plans_by_id[selection[:plan_id]]
+        modules = plan.current_plan_version.plan_modules.select { |plan_module| selection[:module_ids].include?(plan_module.id) }
+        [ selection[:selection_id], modules.flat_map(&:module_benefits) ]
       end
 
     categories =
       CoverageCategory.order(:position, :name).filter_map do |category|
-        benefits = benefits_for_category(category, plan_versions, module_benefits_by_plan_version)
+        benefits = benefits_for_category(category, selection_columns, module_benefits_by_selection)
         next if benefits.empty?
 
         { id: category.id, name: category.name, benefits: benefits }
       end
 
     {
-      plan_versions: plan_versions.map { |plan_version| plan_version_payload(plan_version) },
+      selections: selection_columns,
       categories: categories
     }
   end
@@ -52,11 +54,11 @@ class ComparisonBuilder
 
   attr_reader :progress
 
-  def benefits_for_category(category, plan_versions, module_benefits_by_plan_version)
+  def benefits_for_category(category, selection_columns, module_benefits_by_selection)
     benefits = {}
 
-    plan_versions.each do |plan_version|
-      module_benefits_by_plan_version[plan_version.id].each do |module_benefit|
+    selection_columns.each do |selection|
+      module_benefits_by_selection[selection[:selection_id]].each do |module_benefit|
         next unless module_benefit.benefit.coverage_category_id == category.id
 
         benefits[module_benefit.benefit_id] ||= module_benefit.benefit
@@ -67,8 +69,8 @@ class ComparisonBuilder
       {
         id: benefit.id,
         name: benefit.name,
-        per_plan: plan_versions.to_h do |plan_version|
-          [ plan_version.id, module_benefit_entries(benefit.id, module_benefits_by_plan_version[plan_version.id]) ]
+        per_selection: selection_columns.to_h do |selection|
+          [ selection[:selection_id], module_benefit_entries(benefit.id, module_benefits_by_selection[selection[:selection_id]]) ]
         end
       }
     end
@@ -95,17 +97,7 @@ class ComparisonBuilder
       end
   end
 
-  def plan_version_payload(plan_version)
-    {
-      plan_version_id: plan_version.id,
-      plan_id: plan_version.plan_id,
-      plan_name: plan_version.plan.name,
-      insurer_name: plan_version.plan.insurer.name,
-      policy_type: plan_version.policy_type
-    }
-  end
-
   def empty_payload
-    { plan_versions: [], categories: [] }
+    { selections: [], categories: [] }
   end
 end
