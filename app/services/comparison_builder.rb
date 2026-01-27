@@ -27,10 +27,10 @@ class ComparisonBuilder
     end
 
     module_benefits_by_plan_version =
-      plan_versions.index_with do |plan_version|
+      plan_versions.to_h do |plan_version|
         selected_module_ids = selected_module_ids_by_plan_version[plan_version.id]
         modules = plan_version.plan_modules.select { |plan_module| selected_module_ids.include?(plan_module.id) }
-        modules.flat_map(&:module_benefits)
+        [ plan_version.id, modules.flat_map(&:module_benefits) ]
       end
 
     categories =
@@ -66,15 +66,15 @@ class ComparisonBuilder
       {
         id: benefit.id,
         name: benefit.name,
-        per_plan: plan_versions.index_with do |plan_version|
-          module_benefit_entries(benefit.id, module_benefits_by_plan_version[plan_version.id])
+        per_plan: plan_versions.to_h do |plan_version|
+          [ plan_version.id, module_benefit_entries(benefit.id, module_benefits_by_plan_version[plan_version.id]) ]
         end
       }
     end
   end
 
   def module_benefit_entries(benefit_id, module_benefits)
-    module_benefits
+    Array(module_benefits)
       .select { |module_benefit| module_benefit.benefit_id == benefit_id }
       .sort_by(&:weighting)
       .map do |module_benefit|
