@@ -68,7 +68,9 @@ RSpec.describe "Plan comparison flow", type: :system do
     visit wizard_progress_path(progress)
 
     expect(page).to have_content("Remove Me")
-    click_button "Remove"
+    accept_confirm do
+      click_button "Remove"
+    end
 
     expect(page).to have_content("No plans selected yet", wait: 10)
   end
