@@ -121,16 +121,18 @@ class WizardProgressesController < ApplicationController
   end
 
   def render_current_step
+    presenter = @progress.flow.presenter_for(@progress.current_step) || @presenter
+
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: turbo_stream.replace(
           "wizard_step",
           partial: "wizard_progresses/steps/#{@progress.wizard_type}/#{@progress.current_step}",
-          locals: { progress: @progress, resource: @resource, presenter: @presenter }
+          locals: { progress: @progress, resource: @resource, presenter: presenter }
         )
       end
 
-      format.html { redirect_to wizard_progress_path(@progress, resource: @resource, presenter: @presenter) }
+      format.html { redirect_to wizard_progress_path(@progress, resource: @resource, presenter: presenter) }
     end
   end
 
