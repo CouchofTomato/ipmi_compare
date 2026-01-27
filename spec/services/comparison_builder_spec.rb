@@ -1,0 +1,66 @@
+require "rails_helper"
+
+RSpec.describe ComparisonBuilder do
+  let(:user) { create(:user) }
+  let(:category_a) { create(:coverage_category, name: "Inpatient", position: 1) }
+  let(:category_b) { create(:coverage_category, name: "Outpatient", position: 2) }
+  let(:category_empty) { create(:coverage_category, name: "Dental", position: 3) }
+
+  let(:benefit_a) { create(:benefit, name: "Hospital stay", coverage_category: category_a) }
+  let(:benefit_b) { create(:benefit, name: "Consultations", coverage_category: category_b) }
+
+  let(:plan_one) { create(:plan) }
+  let(:plan_two) { create(:plan) }
+
+  let(:version_one) { plan_one.current_plan_version }
+  let(:version_two) { plan_two.current_plan_version }
+
+  let(:group_one) { create(:module_group, plan_version: version_one) }
+  let(:group_two) { create(:module_group, plan_version: version_two) }
+
+  let(:module_one) { create(:plan_module, plan_version: version_one, module_group: group_one, name: "Core") }
+  let(:module_two) { create(:plan_module, plan_version: version_two, module_group: group_two, name: "Premium") }
+  let(:module_other) { create(:plan_module, plan_version: version_one, module_group: group_one, name: "Optional") }
+
+  let(:progress) do
+    create(
+      :wizard_progress,
+      :plan_comparison,
+      user: user,
+      state: {
+        "plan_selections" => [
+          { "plan_id" => plan_one.id, "module_groups" => { group_one.id.to_s => module_one.id } },
+          { "plan_id" => plan_two.id, "module_groups" => { group_two.id.to_s => module_two.id } }
+        ]
+      }
+    )
+  end
+
+  before do
+    create(:module_benefit, plan_module: module_one, benefit: benefit_a, coverage_description: "Covered", limit_gbp: 10_000, limit_unit: "per year")
+    create(:module_benefit, plan_module: module_two, benefit: benefit_b, coverage_description: "Included", limit_usd: 5000, limit_unit: "per visit")
+    create(:module_benefit, plan_module: module_other, benefit: benefit_a, coverage_description: "Not selected")
+  end
+
+  describe "#build" do
+    it "returns comparison data grouped by coverage category using selected modules" do
+      result = described_class.new(progress).build
+
+      expect(result[:plan_versions].size).to eq(2)
+      expect(result[:categories].map { |cat| cat[:name] }).to eq([ "Inpatient", "Outpatient" ])
+
+      inpatient = result[:categories].first
+      expect(inpatient[:benefits].map { |b| b[:name] }).to eq([ "Hospital stay" ])
+
+      per_plan = inpatient[:benefits].first[:per_plan]
+      expect(per_plan[version_one.id].first[:coverage_description]).to eq("Covered")
+      expect(per_plan[version_two.id]).to eq([])
+    end
+
+    it "skips categories with no selected benefits" do
+      result = described_class.new(progress).build
+
+      expect(result[:categories].map { |cat| cat[:name] }).not_to include("Dental")
+    end
+  end
+end
