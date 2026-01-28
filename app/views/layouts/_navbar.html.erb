@@ -1,8 +1,7 @@
 <% comparison_links =
   if user_signed_in?
     [
-      { name: "My comparisons", path: wizard_progresses_path(status: "in_progress") },
-      { name: "Completed comparisons", path: wizard_progresses_path(status: "complete") }
+      { name: "Comparisons", path: wizard_progresses_path(wizard_type: "plan_comparison") }
     ]
   else
     []
