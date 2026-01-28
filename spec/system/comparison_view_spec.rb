@@ -1,14 +1,6 @@
 require "system_helper"
 
 RSpec.describe "Plan comparison view", type: :system do
-  def sign_in(email:, password:)
-    visit new_user_session_path
-    fill_in "Email", with: email
-    fill_in "Password", with: password
-    click_button "Log in"
-    expect(page).to have_current_path(root_path)
-  end
-
   it "renders comparison data grouped by coverage category" do
     user = create(:user, email: "comparison@example.com", password: "password123")
     progress = create(:wizard_progress, :plan_comparison, user: user, current_step: "comparison")
@@ -31,7 +23,7 @@ RSpec.describe "Plan comparison view", type: :system do
       }
     )
 
-    sign_in(email: user.email, password: "password123")
+    login_as(user, scope: :user)
     visit wizard_progress_path(progress)
 
     expect(page).to have_text(/inpatient/i)
@@ -43,7 +35,7 @@ RSpec.describe "Plan comparison view", type: :system do
     user = create(:user, email: "empty@example.com", password: "password123")
     progress = create(:wizard_progress, :plan_comparison, user: user, current_step: "comparison", state: {})
 
-    sign_in(email: user.email, password: "password123")
+    login_as(user, scope: :user)
     visit wizard_progress_path(progress)
 
     expect(page).to have_content("No plans selected yet")

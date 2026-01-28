@@ -1,17 +1,9 @@
 require "system_helper"
 
 RSpec.describe "Benefits", type: :system do
-  def sign_in(email:, password:)
-    visit new_user_session_path
-    fill_in "Email", with: email
-    fill_in "Password", with: password
-    click_button "Log in"
-    expect(page).to have_current_path(root_path)
-  end
-
   before do
     admin = create(:user, email: "admin@example.com", password: "password123", admin: true)
-    sign_in(email: admin.email, password: "password123")
+    login_as(admin, scope: :user)
   end
 
   it "allows creating a benefit" do

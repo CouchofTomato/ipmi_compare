@@ -1,14 +1,6 @@
 require "system_helper"
 
 RSpec.describe "Plan comparison flow", type: :system do
-  def sign_in(email:, password:)
-    visit new_user_session_path
-    fill_in "Email", with: email
-    fill_in "Password", with: password
-    click_button "Log in"
-    expect(page).to have_current_path(root_path)
-  end
-
   it "adds a plan selection and renders it in the comparison grid" do
     user = create(:user, email: "compare-flow@example.com", password: "password123")
 
@@ -23,7 +15,7 @@ RSpec.describe "Plan comparison flow", type: :system do
 
     progress = create(:wizard_progress, :plan_comparison, user: user, current_step: "plan_selection")
 
-    sign_in(email: user.email, password: "password123")
+    login_as(user, scope: :user)
     visit wizard_progress_path(progress)
 
     fill_in "Search for a plan", with: "Acme"
@@ -64,7 +56,7 @@ RSpec.describe "Plan comparison flow", type: :system do
       }
     )
 
-    sign_in(email: user.email, password: "password123")
+    login_as(user, scope: :user)
     visit wizard_progress_path(progress)
 
     expect(page).to have_content("Remove Me")
@@ -103,7 +95,7 @@ RSpec.describe "Plan comparison flow", type: :system do
       }
     )
 
-    sign_in(email: user.email, password: "password123")
+    login_as(user, scope: :user)
     visit wizard_progress_path(progress)
 
     expect(page).to have_content("Dual Plan")

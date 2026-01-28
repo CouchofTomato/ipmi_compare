@@ -1,14 +1,6 @@
 require "system_helper"
 
 RSpec.describe "Plan wizard", type: :system do
-  def sign_in(email:, password:)
-    visit new_user_session_path
-    fill_in "Email", with: email
-    fill_in "Password", with: password
-    click_button "Log in"
-    expect(page).to have_current_path(root_path)
-  end
-
   it "walks through the full plan creation flow with modules, benefits, limits, cost shares, and cost share links" do
     user = create(:user, email: "wizard@example.com", password: "password123", admin: true)
     insurer = create(:insurer, name: "Acme Health")
@@ -16,7 +8,7 @@ RSpec.describe "Plan wizard", type: :system do
     benefit = create(:benefit, name: "Inpatient care", coverage_category: coverage_category)
     area = create(:geographic_cover_area, name: "Europe", code: "EU")
 
-    sign_in(email: user.email, password: "password123")
+    login_as(user, scope: :user)
 
     visit wizard_progresses_path(wizard_type: "plan_creation")
     find(:test_id, "start-plan-wizard-button").click
