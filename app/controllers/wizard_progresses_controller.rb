@@ -57,6 +57,10 @@ class WizardProgressesController < ApplicationController
   end
 
   def update
+    if params[:step_action] == "restore"
+      return restore_comparison
+    end
+
     if params[:wizard_progress].is_a?(Hash) && params[:wizard_progress].key?(:name)
       @progress.update!(name: params[:wizard_progress][:name])
     end
@@ -153,6 +157,21 @@ class WizardProgressesController < ApplicationController
     return unless params[:wizard_type] == "plan_creation"
 
     require_admin!
+  end
+
+  def restore_comparison
+    unless @progress.wizard_type == "plan_comparison"
+      return redirect_back fallback_location: wizard_progresses_path, alert: "Only comparisons can be restored."
+    end
+
+    unless @progress.complete?
+      return redirect_back fallback_location: wizard_progresses_path, alert: "Only archived comparisons can be restored."
+    end
+
+    @progress.update!(status: :in_progress, completed_at: nil)
+
+    redirect_to wizard_progresses_path(status: "in_progress", wizard_type: "plan_comparison"),
+                notice: "Comparison restored."
   end
 
   def redirect_if_complete
