@@ -1,13 +1,15 @@
 class WizardProgressesController < ApplicationController
   before_action :authenticate_user!
   before_action :require_admin_for_plan_wizard, only: %i[create show update destroy]
+  before_action :require_admin_for_plan_wizard_index, only: %i[index]
   before_action :set_progress, only: %i[show update destroy]
   before_action :redirect_if_complete, only: %i[show update]
   before_action :presenter_for_current_step, only: %i[show update]
 
   def index
     @status = params[:status].presence_in(%w[in_progress complete]) || "in_progress"
-    @wizard_progresses = current_user.wizard_progresses.where(status: @status).order(updated_at: :desc)
+    @wizard_type = params[:wizard_type].presence || "plan_comparison"
+    @wizard_progresses = current_user.wizard_progresses.where(status: @status, wizard_type: @wizard_type).order(updated_at: :desc)
   end
 
   def create
@@ -143,6 +145,12 @@ class WizardProgressesController < ApplicationController
   def require_admin_for_plan_wizard
     wizard_type = @progress&.wizard_type || params[:wizard_type].presence || "plan_creation"
     return if wizard_type != "plan_creation"
+
+    require_admin!
+  end
+
+  def require_admin_for_plan_wizard_index
+    return unless params[:wizard_type] == "plan_creation"
 
     require_admin!
   end

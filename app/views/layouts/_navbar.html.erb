@@ -13,6 +13,7 @@
   if user_signed_in? && current_user.admin?
     [
       { name: "Plans", path: plans_path },
+      { name: "Plan wizards", path: wizard_progresses_path(wizard_type: "plan_creation") },
       { name: "Insurers", path: insurers_path },
       { name: "Benefits", path: benefits_path },
       { name: "Coverage categories", path: coverage_categories_path },
