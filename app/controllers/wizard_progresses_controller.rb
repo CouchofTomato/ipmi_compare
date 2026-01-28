@@ -175,6 +175,8 @@ class WizardProgressesController < ApplicationController
   end
 
   def redirect_if_complete
+    return if params[:step_action] == "restore"
+
     redirect_to_plan_if_complete
   end
 
