@@ -1,8 +1,8 @@
 class WizardProgressesController < ApplicationController
   before_action :authenticate_user!
-  before_action :require_admin_for_plan_wizard, only: %i[create show update destroy]
   before_action :require_admin_for_plan_wizard_index, only: %i[index]
   before_action :set_progress, only: %i[show update destroy]
+  before_action :require_admin_for_plan_wizard, only: %i[create show update destroy]
   before_action :redirect_if_complete, only: %i[show update]
   before_action :presenter_for_current_step, only: %i[show update]
 

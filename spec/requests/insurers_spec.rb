@@ -4,6 +4,11 @@ RSpec.describe "Insurers", type: :request do
   let!(:insurer) { create(:insurer) }
   let(:valid_attributes) { attributes_for(:insurer) }
   let(:invalid_attributes) { { name: "", jurisdiction: "" } }
+  let(:admin_user) { create(:user, admin: true) }
+
+  before do
+    sign_in admin_user
+  end
 
   describe "GET /index" do
     it "returns http success" do

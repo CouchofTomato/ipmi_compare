@@ -8,6 +8,10 @@ RSpec.describe "Comparison::PlanSelections", type: :request do
   let(:module_a) { create(:plan_module, plan_version:, module_group: group) }
   let(:module_b) { create(:plan_module, plan_version:, module_group: group, name: "Alternate") }
 
+  before do
+    sign_in progress.user
+  end
+
   describe "GET /search" do
     it "returns success" do
       get search_comparison_plan_selection_path(progress), params: { q: plan.name }, headers: { "Accept" => "text/vnd.turbo-stream.html" }

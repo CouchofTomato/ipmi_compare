@@ -10,7 +10,7 @@ RSpec.describe "Plan wizard", type: :system do
   end
 
   it "walks through the full plan creation flow with modules, benefits, limits, cost shares, and cost share links" do
-    user = create(:user, email: "wizard@example.com", password: "password123")
+    user = create(:user, email: "wizard@example.com", password: "password123", admin: true)
     insurer = create(:insurer, name: "Acme Health")
     coverage_category = create(:coverage_category, name: "Hospitalisation")
     benefit = create(:benefit, name: "Inpatient care", coverage_category: coverage_category)
@@ -18,7 +18,7 @@ RSpec.describe "Plan wizard", type: :system do
 
     sign_in(email: user.email, password: "password123")
 
-    visit wizard_progresses_path
+    visit wizard_progresses_path(wizard_type: "plan_creation")
     find(:test_id, "start-plan-wizard-button").click
 
     expect(page).to have_content("Step 1: Plan details")
