@@ -1,16 +1,18 @@
 require "rails_helper"
 
 RSpec.describe "WizardProgresses", type: :request do
+  let(:admin_user) { create(:user, admin: true) }
   let(:wizard_progress) do
     create(
       :wizard_progress,
       wizard_type: "plan_creation",
-      current_step: "plan_residency"
+      current_step: "plan_residency",
+      user: admin_user
     )
   end
 
   before do
-    sign_in wizard_progress.user
+    sign_in admin_user
   end
 
   describe "GET /show" do

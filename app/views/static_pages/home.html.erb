@@ -1,50 +1,92 @@
 <% content_for :title, "Home" %>
 
 <div class="px-4 py-10 sm:px-6 lg:px-8">
-  <div class="mx-auto max-w-4xl space-y-6">
-    <div>
-      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Welcome back</h1>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Choose an area to manage your IPMI data.</p>
-    </div>
+  <div class="mx-auto max-w-4xl space-y-8">
+    <% if user_signed_in? %>
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Welcome back</h1>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Start a new comparison or continue one in progress.</p>
+      </div>
 
-    <div class="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-700 shadow-sm dark:border-white/10 dark:bg-gray-900 dark:text-gray-200">
-      Looking for your wizards? Head to the
-      <%= link_to "wizard sessions page", wizard_progresses_path, class: "font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-300 dark:hover:text-indigo-200" %>
-      to start a new plan or continue an in-progress flow.
-    </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <%= button_to "New comparison",
+                      wizard_progresses_path(wizard_type: "plan_comparison"),
+                      method: :post,
+                      class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
+        <%= link_to "View comparisons",
+                    wizard_progresses_path(wizard_type: "plan_comparison"),
+                    class: "inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:border-gray-400 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/20" %>
+      </div>
 
-    <div class="grid gap-4 sm:grid-cols-2">
-      <%= link_to plans_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Plans</p>
-          <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Browse and compare plans</p>
+      <% if current_user.admin? %>
+        <div class="space-y-3">
+          <div>
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Admin tools</h2>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Manage the catalog and plan setup.</p>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <%= link_to plans_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
+              <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Plans</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Manage plan records</p>
+              </div>
+              <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
+            <% end %>
+
+            <%= link_to wizard_progresses_path(wizard_type: "plan_creation"), class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
+              <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Plan wizards</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Draft or update plan versions</p>
+              </div>
+              <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
+            <% end %>
+
+            <%= link_to insurers_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
+              <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Insurers</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Maintain insurer records</p>
+              </div>
+              <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
+            <% end %>
+
+            <%= link_to benefits_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
+              <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Benefits</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Manage benefit details</p>
+              </div>
+              <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
+            <% end %>
+
+            <%= link_to coverage_categories_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
+              <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Coverage categories</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Organize benefit groups</p>
+              </div>
+              <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
+            <% end %>
+
+            <%= link_to geographic_cover_areas_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
+              <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Geographic cover</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Review coverage areas</p>
+              </div>
+              <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
+            <% end %>
+          </div>
         </div>
-        <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
       <% end %>
+    <% else %>
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">IPMI Compare</h1>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Sign in to build plan comparisons and review coverage details.</p>
+      </div>
 
-      <%= link_to benefits_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Benefits</p>
-          <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Manage benefit details</p>
-        </div>
-        <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
-      <% end %>
-
-      <%= link_to geographic_cover_areas_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Geographic cover</p>
-          <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Review coverage areas</p>
-        </div>
-        <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
-      <% end %>
-
-      <%= link_to insurers_path, class: "flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-gray-900" do %>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Insurers</p>
-          <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Maintain insurer records</p>
-        </div>
-        <span class="text-indigo-600 dark:text-indigo-300">&rarr;</span>
-      <% end %>
-    </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <%= link_to "Log in",
+                    new_user_session_path,
+                    class: "inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
+      </div>
+    <% end %>
   </div>
 </div>

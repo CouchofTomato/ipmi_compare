@@ -1,12 +1,15 @@
 class WizardProgressesController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_progress, only: %i[show update]
+  before_action :require_admin_for_plan_wizard_index, only: %i[index]
+  before_action :set_progress, only: %i[show update destroy]
+  before_action :require_admin_for_plan_wizard, only: %i[create show update destroy]
   before_action :redirect_if_complete, only: %i[show update]
   before_action :presenter_for_current_step, only: %i[show update]
 
   def index
     @status = params[:status].presence_in(%w[in_progress complete]) || "in_progress"
-    @wizard_progresses = current_user.wizard_progresses.where(status: @status).order(updated_at: :desc)
+    @wizard_type = params[:wizard_type].presence || "plan_comparison"
+    @wizard_progresses = current_user.wizard_progresses.where(status: @status, wizard_type: @wizard_type).order(updated_at: :desc)
   end
 
   def create
@@ -54,6 +57,10 @@ class WizardProgressesController < ApplicationController
   end
 
   def update
+    if params[:step_action] == "restore"
+      return restore_comparison
+    end
+
     if params[:wizard_progress].is_a?(Hash) && params[:wizard_progress].key?(:name)
       @progress.update!(name: params[:wizard_progress][:name])
     end
@@ -80,8 +87,7 @@ class WizardProgressesController < ApplicationController
   end
 
   def destroy
-    progress = current_user.wizard_progresses.find(params[:id])
-    progress.destroy
+    @progress.destroy
 
     redirect_to wizard_progresses_path, notice: "Wizard session deleted."
   end
@@ -137,10 +143,40 @@ class WizardProgressesController < ApplicationController
   end
 
   def set_progress
-    @progress = WizardProgress.find(params[:id])
+    @progress = current_user.wizard_progresses.find(params[:id])
+  end
+
+  def require_admin_for_plan_wizard
+    wizard_type = @progress&.wizard_type || params[:wizard_type].presence || "plan_creation"
+    return if wizard_type != "plan_creation"
+
+    require_admin!
+  end
+
+  def require_admin_for_plan_wizard_index
+    return unless params[:wizard_type] == "plan_creation"
+
+    require_admin!
+  end
+
+  def restore_comparison
+    unless @progress.wizard_type == "plan_comparison"
+      return redirect_back fallback_location: wizard_progresses_path, alert: "Only comparisons can be restored."
+    end
+
+    unless @progress.complete?
+      return redirect_back fallback_location: wizard_progresses_path, alert: "Only archived comparisons can be restored."
+    end
+
+    @progress.update!(status: :in_progress, completed_at: nil)
+
+    redirect_to wizard_progresses_path(status: "in_progress", wizard_type: "plan_comparison"),
+                notice: "Comparison restored."
   end
 
   def redirect_if_complete
+    return if params[:step_action] == "restore"
+
     redirect_to_plan_if_complete
   end
 

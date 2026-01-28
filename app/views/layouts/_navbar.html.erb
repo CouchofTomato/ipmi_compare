@@ -1,18 +1,27 @@
-<% nav_links = if user_signed_in?
-  [
-    { name: "Plans", path: plans_path },
-    { name: "Benefits", path: benefits_path },
-    { name: "Coverage categories", path: coverage_categories_path },
-    { name: "Geographic cover", path: geographic_cover_areas_path },
-    { name: "Insurers", path: insurers_path },
-    {
-      name: "Wizard sessions",
-      path: wizard_progresses_path
-    }
-  ]
-else
-  []
-end %>
+<% comparison_links =
+  if user_signed_in?
+    [
+      { name: "Comparisons", path: wizard_progresses_path(wizard_type: "plan_comparison") }
+    ]
+  else
+    []
+  end
+%>
+
+<% admin_links =
+  if user_signed_in? && current_user.admin?
+    [
+      { name: "Plans", path: plans_path },
+      { name: "Plan wizards", path: wizard_progresses_path(wizard_type: "plan_creation") },
+      { name: "Insurers", path: insurers_path },
+      { name: "Benefits", path: benefits_path },
+      { name: "Coverage categories", path: coverage_categories_path },
+      { name: "Geographic cover", path: geographic_cover_areas_path }
+    ]
+  else
+    []
+  end
+%>
 
 <nav aria-label="Primary navigation" class="border-b border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-gray-900">
   <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
@@ -22,9 +31,9 @@ end %>
         <span class="hidden sm:inline">IPMI Compare</span>
       <% end %>
 
-      <% if nav_links.any? %>
+      <% if comparison_links.any? || admin_links.any? %>
         <div class="hidden items-center gap-6 md:flex">
-          <% nav_links.each do |link| %>
+          <% comparison_links.each do |link| %>
             <% path = link[:path] %>
             <% path_without_query = path.to_s.split("?").first %>
             <% active = request.path == path_without_query || request.path.start_with?("#{path_without_query}/") %>
@@ -34,9 +43,29 @@ end %>
             else
               "#{base_classes} text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
             end %>
-            <% html_options = { class: link_classes } %>
-            <% html_options[:data] = link[:data] if link[:data].present? %>
-            <%= link_to link[:name], path, html_options %>
+            <%= link_to link[:name], path, class: link_classes %>
+          <% end %>
+
+          <% if admin_links.any? %>
+            <details class="relative">
+              <summary class="list-none cursor-pointer rounded-md px-2 py-1 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 dark:text-gray-300 dark:hover:text-white">
+                Admin
+              </summary>
+              <div class="absolute left-0 z-10 mt-2 w-56 rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-gray-900">
+                <% admin_links.each do |link| %>
+                  <% path = link[:path] %>
+                  <% path_without_query = path.to_s.split("?").first %>
+                  <% active = request.path == path_without_query || request.path.start_with?("#{path_without_query}/") %>
+                  <% base_classes = "block rounded-md px-3 py-2 text-sm font-medium transition-colors" %>
+                  <% link_classes = if active
+                    "#{base_classes} bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200"
+                  else
+                    "#{base_classes} text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-white/10 dark:hover:text-white"
+                  end %>
+                  <%= link_to link[:name], path, class: link_classes %>
+                <% end %>
+              </div>
+            </details>
           <% end %>
         </div>
       <% end %>
@@ -58,10 +87,10 @@ end %>
     </div>
   </div>
 
-  <% if nav_links.any? %>
+  <% if comparison_links.any? || admin_links.any? %>
     <div class="border-t border-gray-200 bg-gray-50 md:hidden dark:border-white/10 dark:bg-gray-900/70">
       <div class="mx-auto flex max-w-7xl flex-wrap gap-4 px-4 py-3 text-sm font-medium text-gray-600 sm:px-6 lg:px-8 dark:text-gray-300">
-        <% nav_links.each do |link| %>
+        <% comparison_links.each do |link| %>
           <% path = link[:path] %>
           <% path_without_query = path.to_s.split("?").first %>
           <% active = request.path == path_without_query || request.path.start_with?("#{path_without_query}/") %>
@@ -71,9 +100,29 @@ end %>
           else
             "#{base_classes} text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
           end %>
-          <% html_options = { class: link_classes } %>
-          <% html_options[:data] = link[:data] if link[:data].present? %>
-          <%= link_to link[:name], path, html_options %>
+          <%= link_to link[:name], path, class: link_classes %>
+        <% end %>
+
+        <% if admin_links.any? %>
+          <details class="w-full">
+            <summary class="list-none rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+              Admin
+            </summary>
+            <div class="mt-2 flex flex-wrap gap-3">
+              <% admin_links.each do |link| %>
+                <% path = link[:path] %>
+                <% path_without_query = path.to_s.split("?").first %>
+                <% active = request.path == path_without_query || request.path.start_with?("#{path_without_query}/") %>
+                <% base_classes = "rounded-md px-2 py-1 transition-colors" %>
+                <% link_classes = if active
+                  "#{base_classes} bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200"
+                else
+                  "#{base_classes} text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                end %>
+                <%= link_to link[:name], path, class: link_classes %>
+              <% end %>
+            </div>
+          </details>
         <% end %>
       </div>
     </div>

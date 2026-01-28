@@ -1,6 +1,11 @@
 require "system_helper"
 
 RSpec.describe "Benefits", type: :system do
+  before do
+    admin = create(:user, email: "admin@example.com", password: "password123", admin: true)
+    login_as(admin, scope: :user)
+  end
+
   it "allows creating a benefit" do
     coverage_category = create(:coverage_category, name: "Inpatient")
 

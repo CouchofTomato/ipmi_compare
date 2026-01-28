@@ -1,4 +1,5 @@
 class Comparison::PlanSelectionsController < ApplicationController
+  before_action :authenticate_user!
   before_action :set_wizard_progress
   before_action :set_presenter
 
@@ -110,7 +111,7 @@ class Comparison::PlanSelectionsController < ApplicationController
   private
 
   def set_wizard_progress
-    @wizard_progress = WizardProgress.find(params[:wizard_progress_id])
+    @wizard_progress = current_user.wizard_progresses.find(params[:wizard_progress_id])
   end
 
   def set_presenter

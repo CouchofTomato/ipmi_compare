@@ -1,41 +1,57 @@
-<% content_for :title, "Your wizard sessions" %>
+<% page_title = @wizard_type == "plan_creation" ? "Plan wizards" : "Comparisons" %>
+<% content_for :title, page_title %>
 
 <div class="px-4 py-10 sm:px-6 lg:px-8">
   <div class="mx-auto max-w-4xl space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Wizard sessions</h1>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white"><%= page_title %></h1>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
           <%= @status == "complete" ? "Review archived sessions." : "Continue where you left off." %>
         </p>
       </div>
-      <%= button_to "Start plan wizard",
-                    wizard_progresses_path(wizard_type: "plan_creation"),
-                    method: :post,
-                    class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2",
-                    data: { test_id: "start-plan-wizard-button" } %>
+      <% if @wizard_type == "plan_creation" %>
+        <%= button_to "Start plan wizard",
+                      wizard_progresses_path(wizard_type: "plan_creation"),
+                      method: :post,
+                      class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2",
+                      data: { test_id: "start-plan-wizard-button" } %>
+      <% else %>
+        <%= button_to "New comparison",
+                      wizard_progresses_path(wizard_type: "plan_comparison"),
+                      method: :post,
+                      class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2",
+                      data: { test_id: "start-comparison-button" } %>
+      <% end %>
     </div>
 
     <div class="flex items-center gap-2">
       <%= link_to "In progress",
-                  wizard_progresses_path(status: "in_progress"),
+                  wizard_progresses_path(status: "in_progress", wizard_type: @wizard_type),
                   class: "rounded-full px-3 py-1 text-sm font-semibold #{@status == 'in_progress' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200'}" %>
       <%= link_to "Archived",
-                  wizard_progresses_path(status: "complete"),
+                  wizard_progresses_path(status: "complete", wizard_type: @wizard_type),
                   class: "rounded-full px-3 py-1 text-sm font-semibold #{@status == 'complete' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200'}" %>
     </div>
 
     <% if @wizard_progresses.empty? %>
       <div class="rounded-lg border border-dashed border-gray-300 bg-white p-6 text-sm text-gray-600 shadow-sm dark:border-white/10 dark:bg-gray-900 dark:text-gray-200">
         <% if @status == "complete" %>
-          <p>You don’t have any archived wizards.</p>
+          <p>You don’t have any archived <%= @wizard_type == "plan_creation" ? "plan wizards" : "comparisons" %>.</p>
         <% else %>
-          <p>You don’t have any in-progress wizards.</p>
+          <p>You don’t have any in-progress <%= @wizard_type == "plan_creation" ? "plan wizards" : "comparisons" %>.</p>
           <div class="mt-4">
-            <%= button_to "Start a new plan wizard",
-                          wizard_progresses_path(wizard_type: "plan_creation"),
-                          method: :post,
-                          class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
+            <% if @wizard_type == "plan_creation" %>
+              <%= button_to "Start a new plan wizard",
+                            wizard_progresses_path(wizard_type: "plan_creation"),
+                            method: :post,
+                            class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
+            <% else %>
+              <%= button_to "Start a new comparison",
+                            wizard_progresses_path(wizard_type: "plan_comparison"),
+                            method: :post,
+                            class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
+            <% end %>
           </div>
         <% end %>
       </div>
@@ -58,6 +74,13 @@
             </div>
             <div class="flex items-center gap-3">
               <%= link_to "Open", wizard_progress_path(progress), class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2" %>
+              <% if @status == "complete" && @wizard_type == "plan_comparison" %>
+                <%= button_to "Restore",
+                              wizard_progress_path(progress),
+                              method: :patch,
+                              params: { step_action: "restore" },
+                              class: "inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:border-gray-400 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/20" %>
+              <% end %>
               <%= button_to "Delete",
                             wizard_progress_path(progress),
                             method: :delete,
