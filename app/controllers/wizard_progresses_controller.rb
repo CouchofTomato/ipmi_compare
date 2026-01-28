@@ -1,6 +1,7 @@
 class WizardProgressesController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_progress, only: %i[show update]
+  before_action :require_admin_for_plan_wizard, only: %i[create show update destroy]
+  before_action :set_progress, only: %i[show update destroy]
   before_action :redirect_if_complete, only: %i[show update]
   before_action :presenter_for_current_step, only: %i[show update]
 
@@ -80,8 +81,7 @@ class WizardProgressesController < ApplicationController
   end
 
   def destroy
-    progress = current_user.wizard_progresses.find(params[:id])
-    progress.destroy
+    @progress.destroy
 
     redirect_to wizard_progresses_path, notice: "Wizard session deleted."
   end
@@ -137,7 +137,14 @@ class WizardProgressesController < ApplicationController
   end
 
   def set_progress
-    @progress = WizardProgress.find(params[:id])
+    @progress = current_user.wizard_progresses.find(params[:id])
+  end
+
+  def require_admin_for_plan_wizard
+    wizard_type = @progress&.wizard_type || params[:wizard_type].presence || "plan_creation"
+    return if wizard_type != "plan_creation"
+
+    require_admin!
   end
 
   def redirect_if_complete

@@ -1,4 +1,6 @@
 class PlansController < ApplicationController
+  before_action :authenticate_user!
+  before_action :require_admin!
   before_action :set_plan, only: %i[show]
 
   def index

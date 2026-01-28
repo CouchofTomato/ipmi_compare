@@ -1,4 +1,6 @@
 class CoverageCategoriesController < ApplicationController
+  before_action :authenticate_user!
+  before_action :require_admin!
   before_action :set_coverage_category, only: %i[show edit update destroy]
 
   def index

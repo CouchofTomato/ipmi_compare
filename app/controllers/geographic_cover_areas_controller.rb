@@ -1,4 +1,6 @@
 class GeographicCoverAreasController < ApplicationController
+  before_action :authenticate_user!
+  before_action :require_admin!
   before_action :set_geographic_cover_area, only: %i[show edit update destroy]
 
   def index
