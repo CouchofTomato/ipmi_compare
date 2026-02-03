@@ -40,14 +40,14 @@ cell_style = styles.add_style(alignment: { vertical: :top, wrap_text: true }, bo
 cell_alt_style = styles.add_style(bg_color: "EEF2FF", alignment: { vertical: :top, wrap_text: true }, border: { style: :thin, color: "E2E8F0" })
 
 workbook.add_worksheet(name: "Benefits") do |sheet|
-  sheet.add_row([@comparison_name.to_s], style: title_style, height: 24)
+  sheet.add_row([ @comparison_name.to_s ], style: title_style, height: 24)
   sheet.merge_cells("A1:#{column_letter.call(total_columns)}1")
 
   exported_at = Time.zone.now.strftime("%Y-%m-%d %H:%M")
-  sheet.add_row(["Exported", exported_at], style: [meta_style, meta_style])
+  sheet.add_row([ "Exported", exported_at ], style: [ meta_style, meta_style ])
   sheet.add_row([])
 
-  header = ["Benefit"] + selections.map do |selection|
+  header = [ "Benefit" ] + selections.map do |selection|
     "#{selection[:plan_name]}\n#{selection[:insurer_name]}"
   end
   sheet.add_row(header, style: Array.new(total_columns, header_style), height: 28)
@@ -55,13 +55,13 @@ workbook.add_worksheet(name: "Benefits") do |sheet|
 
   categories.each do |category|
     category_row_index = sheet.rows.size + 1
-    sheet.add_row([category[:name]] + Array.new(selections.size, nil), style: category_style)
+    sheet.add_row([ category[:name] ] + Array.new(selections.size, nil), style: category_style)
     sheet.merge_cells("A#{category_row_index}:#{column_letter.call(total_columns)}#{category_row_index}")
 
     benefit_row_index = 0
     category[:benefits].each do |benefit|
-      row_style = benefit_row_index.even? ? [benefit_style] + Array.new(selections.size, cell_style) : [benefit_alt_style] + Array.new(selections.size, cell_alt_style)
-      row = [benefit[:name]]
+      row_style = benefit_row_index.even? ? [ benefit_style ] + Array.new(selections.size, cell_style) : [ benefit_alt_style ] + Array.new(selections.size, cell_alt_style)
+      row = [ benefit[:name] ]
       selections.each do |selection|
         entries = benefit[:per_selection][selection[:selection_id]] || []
         row << exporter.cell_text(entries)
