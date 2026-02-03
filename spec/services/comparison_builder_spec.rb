@@ -4,7 +4,7 @@ RSpec.describe ComparisonBuilder do
   let(:user) { create(:user) }
   let(:category_a) { create(:coverage_category, name: "Inpatient", position: 1) }
   let(:category_b) { create(:coverage_category, name: "Outpatient", position: 2) }
-  let(:category_empty) { create(:coverage_category, name: "Dental", position: 3) }
+  let(:category_empty) { create(:coverage_category, name: "Dental #{SecureRandom.hex(4)}", position: 3) }
 
   let(:benefit_a) { create(:benefit, name: "Hospital stay", coverage_category: category_a) }
   let(:benefit_b) { create(:benefit, name: "Consultations", coverage_category: category_b) }
