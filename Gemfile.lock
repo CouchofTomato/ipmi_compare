@@ -97,6 +97,14 @@ GEM
       rack-test (>= 0.6.3)
       regexp_parser (>= 1.5, < 3.0)
       xpath (~> 3.2)
+    caxlsx (4.4.1)
+      htmlentities (~> 4.3, >= 4.3.4)
+      marcel (~> 1.0)
+      nokogiri (~> 1.10, >= 1.10.4)
+      rubyzip (>= 2.4, < 4)
+    caxlsx_rails (0.6.4)
+      actionpack (>= 3.1)
+      caxlsx (>= 3.0)
     choice (0.2.0)
     class_variants (1.1.0)
     concurrent-ruby (1.3.6)
@@ -157,6 +165,7 @@ GEM
       raabro (~> 1.4)
     globalid (1.3.0)
       activesupport (>= 6.1)
+    htmlentities (4.4.2)
     i18n (1.14.8)
       concurrent-ruby (~> 1.0)
     image_processing (1.14.0)
@@ -454,6 +463,8 @@ DEPENDENCIES
   bootsnap
   brakeman
   capybara
+  caxlsx
+  caxlsx_rails
   class_variants (~> 1.1)
   countries (~> 8.1)
   country_select (~> 11.0)

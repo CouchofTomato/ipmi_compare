@@ -1,0 +1,76 @@
+exporter = ComparisonExports::BenefitsXlsx.new(@comparison_data)
+selections = exporter.selections
+categories = exporter.categories(exclude_uncovered: @exclude_uncovered)
+total_columns = 1 + selections.size
+
+column_letter = lambda do |index|
+  letters = +""
+  while index > 0
+    index, remainder = (index - 1).divmod(26)
+    letters.prepend((65 + remainder).chr)
+  end
+  letters
+end
+
+workbook = xlsx_package.workbook
+styles = workbook.styles
+
+title_style = styles.add_style(
+  b: true,
+  sz: 16,
+  bg_color: "E0E7FF",
+  alignment: { horizontal: :left, vertical: :center }
+)
+meta_style = styles.add_style(sz: 11, alignment: { horizontal: :left, vertical: :center })
+header_style = styles.add_style(
+  b: true,
+  bg_color: "DCE7FF",
+  alignment: { horizontal: :center, vertical: :center, wrap_text: true },
+  border: { style: :thin, color: "CBD5F5" }
+)
+category_style = styles.add_style(
+  b: true,
+  bg_color: "C7D2FE",
+  alignment: { horizontal: :left, vertical: :center },
+  border: { style: :thin, color: "CBD5F5" }
+)
+benefit_style = styles.add_style(b: true, alignment: { vertical: :top, wrap_text: true }, border: { style: :thin, color: "E2E8F0" })
+benefit_alt_style = styles.add_style(b: true, bg_color: "EEF2FF", alignment: { vertical: :top, wrap_text: true }, border: { style: :thin, color: "E2E8F0" })
+cell_style = styles.add_style(alignment: { vertical: :top, wrap_text: true }, border: { style: :thin, color: "E2E8F0" })
+cell_alt_style = styles.add_style(bg_color: "EEF2FF", alignment: { vertical: :top, wrap_text: true }, border: { style: :thin, color: "E2E8F0" })
+
+workbook.add_worksheet(name: "Benefits") do |sheet|
+  sheet.add_row([@comparison_name.to_s], style: title_style, height: 24)
+  sheet.merge_cells("A1:#{column_letter.call(total_columns)}1")
+
+  exported_at = Time.zone.now.strftime("%Y-%m-%d %H:%M")
+  sheet.add_row(["Exported", exported_at], style: [meta_style, meta_style])
+  sheet.add_row([])
+
+  header = ["Benefit"] + selections.map do |selection|
+    "#{selection[:plan_name]}\n#{selection[:insurer_name]}"
+  end
+  sheet.add_row(header, style: Array.new(total_columns, header_style), height: 28)
+  sheet.auto_filter = "A4:#{column_letter.call(total_columns)}4"
+
+  categories.each do |category|
+    category_row_index = sheet.rows.size + 1
+    sheet.add_row([category[:name]] + Array.new(selections.size, nil), style: category_style)
+    sheet.merge_cells("A#{category_row_index}:#{column_letter.call(total_columns)}#{category_row_index}")
+
+    benefit_row_index = 0
+    category[:benefits].each do |benefit|
+      row_style = benefit_row_index.even? ? [benefit_style] + Array.new(selections.size, cell_style) : [benefit_alt_style] + Array.new(selections.size, cell_alt_style)
+      row = [benefit[:name]]
+      selections.each do |selection|
+        entries = benefit[:per_selection][selection[:selection_id]] || []
+        row << exporter.cell_text(entries)
+      end
+
+      sheet.add_row(row, style: row_style)
+      benefit_row_index += 1
+    end
+  end
+
+  sheet.column_widths(36, *Array.new(selections.size, 48))
+end

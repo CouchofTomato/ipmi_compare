@@ -108,6 +108,24 @@ class Comparison::PlanSelectionsController < ApplicationController
                   alert: "Could not remove selection: #{e.record.errors.full_messages.to_sentence}"
   end
 
+  def export
+    @comparison_data = ComparisonBuilder.new(@wizard_progress).build
+    @comparison_name = @wizard_progress.comparison_name_from_state || "Plan comparison"
+    @exclude_uncovered = ActiveModel::Type::Boolean.new.cast(params[:exclude_uncovered])
+
+    respond_to do |format|
+      format.xlsx do
+        safe_name = @comparison_name.parameterize.presence || "plan-comparison"
+        date_stamp = Time.zone.today.iso8601
+        response.headers["Content-Disposition"] = %(attachment; filename="#{safe_name}-#{date_stamp}.xlsx")
+      end
+      format.html do
+        redirect_to wizard_progress_path(@wizard_progress),
+                    alert: "Export is available as an Excel download."
+      end
+    end
+  end
+
   private
 
   def set_wizard_progress

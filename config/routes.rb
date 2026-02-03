@@ -29,6 +29,7 @@ Rails.application.routes.draw do
     resources :plan_selections, only: [], param: :wizard_progress_id do
       get :search, on: :member
       get :modules, on: :member
+      get :export, on: :member
       post :add, on: :member
       delete :remove, on: :member
     end

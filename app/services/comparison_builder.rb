@@ -64,17 +64,7 @@ class ComparisonBuilder
   attr_reader :progress
 
   def benefits_for_category(category, selection_columns, module_benefits_by_selection)
-    benefits = {}
-
-    selection_columns.each do |selection|
-      module_benefits_by_selection[selection[:selection_id]].each do |module_benefit|
-        next unless module_benefit.benefit.coverage_category_id == category.id
-
-        benefits[module_benefit.benefit_id] ||= module_benefit.benefit
-      end
-    end
-
-    benefits.values.map do |benefit|
+    Benefit.where(coverage_category_id: category.id).order(:name).map do |benefit|
       {
         id: benefit.id,
         name: benefit.name,
