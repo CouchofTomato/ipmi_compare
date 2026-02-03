@@ -4,7 +4,7 @@ RSpec.describe ComparisonBuilder do
   let(:user) { create(:user) }
   let(:category_a) { create(:coverage_category, name: "Inpatient", position: 1) }
   let(:category_b) { create(:coverage_category, name: "Outpatient", position: 2) }
-  let(:category_empty) { create(:coverage_category, name: "Dental #{SecureRandom.hex(4)}", position: 3) }
+  let(:category_empty) { create(:coverage_category, name: "Dental test #{SecureRandom.hex(4)}", position: 3) }
 
   let(:benefit_a) { create(:benefit, name: "Hospital stay", coverage_category: category_a) }
   let(:benefit_b) { create(:benefit, name: "Consultations", coverage_category: category_b) }
@@ -51,10 +51,10 @@ RSpec.describe ComparisonBuilder do
       expect(result[:selections].size).to eq(2)
       expect(result[:categories].map { |cat| cat[:name] }).to include("Inpatient", "Outpatient")
 
-      inpatient = result[:categories].first
-      expect(inpatient[:benefits].map { |b| b[:name] }).to eq([ "Hospital stay" ])
+      inpatient = result[:categories].find { |cat| cat[:id] == category_a.id }
+      expect(inpatient[:benefits].map { |b| b[:id] }).to include(benefit_a.id)
 
-      per_selection = inpatient[:benefits].first[:per_selection]
+      per_selection = inpatient[:benefits].find { |b| b[:id] == benefit_a.id }[:per_selection]
       expect(per_selection["sel-one"].first[:coverage_description]).to eq("Covered")
       expect(per_selection["sel-two"]).to eq([])
     end
@@ -62,12 +62,12 @@ RSpec.describe ComparisonBuilder do
     it "includes categories with uncovered benefits" do
       result = described_class.new(progress).build
 
-      expect(result[:categories].map { |cat| cat[:name] }).to include("Dental")
+      expect(result[:categories].map { |cat| cat[:id] }).to include(category_empty.id)
 
-      dental = result[:categories].find { |cat| cat[:name] == "Dental" }
-      expect(dental[:benefits].map { |b| b[:name] }).to include("Dental cleaning")
+      dental = result[:categories].find { |cat| cat[:id] == category_empty.id }
+      expect(dental[:benefits].map { |b| b[:id] }).to include(benefit_uncovered.id)
 
-      per_selection = dental[:benefits].find { |b| b[:name] == "Dental cleaning" }[:per_selection]
+      per_selection = dental[:benefits].find { |b| b[:id] == benefit_uncovered.id }[:per_selection]
       expect(per_selection["sel-one"]).to eq([])
       expect(per_selection["sel-two"]).to eq([])
     end
