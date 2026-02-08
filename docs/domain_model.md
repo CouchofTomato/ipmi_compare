@@ -158,19 +158,20 @@ Represents a single cost-sharing rule.
 Key characteristics:
 
 - Defines amount, type (deductible, co-pay, etc.), unit, currency, and scope
-- Is not inherently tied to a specific model
+- Belongs to a polymorphic scope:
+  - a PlanVersion,
+  - a PlanModule,
+  - a ModuleBenefit, or
+  - a BenefitLimitGroup
 
 ### CostShareLink
 
-Links a CostShare to a specific context.
+Links one CostShare to another CostShare.
 
 Key characteristics:
 
-- Connects a CostShare to:
-  - a PlanVersion,
-  - a PlanModule, or
-  - a ModuleBenefit
-- Defines how and where the cost share applies
+- Connects a CostShare to another CostShare
+- Defines the relationship type (e.g. shared pool, override, dependent)
 
 Only one relevant CostShare should apply for a given claim context.
 
@@ -190,6 +191,20 @@ Key characteristics:
 
 ---
 
+## Plan module dependencies
+
+### PlanModuleRequirement
+
+Represents a dependency between PlanModules within a PlanVersion.
+
+Key characteristics:
+
+- Belongs to a PlanVersion
+- Links a dependent PlanModule to a required PlanModule
+- Used to model cases where selecting one module requires another
+
+---
+
 ## Coverage categories
 
 CoverageCategories are used as a tagging system.
@@ -198,6 +213,7 @@ Key characteristics:
 
 - A PlanModule can have many CoverageCategories
 - A CoverageCategory can apply to many PlanModules
+- A Benefit belongs to a CoverageCategory
 - Categories are used for:
   - high-level summaries
   - filtering
