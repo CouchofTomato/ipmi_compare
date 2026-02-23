@@ -91,6 +91,9 @@ class PlanVersionDuplicator
         new_benefit = new_module.module_benefits.create!(
           sanitized_attributes(benefit, %w[benefit_limit_group_id]).merge(benefit_limit_group: new_group)
         )
+        benefit.benefit_limit_rules.each do |sub_limit|
+          new_benefit.benefit_limit_rules.create!(sanitized_attributes(sub_limit))
+        end
         map[benefit.id] = new_benefit
       end
     end

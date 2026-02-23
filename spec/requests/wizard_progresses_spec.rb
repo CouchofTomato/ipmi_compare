@@ -185,6 +185,7 @@ RSpec.describe "WizardProgresses", type: :request do
       module_group = create(:module_group, plan_version:)
       plan_module = create(:plan_module, plan_version:, module_group:)
       module_benefit = create(:module_benefit, :with_deductible, plan_module:)
+      benefit_limit_rule = create(:benefit_limit_rule, module_benefit:)
       wizard_progress.update!(current_step: "module_benefits", step_order: 6, status: :in_progress)
       progress = wizard_progress
 
@@ -193,7 +194,110 @@ RSpec.describe "WizardProgresses", type: :request do
               params: { step_action: "delete", benefits: { id: module_benefit.id } }
       end.to change { ModuleBenefit.where(id: module_benefit.id).count }.by(-1)
         .and change { CostShare.where(scope: module_benefit).count }.by(-1)
+        .and change { BenefitLimitRule.where(id: benefit_limit_rule.id).count }.by(-1)
 
+      expect(response).to have_http_status(:success)
+    end
+
+    it "creates a module benefit with multiple benefit limit rules" do
+      plan = wizard_progress.subject
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      plan_module = create(:plan_module, plan_version:, module_group:)
+      benefit = create(:benefit)
+      wizard_progress.update!(current_step: "module_benefits", step_order: 6, status: :in_progress)
+
+      expect do
+        patch wizard_progress_path(wizard_progress, format: :turbo_stream),
+              params: {
+                step_action: "add",
+                benefits: {
+                  plan_module_id: plan_module.id,
+                  benefit_id: benefit.id,
+                  coverage_description: "Covered with structured rules",
+                  benefit_limit_rules_attributes: {
+                    "0" => {
+                      name: "MRI",
+                      scope: "itemised",
+                      limit_type: "amount",
+                      insurer_amount_usd: "1200",
+                      unit: "per policy year",
+                      position: "0"
+                    },
+                    "1" => {
+                      name: "CT",
+                      scope: "itemised",
+                      limit_type: "as_charged",
+                      cap_insurer_amount_usd: "3000",
+                      cap_unit: "per policy year",
+                      position: "1"
+                    }
+                  }
+                }
+              }
+      end.to change(ModuleBenefit, :count).by(1)
+        .and change(BenefitLimitRule, :count).by(2)
+
+      created = ModuleBenefit.order(:created_at).last
+      expect(created.benefit_limit_rules.order(:position, :created_at).pluck(:name, :limit_type)).to eq(
+        [ [ "MRI", "amount" ], [ "CT", "as_charged" ] ]
+      )
+      expect(response).to have_http_status(:success)
+    end
+
+    it "updates benefit limit rules when editing a module benefit" do
+      plan = wizard_progress.subject
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      plan_module = create(:plan_module, plan_version:, module_group:)
+      benefit = create(:benefit)
+      module_benefit = create(:module_benefit, plan_module:, benefit:, coverage_description: "Before")
+      first = create(:benefit_limit_rule, module_benefit:, scope: :itemised, name: "Old amount", limit_type: :amount, insurer_amount_usd: 500, position: 0)
+      second = create(:benefit_limit_rule, module_benefit:, scope: :itemised, name: "Delete me", limit_type: :not_stated, position: 1)
+      wizard_progress.update!(current_step: "module_benefits", step_order: 6, status: :in_progress)
+
+      expect do
+        patch wizard_progress_path(wizard_progress, format: :turbo_stream),
+              params: {
+                step_action: "add",
+                benefits: {
+                  id: module_benefit.id,
+                  plan_module_id: plan_module.id,
+                  benefit_id: benefit.id,
+                  coverage_description: "After",
+                  benefit_limit_rules_attributes: {
+                    "0" => {
+                      id: first.id,
+                      name: "Updated amount",
+                      scope: "itemised",
+                      limit_type: "amount",
+                      insurer_amount_usd: "950",
+                      unit: "per examination",
+                      position: "2"
+                    },
+                    "1" => {
+                      id: second.id,
+                      _destroy: "1"
+                    },
+                    "2" => {
+                      name: "New as charged",
+                      scope: "itemised",
+                      limit_type: "as_charged",
+                      cap_insurer_amount_usd: "500",
+                      cap_unit: "per policy year",
+                      position: "1"
+                    }
+                  }
+                }
+              }
+      end.to change(BenefitLimitRule, :count).by(0)
+
+      module_benefit.reload
+      expect(module_benefit.coverage_description).to eq("After")
+      expect(module_benefit.benefit_limit_rules.order(:position, :created_at).pluck(:name, :limit_type)).to eq(
+        [ [ "New as charged", "as_charged" ], [ "Updated amount", "amount" ] ]
+      )
+      expect(module_benefit.benefit_limit_rules.where(id: second.id)).to be_empty
       expect(response).to have_http_status(:success)
     end
 

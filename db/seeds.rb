@@ -6,6 +6,7 @@ end
 ActiveRecord::Base.connection.execute("DELETE FROM coverage_categories_plan_modules")
 CostShareLink.delete_all
 CostShare.delete_all
+BenefitLimitRule.delete_all
 ModuleBenefit.delete_all
 BenefitLimitGroup.delete_all
 PlanModuleRequirement.delete_all
@@ -335,32 +336,130 @@ def build_modules_for_plan!(plan:, benefits:, coverage_categories:)
     waiting_period_months: 0
   )
 
-  ModuleBenefit.create!(
+  outpatient_imaging_benefit = ModuleBenefit.create!(
     plan_module: outpatient_module,
     benefit: benefits[:imaging],
     coverage_description: "Imaging diagnostics when medically necessary",
     waiting_period_months: 0
   )
 
-  ModuleBenefit.create!(
+  outpatient_lab_benefit = ModuleBenefit.create!(
     plan_module: outpatient_module,
     benefit: benefits[:outpatient_lab],
     coverage_description: "Routine and diagnostic lab work",
     waiting_period_months: 0
   )
 
-  ModuleBenefit.create!(
+  BenefitLimitRule.create!(
+    module_benefit: outpatient_imaging_benefit,
+    name: "MRI scans",
+    scope: :itemised,
+    limit_type: :amount,
+    insurer_amount_usd: 1_200,
+    unit: "per policy year",
+    notes: "Pre-authorization required",
+    position: 1
+  )
+  BenefitLimitRule.create!(
+    module_benefit: outpatient_imaging_benefit,
+    name: "CT scans",
+    scope: :itemised,
+    limit_type: :amount,
+    insurer_amount_usd: 900,
+    unit: "per examination",
+    cap_insurer_amount_usd: 3_000,
+    cap_unit: "per policy year",
+    notes: "Combined across all CT scan providers",
+    position: 2
+  )
+  BenefitLimitRule.create!(
+    module_benefit: outpatient_imaging_benefit,
+    name: "X-ray",
+    scope: :itemised,
+    limit_type: :amount,
+    insurer_amount_gbp: 305,
+    unit: "per examination",
+    position: 3
+  )
+  BenefitLimitRule.create!(
+    module_benefit: outpatient_imaging_benefit,
+    name: "ECG",
+    scope: :itemised,
+    limit_type: :amount,
+    insurer_amount_usd: 450,
+    unit: "per examination",
+    position: 4
+  )
+  BenefitLimitRule.create!(
+    module_benefit: outpatient_imaging_benefit,
+    name: "Scan",
+    scope: :itemised,
+    limit_type: :amount,
+    insurer_amount_usd: 1_200,
+    unit: "per examination",
+    cap_insurer_amount_usd: 2_500,
+    cap_unit: "per policy year",
+    position: 5
+  )
+
+  BenefitLimitRule.create!(
+    module_benefit: outpatient_lab_benefit,
+    scope: :itemised,
+    name: "Pathology and diagnostics",
+    limit_type: :as_charged,
+    cap_insurer_amount_usd: 1_000,
+    cap_unit: "per policy year",
+    notes: "Covered according to plan terms",
+    position: 1
+  )
+  BenefitLimitRule.create!(
+    module_benefit: outpatient_lab_benefit,
+    name: "Genetic testing",
+    scope: :itemised,
+    limit_type: :not_stated,
+    notes: "Coverage reviewed case-by-case",
+    position: 2
+  )
+
+  outpatient_therapy_benefit = ModuleBenefit.create!(
     plan_module: outpatient_module,
     benefit: benefits[:outpatient_therapy],
     coverage_description: "Physical and occupational therapy sessions",
     waiting_period_months: 0
   )
+  BenefitLimitRule.create!(
+    module_benefit: outpatient_therapy_benefit,
+    scope: :benefit_level,
+    limit_type: :amount,
+    insurer_amount_usd: 50,
+    unit: "per session",
+    cap_insurer_amount_usd: 500,
+    cap_unit: "per policy year",
+    notes: "Physiotherapy limit"
+  )
 
-  ModuleBenefit.create!(
+  outpatient_mental_health_benefit = ModuleBenefit.create!(
     plan_module: outpatient_module,
     benefit: benefits[:outpatient_mental_health],
     coverage_description: "Outpatient counseling and therapy",
     waiting_period_months: 0
+  )
+  BenefitLimitRule.create!(
+    module_benefit: outpatient_mental_health_benefit,
+    scope: :benefit_level,
+    limit_type: :amount,
+    insurer_amount_usd: 2_000,
+    unit: "per policy year",
+    notes: "Annual mental health cap"
+  )
+
+  CostShare.create!(
+    scope: outpatient_mental_health_benefit,
+    cost_share_type: :coinsurance,
+    amount: 100,
+    unit: :percent,
+    per: :per_year,
+    notes: "100% covered when claim is within annual cap"
   )
 
   ModuleBenefit.create!(

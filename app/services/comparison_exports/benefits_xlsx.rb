@@ -43,22 +43,17 @@ module ComparisonExports
       lines << entry[:plan_module_name].to_s if entry[:plan_module_name].present?
       lines << entry[:coverage_description].to_s if entry[:coverage_description].present?
 
-      limit_value = entry[:limit_gbp] || entry[:limit_usd] || entry[:limit_eur]
-      limit_currency =
-        if entry[:limit_gbp].present?
-          "GBP"
-        elsif entry[:limit_usd].present?
-          "USD"
-        elsif entry[:limit_eur].present?
-          "EUR"
-        end
+      benefit_level_rules = entry[:benefit_level_limit_rules].to_a
+      lines << entry[:cost_share_text] if benefit_level_rules.empty? && entry[:cost_share_text].present?
 
-      if limit_value.present? || entry[:limit_unit].present?
-        limit_label = +"Limit: "
-        limit_label << "#{limit_currency}" if limit_currency.present?
-        limit_label << "#{limit_value || 'N/A'}"
-        limit_label << " #{entry[:limit_unit]}" if entry[:limit_unit].present?
-        lines << limit_label
+      benefit_level_rules.each_with_index do |rule, index|
+        formatted_rule = format_rule(rule)
+        formatted_rule = combine_cost_share_and_rule(entry[:cost_share_text], formatted_rule, rule) if index.zero?
+        lines << formatted_rule
+      end
+
+      entry[:itemised_limit_rules].to_a.each do |rule|
+        lines << "#{rule[:name]}: #{format_rule(rule)}"
       end
 
       if entry[:waiting_period_months].present?
@@ -70,6 +65,55 @@ module ComparisonExports
       end
 
       lines.join("\n")
+    end
+
+    def format_rule(rule)
+      base =
+        case rule[:limit_type]
+        when "amount"
+          limit_lines(rule[:insurer_amount_usd], rule[:insurer_amount_gbp], rule[:insurer_amount_eur], rule[:unit]).join(" / ")
+        when "as_charged"
+          "As charged"
+        when "not_stated"
+          "Not stated"
+        end
+
+      cap = cap_lines(rule[:cap_insurer_amount_usd], rule[:cap_insurer_amount_gbp], rule[:cap_insurer_amount_eur], rule[:cap_unit]).join(" / ")
+      result = base.to_s
+      result = "#{result}, up to #{cap}" if cap.present?
+      result = "#{result} (#{rule[:notes]})" if rule[:notes].present?
+      result
+    end
+
+    def combine_cost_share_and_rule(cost_share_text, rule_text, rule)
+      return rule_text if cost_share_text.blank?
+      return "#{cost_share_text}, #{rule_text}" unless rule[:limit_type] == "amount" && rule[:cap_insurer_amount_usd].blank? && rule[:cap_insurer_amount_gbp].blank? && rule[:cap_insurer_amount_eur].blank?
+      return "#{cost_share_text}, up to #{rule_text}" if rule[:unit].to_s.match?(/per policy year|per year/i)
+
+      "#{cost_share_text}, #{rule_text}"
+    end
+
+    def limit_lines(insurer_amount_usd, insurer_amount_gbp, insurer_amount_eur, unit)
+      currency_lines(insurer_amount_usd, insurer_amount_gbp, insurer_amount_eur).map do |line|
+        [ line, unit ].compact.join(" ")
+      end
+    end
+
+    def cap_lines(cap_insurer_amount_usd, cap_insurer_amount_gbp, cap_insurer_amount_eur, cap_unit)
+      currency_lines(cap_insurer_amount_usd, cap_insurer_amount_gbp, cap_insurer_amount_eur).map do |line|
+        [ line, cap_unit ].compact.join(" ")
+      end
+    end
+
+    def currency_lines(usd, gbp, eur)
+      [
+        [ "USD", usd ],
+        [ "GBP", gbp ],
+        [ "EUR", eur ]
+      ].filter_map do |currency, amount|
+        next if amount.blank?
+        "#{currency} #{format('%.2f', amount)}"
+      end
     end
   end
 end

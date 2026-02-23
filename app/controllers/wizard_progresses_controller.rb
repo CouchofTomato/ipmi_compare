@@ -66,6 +66,7 @@ class WizardProgressesController < ApplicationController
     end
 
     result = @progress.flow.handle_step(params)
+    @resource = result.resource if params[:step_action] == "edit" && result.resource.present?
 
     if result.success?
       case params[:step_action]

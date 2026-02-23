@@ -453,6 +453,20 @@ class PlanWizardFlow
         ActionController::Parameters.new
       end
 
+    if step_action == "edit"
+      benefit_id = params_for_benefit[:id].presence || params_for_benefit[:module_benefit_id].presence
+      benefit_id = Integer(benefit_id) rescue nil
+      module_benefit = ModuleBenefit.where(plan_module_id: plan_version.plan_module_ids).includes(:benefit_limit_rules).find_by(id: benefit_id)
+
+      if module_benefit.nil?
+        module_benefit = ModuleBenefit.new
+        module_benefit.errors.add(:base, "Module benefit not found")
+        return WizardStepResult.new(success: false, resource: module_benefit, errors: module_benefit.errors.full_messages)
+      end
+
+      return WizardStepResult.new(success: true, resource: module_benefit)
+    end
+
     if step_action == "delete"
       benefit_id = params_for_benefit[:id].presence || params_for_benefit[:module_benefit_id].presence
       benefit_id = Integer(benefit_id) rescue nil
@@ -473,20 +487,38 @@ class PlanWizardFlow
     # Only create a new module benefit when explicitly asked
     return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
-    permitted = params_for_benefit.permit(:plan_module_id,
-                                          :benefit_id,
-                                          :coverage_description,
-                                          :limit_usd,
-                                          :limit_gbp,
-                                          :limit_eur,
-                                          :limit_unit,
-                                          :waiting_period_months,
-                                          :sub_limit_description,
-                                          :interaction_type,
-                                          :weighting)
+    permitted = params_for_benefit.permit(
+      :id,
+      :plan_module_id,
+      :benefit_id,
+      :coverage_description,
+      :waiting_period_months,
+      :interaction_type,
+      :weighting,
+      benefit_limit_rules_attributes: [
+        :id,
+        :name,
+        :scope,
+        :limit_type,
+        :insurer_amount_usd,
+        :insurer_amount_gbp,
+        :insurer_amount_eur,
+        :unit,
+        :cap_insurer_amount_usd,
+        :cap_insurer_amount_gbp,
+        :cap_insurer_amount_eur,
+        :cap_unit,
+        :notes,
+        :position,
+        :_destroy
+      ]
+    )
 
+    module_benefit_id = permitted[:id].presence
     sanitized_values = permitted.to_h
-    sanitized_values["weighting"] = sanitized_values["weighting"].presence || nil
+    sanitized_values["weighting"] = sanitized_values["weighting"].presence
+    sanitized_values.delete("weighting") if sanitized_values["weighting"].nil?
+    sanitized_values.delete("id")
 
     plan_module = plan_version.plan_modules.find_by(id: sanitized_values["plan_module_id"])
 
@@ -496,10 +528,23 @@ class PlanWizardFlow
       return WizardStepResult.new(success: false, resource: module_benefit, errors: module_benefit.errors.full_messages)
     end
 
-    module_benefit = ModuleBenefit.new(sanitized_values.merge(plan_module:))
+    module_benefit =
+      if module_benefit_id
+        ModuleBenefit.where(plan_module_id: plan_version.plan_module_ids).find_by(id: module_benefit_id)
+      else
+        ModuleBenefit.new
+      end
+
+    unless module_benefit
+      missing_module_benefit = ModuleBenefit.new
+      missing_module_benefit.errors.add(:base, "Module benefit not found")
+      return WizardStepResult.new(success: false, resource: missing_module_benefit, errors: missing_module_benefit.errors.full_messages)
+    end
+
+    module_benefit.assign_attributes(sanitized_values.merge(plan_module:))
 
     # default weighting to next available slot if not provided
-    if module_benefit.weighting.nil?
+    if module_benefit.weighting.nil? && module_benefit.new_record?
       max_weighting = ModuleBenefit.where(plan_module_id: plan_version.plan_module_ids).maximum(:weighting)
       module_benefit.weighting = max_weighting ? max_weighting + 1 : 0
     end

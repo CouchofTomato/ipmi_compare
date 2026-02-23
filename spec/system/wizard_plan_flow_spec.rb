@@ -58,9 +58,36 @@ RSpec.describe "Plan wizard", type: :system do
     find(:test_id, "module-field").select "Core – Hospital module"
     find(:test_id, "benefit-field").select benefit.name
     find(:test_id, "coverage-description-field").set("Covers inpatient stays and surgery.")
+    find(:test_id, "add-benefit-limit-rule-button").click
+    first_row = all("[data-benefit-limit-rules-target='row']").first
+    within(first_row) do
+      find(:test_id, "benefit-limit-rule-name-field").set("MRI scans")
+      find(:test_id, "benefit-limit-rule-scope-field").select "Itemised"
+      find(:test_id, "benefit-limit-rule-type-field").select "Amount"
+      find("input[name*='[insurer_amount_usd]']").set("1200")
+      find("input[name$='[unit]']").set("per examination")
+    end
+    find(:test_id, "add-benefit-limit-rule-button").click
+    second_row = all("[data-benefit-limit-rules-target='row']").last
+    within(second_row) do
+      find(:test_id, "benefit-limit-rule-name-field").set("CT scans")
+      find(:test_id, "benefit-limit-rule-scope-field").select "Itemised"
+      find(:test_id, "benefit-limit-rule-type-field").select "As charged"
+      find("input[name*='[cap_insurer_amount_usd]']").set("2000")
+      find("input[name*='[cap_unit]']").set("per policy year")
+    end
     find(:test_id, "interaction-type-field").select "Replace"
     find(:test_id, "add-module-benefit-button").click
     expect(page).to have_content(benefit.name)
+    expect(page).to have_content("Itemised limits")
+    find(:test_id, "edit-module-benefit-#{ModuleBenefit.last.id}-button").click
+    expect(page).to have_content("Update module benefit")
+    last_row = all("[data-benefit-limit-rules-target='row']").last
+    within(last_row) do
+      find(:test_id, "remove-benefit-limit-rule-button").click
+    end
+    find(:test_id, "add-module-benefit-button").click
+    expect(page).not_to have_content("CT scans")
     find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 8: Benefit limit groups", wait: 10)
