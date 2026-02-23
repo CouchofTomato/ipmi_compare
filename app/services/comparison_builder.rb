@@ -10,7 +10,7 @@ class ComparisonBuilder
     return empty_payload if selections.empty?
 
     plans_by_id =
-      Plan.includes(:insurer, current_plan_version: { plan_modules: { module_benefits: [ :benefit, :benefit_limit_group ] } })
+      Plan.includes(:insurer, current_plan_version: { plan_modules: { module_benefits: [ :benefit, :benefit_limit_group, :benefit_limit_rules, :cost_shares ] } })
         .where(id: selections.map { |selection| selection["plan_id"] }.compact)
         .index_by(&:id)
 
@@ -78,17 +78,46 @@ class ComparisonBuilder
   def module_benefit_entries(benefit_id, module_benefits)
     Array(module_benefits)
       .select { |module_benefit| module_benefit.benefit_id == benefit_id }
-      .sort_by(&:weighting)
+      .sort_by { |module_benefit| [ module_benefit.weighting, module_benefit.created_at ] }
       .map do |module_benefit|
         {
           module_benefit_id: module_benefit.id,
           plan_module_id: module_benefit.plan_module_id,
           plan_module_name: module_benefit.plan_module.name,
           coverage_description: module_benefit.coverage_description,
-          limit_usd: module_benefit.limit_usd,
-          limit_gbp: module_benefit.limit_gbp,
-          limit_eur: module_benefit.limit_eur,
-          limit_unit: module_benefit.limit_unit,
+          cost_share_text: cost_share_text(module_benefit),
+          benefit_level_limit_rules: module_benefit.benefit_limit_rules.benefit_level.map do |rule|
+            {
+              name: rule.name,
+              limit_type: rule.limit_type,
+              insurer_amount_usd: rule.insurer_amount_usd,
+              insurer_amount_gbp: rule.insurer_amount_gbp,
+              insurer_amount_eur: rule.insurer_amount_eur,
+              unit: rule.unit,
+              cap_insurer_amount_usd: rule.cap_insurer_amount_usd,
+              cap_insurer_amount_gbp: rule.cap_insurer_amount_gbp,
+              cap_insurer_amount_eur: rule.cap_insurer_amount_eur,
+              cap_unit: rule.cap_unit,
+              notes: rule.notes,
+              position: rule.position
+            }
+          end,
+          itemised_limit_rules: module_benefit.benefit_limit_rules.itemised.map do |rule|
+            {
+              name: rule.name,
+              limit_type: rule.limit_type,
+              insurer_amount_usd: rule.insurer_amount_usd,
+              insurer_amount_gbp: rule.insurer_amount_gbp,
+              insurer_amount_eur: rule.insurer_amount_eur,
+              unit: rule.unit,
+              cap_insurer_amount_usd: rule.cap_insurer_amount_usd,
+              cap_insurer_amount_gbp: rule.cap_insurer_amount_gbp,
+              cap_insurer_amount_eur: rule.cap_insurer_amount_eur,
+              cap_unit: rule.cap_unit,
+              notes: rule.notes,
+              position: rule.position
+            }
+          end,
           waiting_period_months: module_benefit.waiting_period_months,
           interaction_type: module_benefit.interaction_type,
           benefit_limit_group_name: module_benefit.benefit_limit_group&.name
@@ -98,5 +127,12 @@ class ComparisonBuilder
 
   def empty_payload
     { selections: [], categories: [] }
+  end
+
+  def cost_share_text(module_benefit)
+    coinsurance = module_benefit.cost_shares.find { |cs| cs.cost_share_type == "coinsurance" && cs.unit == "percent" }
+    return nil unless coinsurance
+
+    "#{format('%.0f', coinsurance.amount)}% covered"
   end
 end

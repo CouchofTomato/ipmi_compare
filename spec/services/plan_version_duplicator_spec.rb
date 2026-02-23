@@ -13,6 +13,7 @@ RSpec.describe PlanVersionDuplicator do
       create(:plan_module_requirement, plan_version: source_version, dependent_module: plan_module, required_module: required_module)
       benefit_limit_group = create(:benefit_limit_group, plan_module: plan_module)
       module_benefit = create(:module_benefit, plan_module: plan_module, benefit_limit_group: benefit_limit_group)
+      create(:benefit_limit_rule, module_benefit: module_benefit, scope: :itemised, name: "MRI", limit_type: :amount, insurer_amount_usd: 1000, unit: "per examination", position: 0)
 
       create(:plan_residency_eligibility, plan_version: source_version, country_code: "US")
       create(:plan_geographic_cover_area, plan_version: source_version)
@@ -43,6 +44,7 @@ RSpec.describe PlanVersionDuplicator do
       expect(new_module.benefit_limit_groups.count).to eq(1)
       expect(new_module.module_benefits.count).to eq(1)
       expect(new_module.module_benefits.first.benefit_limit_group).to eq(new_module.benefit_limit_groups.first)
+      expect(new_module.module_benefits.first.benefit_limit_rules.pluck(:name)).to eq([ "MRI" ])
 
       plan_scope_cost_shares = new_version.cost_shares.pluck(:id)
       module_scope_cost_shares = CostShare.where(scope_type: "PlanModule", scope_id: new_version.plan_module_ids).pluck(:id)

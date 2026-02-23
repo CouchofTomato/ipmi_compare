@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_25_205747) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_24_002000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -53,6 +53,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_25_205747) do
     t.bigint "plan_module_id", null: false
     t.datetime "updated_at", null: false
     t.index ["plan_module_id"], name: "index_benefit_limit_groups_on_plan_module_id"
+  end
+
+  create_table "benefit_limit_rules", force: :cascade do |t|
+    t.decimal "cap_insurer_amount_eur", precision: 12, scale: 2
+    t.decimal "cap_insurer_amount_gbp", precision: 12, scale: 2
+    t.decimal "cap_insurer_amount_usd", precision: 12, scale: 2
+    t.string "cap_unit"
+    t.datetime "created_at", null: false
+    t.decimal "insurer_amount_eur", precision: 12, scale: 2
+    t.decimal "insurer_amount_gbp", precision: 12, scale: 2
+    t.decimal "insurer_amount_usd", precision: 12, scale: 2
+    t.integer "limit_type", null: false
+    t.bigint "module_benefit_id", null: false
+    t.string "name"
+    t.text "notes"
+    t.integer "position", default: 0, null: false
+    t.integer "scope", default: 1, null: false
+    t.string "unit"
+    t.datetime "updated_at", null: false
+    t.index ["module_benefit_id"], name: "index_benefit_limit_rules_on_module_benefit_id"
   end
 
   create_table "benefits", force: :cascade do |t|
@@ -124,12 +144,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_25_205747) do
     t.string "coverage_description"
     t.datetime "created_at", null: false
     t.integer "interaction_type", default: 1, null: false
-    t.decimal "limit_eur", precision: 12, scale: 2
-    t.decimal "limit_gbp", precision: 12, scale: 2
-    t.string "limit_unit"
-    t.decimal "limit_usd", precision: 12, scale: 2
     t.bigint "plan_module_id", null: false
-    t.string "sub_limit_description"
     t.datetime "updated_at", null: false
     t.integer "waiting_period_months"
     t.integer "weighting", default: 0, null: false
@@ -279,6 +294,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_25_205747) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "benefit_limit_groups", "plan_modules"
+  add_foreign_key "benefit_limit_rules", "module_benefits"
   add_foreign_key "benefits", "coverage_categories"
   add_foreign_key "cost_share_links", "cost_shares"
   add_foreign_key "cost_share_links", "cost_shares", column: "linked_cost_share_id"

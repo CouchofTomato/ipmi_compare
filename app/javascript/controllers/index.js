@@ -12,3 +12,6 @@ application.register("residency-selector", ResidencySelectorController)
 
 import GeographicCoverAreasController from "./geographic_cover_areas_controller"
 application.register("geographic-cover-areas", GeographicCoverAreasController)
+
+import BenefitLimitRulesController from "./benefit_limit_rules_controller"
+application.register("benefit-limit-rules", BenefitLimitRulesController)

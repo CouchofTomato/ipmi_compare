@@ -38,8 +38,9 @@ RSpec.describe ComparisonBuilder do
   end
 
   before do
-    create(:module_benefit, plan_module: module_one, benefit: benefit_a, coverage_description: "Covered", limit_gbp: 10_000, limit_unit: "per year")
-    create(:module_benefit, plan_module: module_two, benefit: benefit_b, coverage_description: "Included", limit_usd: 5000, limit_unit: "per visit")
+    module_benefit_one = create(:module_benefit, plan_module: module_one, benefit: benefit_a, coverage_description: "Covered")
+    create(:benefit_limit_rule, module_benefit: module_benefit_one, scope: :itemised, name: "MRI", limit_type: :amount, insurer_amount_gbp: 750, unit: "per examination", position: 0)
+    create(:module_benefit, plan_module: module_two, benefit: benefit_b, coverage_description: "Included")
     create(:module_benefit, plan_module: module_other, benefit: benefit_a, coverage_description: "Not selected")
     benefit_uncovered
   end
@@ -56,6 +57,7 @@ RSpec.describe ComparisonBuilder do
 
       per_selection = inpatient[:benefits].find { |b| b[:id] == benefit_a.id }[:per_selection]
       expect(per_selection["sel-one"].first[:coverage_description]).to eq("Covered")
+      expect(per_selection["sel-one"].first[:itemised_limit_rules].map { |rule| rule[:name] }).to eq([ "MRI" ])
       expect(per_selection["sel-two"]).to eq([])
     end
 

@@ -135,15 +135,58 @@ Key characteristics:
 
 - Belongs to a PlanModule
 - Belongs to a Benefit
+- Has many BenefitLimitRules
 - Stores coverage detail such as:
-  - monetary limits (multi-currency)
-  - limit units and descriptions
   - waiting periods
   - interaction type
   - weighting / importance
 - This is where “what is actually covered” is expressed
 
 ModuleBenefit is the primary source of truth for benefit-level coverage.
+
+**ModuleBenefit does not store numeric limits.**
+All numeric limits are represented via `BenefitLimitRule`.
+
+### BenefitLimitRule
+
+Represents a numeric limit rule attached to a ModuleBenefit.
+
+Key characteristics:
+
+- Belongs to a ModuleBenefit
+- Uses `scope` to describe where the rule applies:
+  - `benefit_level` for rules that apply to the whole benefit
+  - `itemised` for rules that apply to a specific component (e.g. X-ray, ECG, scan)
+- Supports multiple limit types:
+  - `amount` (insurer amount in one or more of USD/GBP/EUR)
+  - `as_charged`
+  - `not_stated`
+- Uses insurer amount fields (`insurer_amount_*`) plus `unit` for per-use/per-period expression
+- Supports aggregate caps (`cap_insurer_amount_*` + `cap_unit`) for “up to X per year” style rules
+- Includes optional `notes` and `position` for ordering
+- Ordered by `position`, then `created_at`
+
+Worked example: Physiotherapy
+
+- CostShare:
+  - 100% covered
+- BenefitLimitRule (`scope: benefit_level`, `limit_type: amount`):
+  - USD 50 per session, up to USD 500 per policy year
+
+Worked example: Diagnostics with itemised caps
+
+- ModuleBenefit:
+  - Benefit: Outpatient Diagnostics
+  - Coverage description: Covered
+- BenefitLimitRules (`scope: itemised`):
+  - X-ray: GBP 305 per examination
+  - ECG: USD 450 per examination
+  - Scan: USD 1,200 per examination, up to USD 2,500 per policy year
+
+Warning:
+
+- Do not add numeric limit fields outside `BenefitLimitRule`.
+- Do not add percent fields to `BenefitLimitRule`; percentages belong to `CostShare`.
 
 ---
 
@@ -158,6 +201,7 @@ Represents a single cost-sharing rule.
 Key characteristics:
 
 - Defines amount, type (deductible, co-pay, etc.), unit, currency, and scope
+- Reimbursement percentages (for example `80%` or `100% covered`) are stored here, not in `BenefitLimitRule`
 - Belongs to a polymorphic scope:
   - a PlanVersion,
   - a PlanModule,

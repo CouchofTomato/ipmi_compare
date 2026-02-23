@@ -8,6 +8,39 @@
     </div>
 
     <% comparison_data = presenter.comparison_data %>
+    <% format_currency_lines = lambda do |usd, gbp, eur|
+         [
+           ["USD", usd],
+           ["GBP", gbp],
+           ["EUR", eur]
+         ].filter_map do |currency, amount|
+           next if amount.blank?
+           "#{currency} #{number_with_precision(amount, precision: 2)}"
+         end
+       end %>
+    <% format_rule = lambda do |rule|
+         base =
+           case rule[:limit_type]
+           when "amount"
+             format_currency_lines.call(rule[:insurer_amount_usd], rule[:insurer_amount_gbp], rule[:insurer_amount_eur]).map { |line| [line, rule[:unit]].compact.join(" ") }.join(" / ")
+           when "as_charged"
+             "As charged"
+           when "not_stated"
+             "Not stated"
+           end
+         cap = format_currency_lines.call(rule[:cap_insurer_amount_usd], rule[:cap_insurer_amount_gbp], rule[:cap_insurer_amount_eur]).map { |line| [line, rule[:cap_unit]].compact.join(" ") }.join(" / ")
+         text = base.to_s
+         text = "#{text}, up to #{cap}" if cap.present?
+         text = "#{text} (#{rule[:notes]})" if rule[:notes].present?
+         text
+       end %>
+    <% combine_cost_share_and_rule = lambda do |cost_share_text, rule_text, rule|
+         return rule_text if cost_share_text.blank?
+         return "#{cost_share_text}, #{rule_text}" unless rule[:limit_type] == "amount" && rule[:cap_insurer_amount_usd].blank? && rule[:cap_insurer_amount_gbp].blank? && rule[:cap_insurer_amount_eur].blank?
+         return "#{cost_share_text}, up to #{rule_text}" if rule[:unit].to_s.match?(/per policy year|per year/i)
+
+         "#{cost_share_text}, #{rule_text}"
+       end %>
     <div class="space-y-4">
       <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div class="flex flex-wrap items-start justify-between gap-3">
@@ -116,21 +149,17 @@
                                 <% if entry[:coverage_description].present? %>
                                   <p class="text-slate-600 dark:text-slate-300 leading-snug"><%= entry[:coverage_description] %></p>
                                 <% end %>
-                                <% limit_value = entry[:limit_gbp] || entry[:limit_usd] || entry[:limit_eur] %>
-                                <% limit_currency =
-                                     if entry[:limit_gbp].present?
-                                       "GBP"
-                                     elsif entry[:limit_usd].present?
-                                       "USD"
-                                     elsif entry[:limit_eur].present?
-                                       "EUR"
-                                     end %>
-                                <% if limit_value.present? || entry[:limit_unit].present? %>
-                                  <p class="text-slate-600 dark:text-slate-300">
-                                    Limit:
-                                    <%= limit_currency %><%= limit_value || "N/A" %>
-                                    <%= entry[:limit_unit] %>
-                                  </p>
+                                <% benefit_level_rules = entry[:benefit_level_limit_rules].to_a %>
+                                <% if benefit_level_rules.empty? && entry[:cost_share_text].present? %>
+                                  <p class="text-slate-600 dark:text-slate-300"><%= entry[:cost_share_text] %></p>
+                                <% end %>
+                                <% benefit_level_rules.each_with_index do |rule, index| %>
+                                  <% rule_text = format_rule.call(rule) %>
+                                  <% rule_text = combine_cost_share_and_rule.call(entry[:cost_share_text], rule_text, rule) if index.zero? %>
+                                  <p class="text-slate-600 dark:text-slate-300"><%= rule_text %></p>
+                                <% end %>
+                                <% entry[:itemised_limit_rules].to_a.each do |rule| %>
+                                  <p class="text-slate-600 dark:text-slate-300"><span class="font-semibold"><%= rule[:name] %>:</span> <%= format_rule.call(rule) %></p>
                                 <% end %>
                                 <% if entry[:waiting_period_months].present? %>
                                   <p class="text-slate-600 dark:text-slate-300">Waiting: <%= entry[:waiting_period_months] %> months</p>
