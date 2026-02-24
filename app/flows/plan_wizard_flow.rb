@@ -648,11 +648,18 @@ class PlanWizardFlow
                                              :benefit_limit_group_id,
                                              :cost_share_type,
                                              :amount,
+                                             :amount_usd,
+                                             :amount_gbp,
+                                             :amount_eur,
+                                             :cap_amount_usd,
+                                             :cap_amount_gbp,
+                                             :cap_amount_eur,
+                                             :cap_period,
                                              :unit,
                                              :per,
-                                             :currency,
                                              :notes,
-                                             :id)
+                                             :id,
+                                             benefit_limit_rule_ids: [])
 
     sanitized = permitted.to_h
     # Only treat this submission as a create when meaningful fields are present.
@@ -675,15 +682,24 @@ class PlanWizardFlow
       return WizardStepResult.new(success: true, resource: plan)
     end
 
-    user_filled_any = sanitized.slice("amount", "currency", "notes", "plan_module_id", "module_benefit_id", "benefit_limit_group_id").values.any?(&:present?)
+    user_filled_any = sanitized.slice("amount", "amount_usd", "amount_gbp", "amount_eur", "cap_amount_usd", "cap_amount_gbp", "cap_amount_eur", "cap_period", "notes", "plan_module_id", "module_benefit_id", "benefit_limit_group_id").values.any?(&:present?)
+    user_filled_any ||= Array(permitted[:benefit_limit_rule_ids]).any?(&:present?)
     creating = step_action.in?([ "add", "next" ]) || (step_action.blank? && user_filled_any)
 
     return WizardStepResult.new(success: true, resource: plan) unless creating && user_filled_any
 
     applies_to = permitted[:applies_to].presence || "plan"
+
     plan_module_id = permitted[:plan_module_id].presence
     module_benefit_id = permitted[:module_benefit_id].presence
     benefit_limit_group_id = permitted[:benefit_limit_group_id].presence
+    benefit_limit_rule_ids =
+      Array(permitted[:benefit_limit_rule_ids])
+        .map(&:presence)
+        .compact
+        .map { |id| Integer(id) rescue nil }
+        .compact
+        .uniq
 
     scope =
       case applies_to
@@ -695,11 +711,49 @@ class PlanWizardFlow
         ModuleBenefit.where(plan_module_id: plan_version.plan_module_ids).find_by(id: module_benefit_id)
       when "benefit_limit_group"
         BenefitLimitGroup.where(plan_module_id: plan_version.plan_module_ids).find_by(id: benefit_limit_group_id)
+      when "benefit_limit_rule"
+        nil
       else
         nil
       end
 
-    cost_share = CostShare.new(permitted.except(:applies_to, :plan_module_id, :module_benefit_id, :benefit_limit_group_id).merge(scope:))
+    if applies_to == "benefit_limit_rule"
+      eligible_rules = BenefitLimitRule.joins(module_benefit: :plan_module)
+                                       .where(plan_modules: { plan_version_id: plan_version.id }, id: benefit_limit_rule_ids)
+                                       .includes(:module_benefit)
+
+      if eligible_rules.empty?
+        cost_share = CostShare.new
+        cost_share.errors.add(:base, "Select at least one benefit limit rule")
+        return WizardStepResult.new(success: false, resource: cost_share, errors: cost_share.errors.full_messages)
+      end
+
+      attributes = permitted.except(:applies_to, :plan_module_id, :module_benefit_id, :benefit_limit_group_id, :benefit_limit_rule_ids)
+      saved_cost_share = nil
+      validation_error = nil
+
+      CostShare.transaction do
+        eligible_rules.each do |rule|
+          # Keep one canonical cost share per benefit limit rule.
+          saved_cost_share = CostShare.find_or_initialize_by(scope: rule)
+          saved_cost_share.assign_attributes(attributes)
+
+          unless saved_cost_share.save
+            validation_error = saved_cost_share
+            raise ActiveRecord::Rollback
+          end
+        end
+      end
+
+      unless validation_error.nil?
+        return WizardStepResult.new(success: false, resource: validation_error, errors: validation_error.errors.full_messages)
+      end
+
+      eligible_rules.each(&:reload)
+      return WizardStepResult.new(success: true, resource: saved_cost_share)
+    end
+
+    cost_share = CostShare.new(permitted.except(:applies_to, :plan_module_id, :module_benefit_id, :benefit_limit_group_id, :benefit_limit_rule_ids).merge(scope:))
     cost_share.applies_to = applies_to
     cost_share.plan_module_id = plan_module_id
     cost_share.module_benefit_id = module_benefit_id
@@ -829,12 +883,14 @@ class PlanWizardFlow
 
     module_ids = plan_version.plan_module_ids
     module_benefit_ids = ModuleBenefit.where(plan_module_id: module_ids).pluck(:id)
+    benefit_limit_rule_ids = BenefitLimitRule.where(module_benefit_id: module_benefit_ids).pluck(:id)
     benefit_limit_group_ids = BenefitLimitGroup.where(plan_module_id: module_ids).pluck(:id)
 
     [
       plan_version.cost_share_ids,
       CostShare.where(scope_type: "PlanModule", scope_id: module_ids).pluck(:id),
       CostShare.where(scope_type: "ModuleBenefit", scope_id: module_benefit_ids).pluck(:id),
+      CostShare.where(scope_type: "BenefitLimitRule", scope_id: benefit_limit_rule_ids).pluck(:id),
       CostShare.where(scope_type: "BenefitLimitGroup", scope_id: benefit_limit_group_ids).pluck(:id)
     ].flatten.uniq
   end

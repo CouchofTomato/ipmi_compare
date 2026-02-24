@@ -15,3 +15,6 @@ application.register("geographic-cover-areas", GeographicCoverAreasController)
 
 import BenefitLimitRulesController from "./benefit_limit_rules_controller"
 application.register("benefit-limit-rules", BenefitLimitRulesController)
+
+import CostShareFormController from "./cost_share_form_controller"
+application.register("cost-share-form", CostShareFormController)

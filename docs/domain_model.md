@@ -201,12 +201,25 @@ Represents a single cost-sharing rule.
 Key characteristics:
 
 - Defines amount, type (deductible, co-pay, etc.), unit, currency, and scope
+- Defines `kind`:
+  - `deductible` for plan-level and module-level cost shares
+  - `coinsurance` for benefit-level and rule-level cost shares
 - Reimbursement percentages (for example `80%` or `100% covered`) are stored here, not in `BenefitLimitRule`
 - Belongs to a polymorphic scope:
   - a PlanVersion,
   - a PlanModule,
   - a ModuleBenefit, or
-  - a BenefitLimitGroup
+  - a BenefitLimitGroup, or
+  - a BenefitLimitRule
+
+Display semantics:
+
+- PlanVersion and PlanModule cost shares are deductibles only and are not rendered inline for each benefit rule.
+- ModuleBenefit and BenefitLimitRule cost shares are rendered inline with benefit/rule output.
+- Precedence is:
+  1. BenefitLimitRule cost share (if present)
+  2. ModuleBenefit cost share (fallback)
+  3. no inline cost share
 
 ### CostShareLink
 
@@ -218,6 +231,24 @@ Key characteristics:
 - Defines the relationship type (e.g. shared pool, override, dependent)
 
 Only one relevant CostShare should apply for a given claim context.
+
+Worked dental example:
+
+- ModuleBenefit: `Routine dental treatment`
+- BenefitLimitRules:
+  - Root treatment (cap per tooth)
+  - Extraction (cap per tooth)
+  - Surgery (cap per tooth)
+  - X-ray (cap per policy year)
+  - Anaesthesia (cap per policy year)
+- CostShare:
+  - `kind: coinsurance`
+  - `amount: 80`
+  - `unit: percent`
+  - attached per `BenefitLimitRule`
+- Result:
+  - each itemised dental rule displays `80% covered ...`
+  - a rule-level value overrides any ModuleBenefit-level coinsurance
 
 ---
 

@@ -9,7 +9,7 @@ RSpec.describe "Plan comparison flow", type: :system do
     group = create(:module_group, plan_version: plan_version, name: "Core")
     plan_module = create(:plan_module, plan_version: plan_version, module_group: group, name: "Hospital Plan")
 
-    category = create(:coverage_category, name: "Inpatient", position: 1)
+    category = create(:coverage_category, name: "Inpatient #{SecureRandom.hex(4)}", position: 1)
     benefit = create(:benefit, name: "Hospital stay", coverage_category: category)
     create(:module_benefit, plan_module: plan_module, benefit: benefit, coverage_description: "Paid in full")
 
@@ -40,7 +40,7 @@ RSpec.describe "Plan comparison flow", type: :system do
     plan_version = plan.current_plan_version
     group = create(:module_group, plan_version: plan_version, name: "Core")
     plan_module = create(:plan_module, plan_version: plan_version, module_group: group, name: "Hospital Plan")
-    category = create(:coverage_category, name: "Inpatient", position: 1)
+    category = create(:coverage_category, name: "Inpatient #{SecureRandom.hex(4)}", position: 1)
     benefit = create(:benefit, name: "Hospital stay", coverage_category: category)
     create(:module_benefit, plan_module: plan_module, benefit: benefit, coverage_description: "Covered")
 
@@ -77,7 +77,7 @@ RSpec.describe "Plan comparison flow", type: :system do
     module_a = create(:plan_module, plan_version: plan_version, module_group: group, name: "Module A")
     module_b = create(:plan_module, plan_version: plan_version, module_group: group, name: "Module B")
 
-    category = create(:coverage_category, name: "Outpatient", position: 1)
+    category = create(:coverage_category, name: "Outpatient #{SecureRandom.hex(4)}", position: 1)
     benefit = create(:benefit, name: "Consultations", coverage_category: category)
     create(:module_benefit, plan_module: module_a, benefit: benefit, coverage_description: "A coverage")
     create(:module_benefit, plan_module: module_b, benefit: benefit, coverage_description: "B coverage")

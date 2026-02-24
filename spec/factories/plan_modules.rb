@@ -32,27 +32,26 @@ FactoryBot.define do
 
     trait :with_deductible do
       after(:create) do |plan_module|
-        create(:cost_share, scope: plan_module, cost_share_type: :deductible, amount: 1000, per: :per_year, currency: "USD")
+        create(:cost_share, scope: plan_module, cost_share_type: :deductible, amount_usd: 1000, per: :per_year)
       end
     end
 
     trait :with_coinsurance do
       after(:create) do |plan_module|
-        create(:cost_share, scope: plan_module, cost_share_type: :coinsurance, amount: 10, unit: :percent, per: :per_visit)
+        create(:cost_share, scope: plan_module, cost_share_type: :excess, amount_usd: 10, unit: :amount, per: :per_visit)
       end
     end
 
     trait :with_excess do
       after(:create) do |plan_module|
-        create(:cost_share, scope: plan_module, cost_share_type: :excess, amount: 25, per: :per_visit, currency: "USD")
+        create(:cost_share, scope: plan_module, cost_share_type: :excess, amount_usd: 25, per: :per_visit)
       end
     end
 
     trait :with_all_cost_shares do
       after(:create) do |plan_module|
-        create(:cost_share, scope: plan_module, cost_share_type: :deductible, amount: 1000, per: :per_year, currency: "USD")
-        create(:cost_share, scope: plan_module, cost_share_type: :coinsurance, amount: 10, unit: :percent, per: :per_visit)
-        create(:cost_share, scope: plan_module, cost_share_type: :excess, amount: 25, per: :per_visit, currency: "USD")
+        create(:cost_share, scope: plan_module, cost_share_type: :deductible, amount_usd: 1000, per: :per_year)
+        create(:cost_share, scope: plan_module, cost_share_type: :excess, amount_usd: 25, per: :per_visit)
       end
     end
 

@@ -10,7 +10,7 @@ class ComparisonBuilder
     return empty_payload if selections.empty?
 
     plans_by_id =
-      Plan.includes(:insurer, current_plan_version: { plan_modules: { module_benefits: [ :benefit, :benefit_limit_group, :benefit_limit_rules, :cost_shares ] } })
+      Plan.includes(:insurer, current_plan_version: { plan_modules: { module_benefits: [ :benefit, :benefit_limit_group, :cost_shares, { benefit_limit_rules: :cost_share } ] } })
         .where(id: selections.map { |selection| selection["plan_id"] }.compact)
         .index_by(&:id)
 
@@ -89,6 +89,7 @@ class ComparisonBuilder
           benefit_level_limit_rules: module_benefit.benefit_limit_rules.benefit_level.map do |rule|
             {
               name: rule.name,
+              cost_share_text: rule_cost_share_text(rule, module_benefit),
               limit_type: rule.limit_type,
               insurer_amount_usd: rule.insurer_amount_usd,
               insurer_amount_gbp: rule.insurer_amount_gbp,
@@ -105,6 +106,7 @@ class ComparisonBuilder
           itemised_limit_rules: module_benefit.benefit_limit_rules.itemised.map do |rule|
             {
               name: rule.name,
+              cost_share_text: rule_cost_share_text(rule, module_benefit),
               limit_type: rule.limit_type,
               insurer_amount_usd: rule.insurer_amount_usd,
               insurer_amount_gbp: rule.insurer_amount_gbp,
@@ -130,9 +132,18 @@ class ComparisonBuilder
   end
 
   def cost_share_text(module_benefit)
-    coinsurance = module_benefit.cost_shares.find { |cs| cs.cost_share_type == "coinsurance" && cs.unit == "percent" }
-    return nil unless coinsurance
+    cost_share = module_benefit.cost_shares.find { |cs| cs.kind_coinsurance? }
+    return nil unless cost_share
 
-    "#{format('%.0f', coinsurance.amount)}% covered"
+    cost_share.specification_text
+  end
+
+  def rule_cost_share_text(rule, module_benefit)
+    rule_cost_share = rule.cost_share if rule.cost_share&.kind_coinsurance?
+    benefit_cost_share = module_benefit.cost_shares.find { |cs| cs.kind_coinsurance? }
+    selected_cost_share = rule_cost_share || benefit_cost_share
+    return nil unless selected_cost_share
+
+    selected_cost_share.specification_text
   end
 end

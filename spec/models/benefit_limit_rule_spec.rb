@@ -4,6 +4,7 @@ RSpec.describe BenefitLimitRule, type: :model do
   subject(:benefit_limit_rule) { build(:benefit_limit_rule) }
 
   it { expect(benefit_limit_rule).to belong_to(:module_benefit) }
+  it { expect(benefit_limit_rule).to have_one(:cost_share).dependent(:destroy) }
   it { expect(benefit_limit_rule).to validate_presence_of(:scope) }
   it { expect(benefit_limit_rule).to validate_presence_of(:limit_type) }
   it { expect(benefit_limit_rule).to define_enum_for(:scope).with_values(benefit_level: 0, itemised: 1) }

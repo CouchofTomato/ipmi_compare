@@ -8,34 +8,36 @@
 <% module_cost_shares = plan_version&.plan_modules&.includes(:module_group, :cost_shares)&.order(:created_at) || [] %>
 <% module_benefit_cost_shares = ModuleBenefit.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(:cost_shares, benefit: :coverage_category, plan_module: :module_group).order(:plan_module_id, :weighting, :created_at) %>
 <% benefit_limit_group_cost_shares = BenefitLimitGroup.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(:cost_shares, plan_module: :module_group).order(:created_at) %>
+<% benefit_limit_rule_cost_shares = BenefitLimitRule.joins(module_benefit: :plan_module).where(plan_modules: { plan_version_id: plan_version&.id }).includes(:cost_share, module_benefit: [{ benefit: :coverage_category }, { plan_module: :module_group }]).order(:scope, :position, :created_at).filter_map(&:cost_share) %>
 <% cost_share_labels = {} %>
-<% display_cost_share_amount = lambda do |cs|
-     if cs.unit == "percent"
-       "#{cs.amount.to_f}%"
-     else
-       number_to_currency(cs.amount || 0, unit: cs.currency.presence || "$")
-     end
+<% cost_share_spec_text = lambda do |cs|
+     cs.specification_text
    end %>
 <% plan_cost_shares.each do |cs| %>
-  <% cost_share_labels[cs.id] = "Plan — #{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" %>
+  <% cost_share_labels[cs.id] = "Plan — #{cost_share_spec_text.call(cs)}" %>
 <% end %>
 <% module_cost_shares.each do |mod| %>
   <% scope_label = [mod.module_group&.name, mod.name].compact.join(" · ") %>
   <% mod.cost_shares.each do |cs| %>
-    <% cost_share_labels[cs.id] = "#{scope_label} — #{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" %>
+    <% cost_share_labels[cs.id] = "#{scope_label} — #{cost_share_spec_text.call(cs)}" %>
   <% end %>
 <% end %>
 <% module_benefit_cost_shares.each do |mb| %>
   <% scope_label = "#{[mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ")} — #{mb.benefit.name} (#{mb.benefit.coverage_category.name})" %>
   <% mb.cost_shares.each do |cs| %>
-    <% cost_share_labels[cs.id] = "#{scope_label} — #{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" %>
+    <% cost_share_labels[cs.id] = "#{scope_label} — #{cost_share_spec_text.call(cs)}" %>
   <% end %>
 <% end %>
 <% benefit_limit_group_cost_shares.each do |group| %>
   <% scope_label = "#{[group.plan_module.module_group&.name, group.plan_module.name].compact.join(" · ")} — #{group.name}" %>
   <% group.cost_shares.each do |cs| %>
-    <% cost_share_labels[cs.id] = "#{scope_label} — #{cs.cost_share_type.humanize} — #{display_cost_share_amount.call(cs)} (#{cs.per.humanize})" %>
+    <% cost_share_labels[cs.id] = "#{scope_label} — #{cost_share_spec_text.call(cs)}" %>
   <% end %>
+<% end %>
+<% benefit_limit_rule_cost_shares.each do |cs| %>
+  <% rule = cs.scope %>
+  <% scope_label = "#{[rule.module_benefit.plan_module.module_group&.name, rule.module_benefit.plan_module.name].compact.join(" · ")} — #{rule.module_benefit.benefit.name} — #{rule.name.presence || "Benefit-level rule"}" %>
+  <% cost_share_labels[cs.id] = "#{scope_label} — #{cost_share_spec_text.call(cs)}" %>
 <% end %>
 <% cost_share_links = CostShareLink.where(cost_share_id: cost_share_labels.keys, linked_cost_share_id: cost_share_labels.keys).order(:created_at) %>
 
@@ -150,7 +152,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Cost shares</p>
-              <% total_cost_shares = plan_cost_shares.size + module_cost_shares.sum { |m| m.cost_shares.size } + module_benefit_cost_shares.sum { |mb| mb.cost_shares.size } + benefit_limit_group_cost_shares.sum { |g| g.cost_shares.size } %>
+              <% total_cost_shares = plan_cost_shares.size + module_cost_shares.sum { |m| m.cost_shares.size } + module_benefit_cost_shares.sum { |mb| mb.cost_shares.size } + benefit_limit_group_cost_shares.sum { |g| g.cost_shares.size } + benefit_limit_rule_cost_shares.size %>
               <p class="text-sm text-gray-600 dark:text-gray-300"><%= pluralize(total_cost_shares, "cost share") %></p>
             </div>
           </div>
@@ -160,7 +162,7 @@
                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Plan</p>
                 <ul class="mt-2 space-y-1">
                   <% plan_cost_shares.each do |cs| %>
-                    <li><%= cs.cost_share_type.humanize %> — <%= display_cost_share_amount.call(cs) %> (<%= cs.per.humanize %>)</li>
+                    <li><%= cost_share_spec_text.call(cs) %></li>
                   <% end %>
                 </ul>
               </div>
@@ -172,7 +174,7 @@
                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"><%= [mod.module_group&.name, mod.name].compact.join(" · ") %></p>
                 <ul class="mt-2 space-y-1">
                   <% mod.cost_shares.each do |cs| %>
-                    <li><%= cs.cost_share_type.humanize %> — <%= display_cost_share_amount.call(cs) %> (<%= cs.per.humanize %>)</li>
+                    <li><%= cost_share_spec_text.call(cs) %></li>
                   <% end %>
                 </ul>
               </div>
@@ -185,7 +187,7 @@
                 <p class="text-xs text-gray-600 dark:text-gray-300"><%= mb.benefit.name %> (<%= mb.benefit.coverage_category.name %>)</p>
                 <ul class="mt-2 space-y-1">
                   <% mb.cost_shares.each do |cs| %>
-                    <li><%= cs.cost_share_type.humanize %> — <%= display_cost_share_amount.call(cs) %> (<%= cs.per.humanize %>)</li>
+                    <li><%= cost_share_spec_text.call(cs) %></li>
                   <% end %>
                 </ul>
               </div>
@@ -198,8 +200,19 @@
                 <p class="text-xs text-gray-600 dark:text-gray-300"><%= group.name %></p>
                 <ul class="mt-2 space-y-1">
                   <% group.cost_shares.each do |cs| %>
-                    <li><%= cs.cost_share_type.humanize %> — <%= display_cost_share_amount.call(cs) %> (<%= cs.per.humanize %>)</li>
+                    <li><%= cost_share_spec_text.call(cs) %></li>
                   <% end %>
+                </ul>
+              </div>
+            <% end %>
+
+            <% benefit_limit_rule_cost_shares.each do |cs| %>
+              <% rule = cs.scope %>
+              <div class="rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-gray-800">
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"><%= [rule.module_benefit.plan_module.module_group&.name, rule.module_benefit.plan_module.name].compact.join(" · ") %></p>
+                <p class="text-xs text-gray-600 dark:text-gray-300"><%= rule.module_benefit.benefit.name %> — <%= rule.name.presence || "Benefit-level rule" %></p>
+                <ul class="mt-2 space-y-1">
+                  <li><%= cost_share_spec_text.call(cs) %></li>
                 </ul>
               </div>
             <% end %>

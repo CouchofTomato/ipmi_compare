@@ -153,13 +153,14 @@
                                 <% if benefit_level_rules.empty? && entry[:cost_share_text].present? %>
                                   <p class="text-slate-600 dark:text-slate-300"><%= entry[:cost_share_text] %></p>
                                 <% end %>
-                                <% benefit_level_rules.each_with_index do |rule, index| %>
+                                <% benefit_level_rules.each do |rule| %>
                                   <% rule_text = format_rule.call(rule) %>
-                                  <% rule_text = combine_cost_share_and_rule.call(entry[:cost_share_text], rule_text, rule) if index.zero? %>
+                                  <% rule_text = combine_cost_share_and_rule.call(rule[:cost_share_text], rule_text, rule) %>
                                   <p class="text-slate-600 dark:text-slate-300"><%= rule_text %></p>
                                 <% end %>
                                 <% entry[:itemised_limit_rules].to_a.each do |rule| %>
-                                  <p class="text-slate-600 dark:text-slate-300"><span class="font-semibold"><%= rule[:name] %>:</span> <%= format_rule.call(rule) %></p>
+                                  <% itemised_rule_text = combine_cost_share_and_rule.call(rule[:cost_share_text], format_rule.call(rule), rule) %>
+                                  <p class="text-slate-600 dark:text-slate-300"><span class="font-semibold"><%= rule[:name] %>:</span> <%= itemised_rule_text %></p>
                                 <% end %>
                                 <% if entry[:waiting_period_months].present? %>
                                   <p class="text-slate-600 dark:text-slate-300">Waiting: <%= entry[:waiting_period_months] %> months</p>

@@ -7,7 +7,7 @@ RSpec.describe "Benefits", type: :system do
   end
 
   it "allows creating a benefit" do
-    coverage_category = create(:coverage_category, name: "Inpatient")
+    coverage_category = create(:coverage_category)
 
     visit benefits_path
     click_link "Add benefit"
