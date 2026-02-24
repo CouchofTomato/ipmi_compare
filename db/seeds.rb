@@ -25,16 +25,24 @@ User.delete_all
 
 User.create!(email: "admin@example.com", password: "password", admin: true)
 
-def create_cost_share!(scope:, cost_share_type:, amount:, unit:, per:, currency: nil, notes: nil)
-  CostShare.create!(
+def create_cost_share!(scope:, cost_share_type:, unit:, per:, amount: nil, amount_usd: nil, amount_gbp: nil, amount_eur: nil, notes: nil)
+  attributes = {
     scope: scope,
     cost_share_type: cost_share_type,
-    amount: amount,
     unit: unit,
     per: per,
-    currency: currency,
     notes: notes
-  )
+  }
+
+  if cost_share_type.to_s == "coinsurance"
+    attributes[:amount] = amount
+  else
+    attributes[:amount_usd] = amount_usd || amount
+    attributes[:amount_gbp] = amount_gbp
+    attributes[:amount_eur] = amount_eur
+  end
+
+  CostShare.create!(attributes)
 end
 
 coverage_categories =
@@ -81,6 +89,7 @@ benefits = {
   dental_implants: Benefit.create!(name: "Dental - implants", coverage_category: coverage_categories[3]),
   dental_endodontics: Benefit.create!(name: "Dental - endodontics", coverage_category: coverage_categories[3]),
   dental_prosthodontics: Benefit.create!(name: "Dental - prosthodontics", coverage_category: coverage_categories[3]),
+  dental_routine_treatment: Benefit.create!(name: "Routine dental treatment", coverage_category: coverage_categories[3]),
   vision_exam: Benefit.create!(name: "Vision exam", coverage_category: coverage_categories[4]),
   vision_lenses: Benefit.create!(name: "Vision lenses and frames", coverage_category: coverage_categories[4]),
   vision_surgery: Benefit.create!(name: "Vision correction surgery", coverage_category: coverage_categories[4]),
@@ -179,10 +188,9 @@ plans.each_value do |plan|
   create_cost_share!(
     scope: plan_version,
     cost_share_type: :deductible,
-    amount: 500,
     unit: :amount,
     per: :per_year,
-    currency: "USD",
+    amount_usd: 500,
     notes: "Annual plan-level deductible"
   )
 end
@@ -608,6 +616,50 @@ def build_modules_for_plan!(plan:, benefits:, coverage_categories:)
     coverage_description: "Crowns, bridges, dentures, and prosthodontics"
   )
 
+  routine_dental_treatment = ModuleBenefit.create!(
+    plan_module: dental_module,
+    benefit: benefits[:dental_routine_treatment],
+    coverage_description: "Routine treatment with itemised dental caps"
+  )
+
+  create_cost_share!(
+    scope: routine_dental_treatment,
+    cost_share_type: :coinsurance,
+    amount: 80,
+    unit: :percent,
+    per: :per_visit,
+    notes: "Default routine dental coinsurance"
+  )
+
+  [
+    { name: "Root treatment", unit: "per tooth", cap: 380, position: 0, override: true },
+    { name: "Extraction", unit: "per tooth", cap: 220, position: 1 },
+    { name: "Surgery", unit: "per tooth", cap: 450, position: 2 },
+    { name: "X-ray", unit: "per image", cap: 75, position: 3 },
+    { name: "Anaesthesia", unit: "per procedure", cap: 300, position: 4 }
+  ].each do |rule_data|
+    dental_rule = BenefitLimitRule.create!(
+      module_benefit: routine_dental_treatment,
+      scope: :itemised,
+      name: rule_data[:name],
+      limit_type: :amount,
+      insurer_amount_usd: rule_data[:cap],
+      unit: rule_data[:unit],
+      cap_insurer_amount_usd: rule_data[:cap],
+      cap_unit: "per policy year",
+      position: rule_data[:position]
+    )
+
+    create_cost_share!(
+      scope: dental_rule,
+      cost_share_type: :coinsurance,
+      amount: (rule_data[:override] ? 85 : 80),
+      unit: :percent,
+      per: :per_visit,
+      notes: "Rule-level coinsurance"
+    )
+  end
+
   ModuleBenefit.create!(
     plan_module: vision_module,
     benefit: benefits[:vision_exam],
@@ -707,28 +759,27 @@ def build_modules_for_plan!(plan:, benefits:, coverage_categories:)
   create_cost_share!(
     scope: inpatient_module,
     cost_share_type: :deductible,
-    amount: 250,
     unit: :amount,
     per: :per_visit,
-    currency: "USD",
+    amount_usd: 250,
     notes: "Inpatient admission deductible"
   )
 
   outpatient_copay = create_cost_share!(
     scope: outpatient_module,
-    cost_share_type: :coinsurance,
-    amount: 20,
-    unit: :percent,
+    cost_share_type: :excess,
+    unit: :amount,
     per: :per_visit,
-    notes: "Coinsurance for outpatient services"
+    amount_usd: 20,
+    notes: "Outpatient excess"
   )
 
   maternity_copay = create_cost_share!(
     scope: maternity_module,
-    cost_share_type: :coinsurance,
-    amount: 10,
-    unit: :percent,
-    per: :per_visit
+    cost_share_type: :excess,
+    unit: :amount,
+    per: :per_visit,
+    amount_usd: 10
   )
 
   CostShareLink.create!(

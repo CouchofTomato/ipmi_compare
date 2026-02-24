@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_24_002000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_24_171000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -96,10 +96,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_002000) do
   end
 
   create_table "cost_shares", force: :cascade do |t|
-    t.decimal "amount", precision: 12, scale: 2, null: false
+    t.decimal "amount", precision: 12, scale: 2
+    t.decimal "amount_eur", precision: 12, scale: 2
+    t.decimal "amount_gbp", precision: 12, scale: 2
+    t.decimal "amount_usd", precision: 12, scale: 2
+    t.decimal "cap_amount_eur", precision: 12, scale: 2
+    t.decimal "cap_amount_gbp", precision: 12, scale: 2
+    t.decimal "cap_amount_usd", precision: 12, scale: 2
+    t.integer "cap_period"
     t.integer "cost_share_type", null: false
     t.datetime "created_at", null: false
-    t.string "currency"
+    t.integer "kind", null: false
     t.text "notes"
     t.integer "per", null: false
     t.bigint "scope_id", null: false

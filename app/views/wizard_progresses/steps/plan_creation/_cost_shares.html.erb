@@ -2,13 +2,21 @@
 <% plan_version = progress.plan_version || plan&.current_plan_version %>
 <% cost_share = local_assigns[:resource].is_a?(CostShare) ? local_assigns[:resource] : CostShare.new %>
 <% cost_share.applies_to ||= "plan" %>
+<% cost_share.cost_share_type ||= (cost_share.applies_to.in?(["module_benefit", "benefit_limit_rule"]) ? "coinsurance" : "deductible") %>
+<% cost_share.unit ||= (cost_share.cost_share_type == "coinsurance" ? "percent" : "amount") %>
+<% cost_share.per ||= (cost_share.cost_share_type == "coinsurance" ? "per_event" : "per_visit") %>
+
 <% available_modules = plan_version&.plan_modules&.left_joins(:module_group)&.includes(:module_group)&.order("module_groups.position ASC", "plan_modules.created_at ASC") || [] %>
-<% available_module_benefits = ModuleBenefit.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(benefit: :coverage_category, plan_module: :module_group).order("module_benefits.plan_module_id ASC", "module_benefits.weighting ASC", "module_benefits.created_at ASC") %>
+<% available_module_benefits = ModuleBenefit.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(:benefit_limit_rules, benefit: :coverage_category, plan_module: :module_group).order("module_benefits.plan_module_id ASC", "module_benefits.weighting ASC", "module_benefits.created_at ASC") %>
 <% available_benefit_limit_groups = BenefitLimitGroup.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(plan_module: :module_group).order(:created_at) %>
+<% available_benefit_limit_rules = BenefitLimitRule.joins(module_benefit: :plan_module).where(plan_modules: { plan_version_id: plan_version&.id }).includes(module_benefit: [{ benefit: :coverage_category }, { plan_module: :module_group }]).order(:scope, :position, :created_at) %>
+
 <% plan_cost_shares = plan_version&.cost_shares&.order(:created_at) || [] %>
 <% module_cost_shares = plan_version&.plan_modules&.includes(:module_group, :cost_shares)&.order(:created_at) || [] %>
 <% module_benefit_cost_shares = ModuleBenefit.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(:cost_shares, benefit: :coverage_category, plan_module: :module_group).order("module_benefits.plan_module_id ASC", "module_benefits.weighting ASC", "module_benefits.created_at ASC") %>
 <% benefit_limit_group_cost_shares = BenefitLimitGroup.where(plan_module_id: Array(plan_version&.plan_module_ids)).includes(:cost_shares, plan_module: :module_group).order(:created_at) %>
+<% benefit_limit_rule_cost_shares = available_benefit_limit_rules.select { |rule| rule.cost_share.present? } %>
+
 <% input_classes = "block w-full rounded-md border-0 bg-white px-3 py-2 text-base text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500" %>
 <% field_classes = lambda do |attributes, *extra_classes|
      attrs = Array(attributes)
@@ -16,19 +24,29 @@
      classes << "ring-red-500 focus:ring-red-500" if attrs.any? { |attr| cost_share.errors[attr].present? }
      classes.compact.join(" ")
    end %>
-<% display_cost_share_amount = lambda do |cs|
-     if cs.unit == "percent"
-       "#{cs.amount.to_f}%"
-     else
-       number_to_currency(cs.amount || 0, unit: cs.currency.presence || "$")
-     end
+<% per_options = CostShare.pers.keys.map do |key|
+     label = key == "per_event" ? "Per service" : key.humanize
+     [label, key]
+   end %>
+<% cost_share_spec_text = lambda do |cs|
+     cs.specification_text
+   end %>
+<% rule_amount_summary = lambda do |rule|
+     insurer = [["USD", rule.insurer_amount_usd], ["GBP", rule.insurer_amount_gbp], ["EUR", rule.insurer_amount_eur]].filter_map { |currency, amount| "#{currency} #{number_with_precision(amount, precision: 2)}" if amount.present? }.join(" / ")
+     cap = [["USD", rule.cap_insurer_amount_usd], ["GBP", rule.cap_insurer_amount_gbp], ["EUR", rule.cap_insurer_amount_eur]].filter_map { |currency, amount| "#{currency} #{number_with_precision(amount, precision: 2)}" if amount.present? }.join(" / ")
+     summary = []
+     summary << [insurer, rule.unit].compact.join(" ") if insurer.present?
+     summary << "up to #{[cap, rule.cap_unit].compact.join(" ")}" if cap.present?
+     summary << "As charged" if rule.limit_type == "as_charged"
+     summary << "Not stated" if rule.limit_type == "not_stated"
+     summary.join(", ")
    end %>
 
 <%= turbo_frame_tag "wizard_step" do %>
-  <div class="space-y-6">
+  <div class="space-y-6" data-controller="cost-share-form">
     <div>
       <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Step 9: Cost shares</h2>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Add deductibles, excesses, or coinsurance amounts that apply to the plan, a module, a module benefit, or a benefit limit group.</p>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Add deductibles at plan/module level, and coinsurance at benefit/rule level.</p>
     </div>
 
     <% has_errors = (cost_share.respond_to?(:errors) && cost_share.errors.any?) || progress.errors.any? %>
@@ -52,24 +70,33 @@
                   scope: :cost_shares,
                   url: wizard_progress_path(progress),
                   method: :patch,
-                  data: { turbo_frame: "wizard_step" },
+                  data: { turbo_frame: "wizard_step", cost_share_form_target: "form" },
                   local: true,
                   html: { class: "space-y-6" } do |form| %>
       <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900">
-        <div class="grid gap-4 sm:grid-cols-3">
+        <div class="grid gap-4 sm:grid-cols-2">
           <div>
-            <%= form.label :applies_to, "Applies to", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+            <%= form.label :plan_id, "Plan", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
-              <%= form.select :applies_to,
-                              [["Plan", "plan"], ["Module", "plan_module"], ["Module benefit", "module_benefit"], ["Benefit limit group", "benefit_limit_group"]],
-                              {},
-                              class: field_classes.call(:applies_to),
-                              data: { test_id: "applies-to-field" } %>
+              <%= text_field_tag :selected_plan_name, plan&.name || "", class: input_classes, disabled: true %>
             </div>
           </div>
 
           <div>
-            <%= form.label :plan_module_id, "Module (when applicable)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+            <%= form.label :applies_to, "Target type", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+            <div class="mt-2">
+              <%= form.select :applies_to,
+                              [["Plan", "plan"], ["Module", "plan_module"], ["Module benefit", "module_benefit"], ["Benefit limit rule", "benefit_limit_rule"], ["Benefit limit group", "benefit_limit_group"]],
+                              {},
+                              class: field_classes.call(:applies_to),
+                              data: { test_id: "applies-to-field", cost_share_form_target: "appliesToField", action: "change->cost-share-form#syncFromAppliesTo" } %>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div data-cost-share-form-target="moduleWrapper">
+            <%= form.label :plan_module_id, "Module", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
               <%= form.collection_select :plan_module_id,
                                          available_modules,
@@ -77,23 +104,24 @@
                                          ->(m) { [m.module_group&.name, m.name].compact.join(" – ") },
                                          { prompt: "Select a module" },
                                          class: field_classes.call(:plan_module_id),
-                                         data: { test_id: "module-field" } %>
+                                         data: { test_id: "module-field", cost_share_form_target: "moduleField", action: "change->cost-share-form#syncFromModule" } %>
             </div>
           </div>
 
-          <div>
-            <%= form.label :module_benefit_id, "Module benefit (when applicable)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+          <div data-cost-share-form-target="benefitWrapper">
+            <%= form.label :module_benefit_id, "Module benefit", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
               <%= form.collection_select :module_benefit_id,
                                          available_module_benefits,
                                          :id,
                                          ->(mb) { "#{[mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ")} — #{mb.benefit.name} (#{mb.benefit.coverage_category.name})" },
                                          { prompt: "Select a module benefit" },
-                                         class: field_classes.call(:module_benefit_id) %>
+                                         class: field_classes.call(:module_benefit_id),
+                                         data: { cost_share_form_target: "benefitField", action: "change->cost-share-form#syncFromBenefit" } %>
             </div>
           </div>
 
-          <div>
+          <div data-cost-share-form-target="benefitLimitGroupWrapper">
             <%= form.label :benefit_limit_group_id, "Benefit limit group (when applicable)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
               <%= form.collection_select :benefit_limit_group_id,
@@ -107,22 +135,52 @@
           </div>
         </div>
 
+        <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-white/10" data-cost-share-form-target="ruleTableWrapper">
+          <div class="border-b border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-900 dark:border-white/10 dark:bg-gray-800 dark:text-gray-100">Benefit limit rules</div>
+          <div class="max-h-64 overflow-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-white/10">
+              <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500 dark:bg-gray-800 dark:text-gray-300">
+                <tr>
+                  <th class="px-3 py-2">Select</th>
+                  <th class="px-3 py-2">Scope</th>
+                  <th class="px-3 py-2">Name</th>
+                  <th class="px-3 py-2">Limit type</th>
+                  <th class="px-3 py-2">Unit</th>
+                  <th class="px-3 py-2">Amounts/Caps</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 bg-white dark:divide-white/10 dark:bg-gray-900">
+                <% available_benefit_limit_rules.each do |rule| %>
+                  <% checkbox_id = "benefit_limit_rule_ids_#{rule.id}" %>
+                  <% checked = Array(cost_share.benefit_limit_rule_ids).map(&:to_i).include?(rule.id) %>
+                  <tr class="text-gray-700 dark:text-gray-200" data-cost-share-form-target="ruleRow" data-module-benefit-id="<%= rule.module_benefit_id %>">
+                    <td class="px-3 py-2 align-top">
+                      <%= check_box_tag "cost_shares[benefit_limit_rule_ids][]", rule.id, checked,
+                                        id: checkbox_id,
+                                        class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-white/20 dark:bg-gray-900 dark:text-indigo-400 dark:focus:ring-indigo-400",
+                                        data: { test_id: "benefit-limit-rule-#{rule.id}-checkbox", cost_share_form_target: "ruleCheckbox" } %>
+                    </td>
+                    <td class="px-3 py-2 align-top"><%= rule.scope.humanize %></td>
+                    <td class="px-3 py-2 align-top"><%= rule.name.presence || "-" %></td>
+                    <td class="px-3 py-2 align-top"><%= rule.limit_type.humanize %></td>
+                    <td class="px-3 py-2 align-top"><%= rule.unit.presence || "-" %></td>
+                    <td class="px-3 py-2 align-top"><%= rule_amount_summary.call(rule).presence || "-" %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="grid gap-4 sm:grid-cols-3">
           <div>
-            <%= form.label :cost_share_type, "Type", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+            <%= form.label :cost_share_type, "Cost share type", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
               <%= form.select :cost_share_type,
                               CostShare.cost_share_types.keys.map { |key| [key.humanize, key] },
                               {},
                               class: field_classes.call(:cost_share_type),
-                              data: { test_id: "cost-share-type-field" } %>
-            </div>
-          </div>
-
-          <div>
-            <%= form.label :amount, "Amount", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
-            <div class="mt-2">
-              <%= form.number_field :amount, class: field_classes.call(:amount), step: 0.01, min: 0, data: { test_id: "cost-share-amount-field" } %>
+                              data: { test_id: "cost-share-type-field", cost_share_form_target: "typeField", action: "change->cost-share-form#syncFromType" } %>
             </div>
           </div>
 
@@ -133,7 +191,34 @@
                               CostShare.units.keys.map { |key| [key.humanize, key] },
                               {},
                               class: field_classes.call(:unit),
-                              data: { test_id: "cost-share-unit-field" } %>
+                              data: { test_id: "cost-share-unit-field", cost_share_form_target: "unitField" } %>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div data-cost-share-form-target="percentAmountWrapper">
+            <%= form.label :amount, "Amount (%)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+            <div class="mt-2">
+              <%= form.number_field :amount, class: field_classes.call(:amount), step: 0.01, min: 0, data: { cost_share_form_target: "amountField", test_id: "cost-share-amount-field" } %>
+            </div>
+          </div>
+
+          <div data-cost-share-form-target="moneyAmountsWrapper">
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Amount (member pays)</p>
+            <div class="mt-2 grid gap-4 sm:grid-cols-3">
+              <div>
+                <%= form.label :amount_usd, "USD", class: "text-xs font-semibold text-gray-700 dark:text-gray-200" %>
+                <%= form.number_field :amount_usd, class: field_classes.call(:amount_usd), step: 0.01, min: 0, data: { cost_share_form_target: "amountUsdField", test_id: "cost-share-amount-usd-field" } %>
+              </div>
+              <div>
+                <%= form.label :amount_gbp, "GBP", class: "text-xs font-semibold text-gray-700 dark:text-gray-200" %>
+                <%= form.number_field :amount_gbp, class: field_classes.call(:amount_gbp), step: 0.01, min: 0, data: { cost_share_form_target: "amountGbpField", test_id: "cost-share-amount-gbp-field" } %>
+              </div>
+              <div>
+                <%= form.label :amount_eur, "EUR", class: "text-xs font-semibold text-gray-700 dark:text-gray-200" %>
+                <%= form.number_field :amount_eur, class: field_classes.call(:amount_eur), step: 0.01, min: 0, data: { cost_share_form_target: "amountEurField", test_id: "cost-share-amount-eur-field" } %>
+              </div>
             </div>
           </div>
         </div>
@@ -143,17 +228,58 @@
             <%= form.label :per, "Per", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
             <div class="mt-2">
               <%= form.select :per,
-                              CostShare.pers.keys.map { |key| [key.humanize, key] },
+                              per_options,
                               {},
                               class: field_classes.call(:per),
-                              data: { test_id: "cost-share-per-field" } %>
+                              data: { test_id: "cost-share-per-field", cost_share_form_target: "perField" } %>
             </div>
+            <p class="mt-1 text-xs text-gray-600 dark:text-gray-300">Defines how the cost share is applied (e.g. per visit, per service, or per condition).</p>
           </div>
+        </div>
 
-          <div>
-            <%= form.label :currency, "Currency (optional)", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
-            <div class="mt-2">
-              <%= form.text_field :currency, class: field_classes.call(:currency), placeholder: "e.g. USD", data: { test_id: "cost-share-currency-field" } %>
+        <div class="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-gray-800/40" data-cost-share-form-target="memberCapWrapper">
+          <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Member cost-share cap (optional)</p>
+          <p class="text-xs text-gray-600 dark:text-gray-300">Maximum total the member pays for this cost share over the selected period (e.g. per policy year).</p>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Cap amount</p>
+              <div class="mt-2 grid gap-4 sm:grid-cols-3">
+                <div>
+                  <%= form.label :cap_amount_usd, "USD", class: "text-xs font-semibold text-gray-700 dark:text-gray-200" %>
+                  <%= form.number_field :cap_amount_usd,
+                                        class: field_classes.call(:cap_amount_usd),
+                                        step: 0.01,
+                                        min: 0,
+                                        data: { cost_share_form_target: "capAmountUsdField", test_id: "cost-share-cap-amount-usd-field" } %>
+                </div>
+                <div>
+                  <%= form.label :cap_amount_gbp, "GBP", class: "text-xs font-semibold text-gray-700 dark:text-gray-200" %>
+                  <%= form.number_field :cap_amount_gbp,
+                                        class: field_classes.call(:cap_amount_gbp),
+                                        step: 0.01,
+                                        min: 0,
+                                        data: { cost_share_form_target: "capAmountGbpField", test_id: "cost-share-cap-amount-gbp-field" } %>
+                </div>
+                <div>
+                  <%= form.label :cap_amount_eur, "EUR", class: "text-xs font-semibold text-gray-700 dark:text-gray-200" %>
+                  <%= form.number_field :cap_amount_eur,
+                                        class: field_classes.call(:cap_amount_eur),
+                                        step: 0.01,
+                                        min: 0,
+                                        data: { cost_share_form_target: "capAmountEurField", test_id: "cost-share-cap-amount-eur-field" } %>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <%= form.label :cap_period, "Cap period", class: "text-sm font-medium text-gray-900 dark:text-gray-100" %>
+              <div class="mt-2">
+                <%= form.select :cap_period,
+                                CostShare.cap_periods.keys.map { |key| [key.humanize, key] },
+                                { prompt: "Select cap period" },
+                                class: field_classes.call(:cap_period),
+                                data: { cost_share_form_target: "capPeriodField", test_id: "cost-share-cap-period-field" } %>
+              </div>
             </div>
           </div>
         </div>
@@ -193,7 +319,7 @@
     <div class="space-y-3">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">Cost shares added</h3>
-        <% total_cost_shares = plan_cost_shares.size + module_cost_shares.sum { |m| m.cost_shares.size } + module_benefit_cost_shares.sum { |mb| mb.cost_shares.size } + benefit_limit_group_cost_shares.sum { |g| g.cost_shares.size } %>
+        <% total_cost_shares = plan_cost_shares.size + module_cost_shares.sum { |m| m.cost_shares.size } + module_benefit_cost_shares.sum { |mb| mb.cost_shares.size } + benefit_limit_group_cost_shares.sum { |g| g.cost_shares.size } + benefit_limit_rule_cost_shares.size %>
         <p class="text-sm text-gray-500 dark:text-gray-400"><%= pluralize(total_cost_shares, "cost share") %></p>
       </div>
 
@@ -209,18 +335,12 @@
               <ul class="mt-2 space-y-2">
                 <% plan_cost_shares.each do |cs| %>
                   <li class="rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 dark:border-white/10 dark:bg-gray-800 dark:text-gray-200">
-                    <%= cs.cost_share_type.humanize %> — <%= display_cost_share_amount.call(cs) %> (<%= cs.unit.humanize %>, <%= cs.per.humanize %>)
+                    <%= cost_share_spec_text.call(cs) %>
                     <% if cs.notes.present? %>
                       <p class="mt-1 text-xs text-gray-500 dark:text-gray-400"><%= cs.notes %></p>
                     <% end %>
                     <div class="mt-2">
-                      <%= button_to "Delete",
-                                    wizard_progress_path(progress),
-                                    method: :patch,
-                                    params: { step_action: "delete", cost_shares: { id: cs.id } },
-                                    form: { data: { turbo_frame: "wizard_step" } },
-                                    class: "text-xs font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300",
-                                    data: { turbo_confirm: "Delete this cost share?", test_id: "delete-cost-share-#{cs.id}-button" } %>
+                      <%= button_to "Delete", wizard_progress_path(progress), method: :patch, params: { step_action: "delete", cost_shares: { id: cs.id } }, form: { data: { turbo_frame: "wizard_step" } }, class: "text-xs font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300", data: { turbo_confirm: "Delete this cost share?", test_id: "delete-cost-share-#{cs.id}-button" } %>
                     </div>
                   </li>
                 <% end %>
@@ -235,18 +355,12 @@
               <ul class="mt-2 space-y-2">
                 <% mod.cost_shares.each do |cs| %>
                   <li class="rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 dark:border-white/10 dark:bg-gray-800 dark:text-gray-200">
-                    <%= cs.cost_share_type.humanize %> — <%= display_cost_share_amount.call(cs) %> (<%= cs.unit.humanize %>, <%= cs.per.humanize %>)
+                    <%= cost_share_spec_text.call(cs) %>
                     <% if cs.notes.present? %>
                       <p class="mt-1 text-xs text-gray-500 dark:text-gray-400"><%= cs.notes %></p>
                     <% end %>
                     <div class="mt-2">
-                      <%= button_to "Delete",
-                                    wizard_progress_path(progress),
-                                    method: :patch,
-                                    params: { step_action: "delete", cost_shares: { id: cs.id } },
-                                    form: { data: { turbo_frame: "wizard_step" } },
-                                    class: "text-xs font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300",
-                                    data: { turbo_confirm: "Delete this cost share?", test_id: "delete-cost-share-#{cs.id}-button" } %>
+                      <%= button_to "Delete", wizard_progress_path(progress), method: :patch, params: { step_action: "delete", cost_shares: { id: cs.id } }, form: { data: { turbo_frame: "wizard_step" } }, class: "text-xs font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300", data: { turbo_confirm: "Delete this cost share?", test_id: "delete-cost-share-#{cs.id}-button" } %>
                     </div>
                   </li>
                 <% end %>
@@ -257,25 +371,17 @@
           <% module_benefit_cost_shares.each do |mb| %>
             <% next if mb.cost_shares.empty? %>
             <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-gray-900">
-              <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                <%= [mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ") %>
-              </p>
+              <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"><%= [mb.plan_module.module_group&.name, mb.plan_module.name].compact.join(" · ") %></p>
               <p class="text-sm font-semibold text-gray-900 dark:text-gray-100"><%= mb.benefit.name %> (<%= mb.benefit.coverage_category.name %>)</p>
               <ul class="mt-2 space-y-2">
                 <% mb.cost_shares.each do |cs| %>
                   <li class="rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 dark:border-white/10 dark:bg-gray-800 dark:text-gray-200">
-                    <%= cs.cost_share_type.humanize %> — <%= display_cost_share_amount.call(cs) %> (<%= cs.unit.humanize %>, <%= cs.per.humanize %>)
+                    <%= cost_share_spec_text.call(cs) %>
                     <% if cs.notes.present? %>
                       <p class="mt-1 text-xs text-gray-500 dark:text-gray-400"><%= cs.notes %></p>
                     <% end %>
                     <div class="mt-2">
-                      <%= button_to "Delete",
-                                    wizard_progress_path(progress),
-                                    method: :patch,
-                                    params: { step_action: "delete", cost_shares: { id: cs.id } },
-                                    form: { data: { turbo_frame: "wizard_step" } },
-                                    class: "text-xs font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300",
-                                    data: { turbo_confirm: "Delete this cost share?", test_id: "delete-cost-share-#{cs.id}-button" } %>
+                      <%= button_to "Delete", wizard_progress_path(progress), method: :patch, params: { step_action: "delete", cost_shares: { id: cs.id } }, form: { data: { turbo_frame: "wizard_step" } }, class: "text-xs font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300", data: { turbo_confirm: "Delete this cost share?", test_id: "delete-cost-share-#{cs.id}-button" } %>
                     </div>
                   </li>
                 <% end %>
@@ -283,28 +389,39 @@
             </div>
           <% end %>
 
+          <% benefit_limit_rule_cost_shares.each do |rule| %>
+            <% cs = rule.cost_share %>
+            <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-gray-900">
+              <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"><%= [rule.module_benefit.plan_module.module_group&.name, rule.module_benefit.plan_module.name].compact.join(" · ") %></p>
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100"><%= rule.module_benefit.benefit.name %> — <%= rule.name.presence || "Benefit-level rule" %></p>
+              <ul class="mt-2 space-y-2">
+                <li class="rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 dark:border-white/10 dark:bg-gray-800 dark:text-gray-200">
+                  <%= cost_share_spec_text.call(cs) %>
+                  <% if cs.notes.present? %>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400"><%= cs.notes %></p>
+                  <% end %>
+                  <div class="mt-2">
+                    <%= button_to "Delete", wizard_progress_path(progress), method: :patch, params: { step_action: "delete", cost_shares: { id: cs.id } }, form: { data: { turbo_frame: "wizard_step" } }, class: "text-xs font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300", data: { turbo_confirm: "Delete this cost share?", test_id: "delete-cost-share-#{cs.id}-button" } %>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          <% end %>
+
           <% benefit_limit_group_cost_shares.each do |group| %>
             <% next if group.cost_shares.empty? %>
             <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-gray-900">
-              <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                <%= [group.plan_module.module_group&.name, group.plan_module.name].compact.join(" · ") %>
-              </p>
+              <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"><%= [group.plan_module.module_group&.name, group.plan_module.name].compact.join(" · ") %></p>
               <p class="text-sm font-semibold text-gray-900 dark:text-gray-100"><%= group.name %></p>
               <ul class="mt-2 space-y-2">
                 <% group.cost_shares.each do |cs| %>
                   <li class="rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 dark:border-white/10 dark:bg-gray-800 dark:text-gray-200">
-                    <%= cs.cost_share_type.humanize %> — <%= display_cost_share_amount.call(cs) %> (<%= cs.unit.humanize %>, <%= cs.per.humanize %>)
+                    <%= cost_share_spec_text.call(cs) %>
                     <% if cs.notes.present? %>
                       <p class="mt-1 text-xs text-gray-500 dark:text-gray-400"><%= cs.notes %></p>
                     <% end %>
                     <div class="mt-2">
-                      <%= button_to "Delete",
-                                    wizard_progress_path(progress),
-                                    method: :patch,
-                                    params: { step_action: "delete", cost_shares: { id: cs.id } },
-                                    form: { data: { turbo_frame: "wizard_step" } },
-                                    class: "text-xs font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300",
-                                    data: { turbo_confirm: "Delete this cost share?", test_id: "delete-cost-share-#{cs.id}-button" } %>
+                      <%= button_to "Delete", wizard_progress_path(progress), method: :patch, params: { step_action: "delete", cost_shares: { id: cs.id } }, form: { data: { turbo_frame: "wizard_step" } }, class: "text-xs font-semibold text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300", data: { turbo_confirm: "Delete this cost share?", test_id: "delete-cost-share-#{cs.id}-button" } %>
                     </div>
                   </li>
                 <% end %>

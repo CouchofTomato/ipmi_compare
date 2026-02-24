@@ -329,10 +329,10 @@ RSpec.describe "WizardProgresses", type: :request do
       module_benefit = create(:module_benefit, plan_module:)
       benefit_limit_group = create(:benefit_limit_group, plan_module:)
 
-      plan_cost_share = create(:cost_share, scope: plan_version, cost_share_type: :deductible, amount: 100, per: :per_year, currency: "USD")
-      module_cost_share = create(:cost_share, scope: plan_module, cost_share_type: :coinsurance, amount: 10, unit: :percent, per: :per_visit)
-      module_benefit_cost_share = create(:cost_share, scope: module_benefit, cost_share_type: :excess, amount: 50, per: :per_condition, currency: "USD")
-      benefit_limit_cost_share = create(:cost_share, scope: benefit_limit_group, cost_share_type: :excess, amount: 75, per: :per_condition, currency: "USD")
+      plan_cost_share = create(:cost_share, scope: plan_version, cost_share_type: :deductible, amount_usd: 100, per: :per_year)
+      module_cost_share = create(:cost_share, scope: plan_module, cost_share_type: :excess, amount_usd: 10, unit: :amount, per: :per_visit)
+      module_benefit_cost_share = create(:cost_share, scope: module_benefit, cost_share_type: :coinsurance, amount: 50, unit: :percent, per: :per_condition)
+      benefit_limit_cost_share = create(:cost_share, scope: benefit_limit_group, cost_share_type: :excess, amount_usd: 75, per: :per_condition)
 
       wizard_progress.update!(current_step: "cost_shares", step_order: 8, status: :in_progress)
       progress = wizard_progress
@@ -360,6 +360,40 @@ RSpec.describe "WizardProgresses", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "creates one cost share per selected benefit limit rule" do
+      plan = wizard_progress.subject
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      plan_module = create(:plan_module, plan_version:, module_group:)
+      module_benefit = create(:module_benefit, plan_module:)
+      rule_a = create(:benefit_limit_rule, module_benefit:, scope: :itemised, name: "Extraction")
+      rule_b = create(:benefit_limit_rule, module_benefit:, scope: :itemised, name: "Surgery")
+
+      wizard_progress.update!(current_step: "cost_shares", step_order: 8, status: :in_progress)
+
+      expect do
+        patch wizard_progress_path(wizard_progress, format: :turbo_stream),
+              params: {
+                step_action: "add",
+                cost_shares: {
+                  applies_to: "benefit_limit_rule",
+                  plan_module_id: plan_module.id,
+                  module_benefit_id: module_benefit.id,
+                  cost_share_type: "coinsurance",
+                  amount: "80",
+                  unit: "percent",
+                  per: "per_visit",
+                  benefit_limit_rule_ids: [ rule_a.id, rule_b.id ]
+                }
+              }
+      end.to change { CostShare.where(scope_type: "BenefitLimitRule").count }.by(2)
+
+      created = CostShare.where(scope_type: "BenefitLimitRule", scope_id: [ rule_a.id, rule_b.id ])
+      expect(created.pluck(:kind).uniq).to eq([ "coinsurance" ])
+      expect(created.pluck(:amount).uniq).to eq([ BigDecimal("80.0") ])
+      expect(response).to have_http_status(:success)
+    end
+
     it "deletes a cost share link" do
       plan = wizard_progress.subject
       plan_version = plan.current_plan_version
@@ -367,7 +401,7 @@ RSpec.describe "WizardProgresses", type: :request do
       plan_module = create(:plan_module, plan_version:, module_group:)
       module_benefit = create(:module_benefit, plan_module:)
 
-      primary = create(:cost_share, scope: plan_version, cost_share_type: :deductible, amount: 100, per: :per_year, currency: "USD")
+      primary = create(:cost_share, scope: plan_version, cost_share_type: :deductible, amount_usd: 100, per: :per_year)
       secondary = create(:cost_share, scope: module_benefit, cost_share_type: :coinsurance, amount: 20, unit: :percent, per: :per_visit)
       cost_share_link = create(:cost_share_link, cost_share: primary, linked_cost_share: secondary, relationship_type: :shared_pool)
 
