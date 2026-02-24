@@ -29,7 +29,8 @@ class PlanVersionDuplicator
     plan_module_map = copy_plan_modules(new_version, module_group_map)
     benefit_limit_group_map = copy_benefit_limit_groups(plan_module_map)
     module_benefit_map = copy_module_benefits(plan_module_map, benefit_limit_group_map)
-    cost_share_map = copy_cost_shares(new_version, plan_module_map, module_benefit_map, benefit_limit_group_map)
+    benefit_limit_rule_map = copy_benefit_limit_rules(module_benefit_map)
+    cost_share_map = copy_cost_shares(new_version, plan_module_map, module_benefit_map, benefit_limit_group_map, benefit_limit_rule_map)
 
     copy_cost_share_links(cost_share_map)
     copy_plan_module_requirements(new_version, plan_module_map)
@@ -91,15 +92,24 @@ class PlanVersionDuplicator
         new_benefit = new_module.module_benefits.create!(
           sanitized_attributes(benefit, %w[benefit_limit_group_id]).merge(benefit_limit_group: new_group)
         )
-        benefit.benefit_limit_rules.each do |sub_limit|
-          new_benefit.benefit_limit_rules.create!(sanitized_attributes(sub_limit))
-        end
         map[benefit.id] = new_benefit
       end
     end
   end
 
-  def copy_cost_shares(new_version, plan_module_map, module_benefit_map, benefit_limit_group_map)
+  def copy_benefit_limit_rules(module_benefit_map)
+    plan_version.plan_modules.each_with_object({}) do |plan_module, map|
+      plan_module.module_benefits.each do |benefit|
+        new_benefit = module_benefit_map[benefit.id]
+        benefit.benefit_limit_rules.each do |sub_limit|
+          new_rule = new_benefit.benefit_limit_rules.create!(sanitized_attributes(sub_limit))
+          map[sub_limit.id] = new_rule
+        end
+      end
+    end
+  end
+
+  def copy_cost_shares(new_version, plan_module_map, module_benefit_map, benefit_limit_group_map, benefit_limit_rule_map)
     cost_share_map = {}
 
     plan_version.cost_shares.find_each do |cost_share|
@@ -119,6 +129,15 @@ class PlanVersionDuplicator
         benefit.cost_shares.each do |cost_share|
           cost_share_map[cost_share.id] =
             new_benefit.cost_shares.create!(sanitized_cost_share_attributes(cost_share).merge(scope: new_benefit))
+        end
+
+        benefit.benefit_limit_rules.each do |rule|
+          new_rule = benefit_limit_rule_map[rule.id]
+          rule_scope_cost_share = rule.cost_share
+          next unless new_rule && rule_scope_cost_share.present?
+
+          cost_share_map[rule_scope_cost_share.id] =
+            CostShare.create!(sanitized_cost_share_attributes(rule_scope_cost_share).merge(scope: new_rule))
         end
       end
 

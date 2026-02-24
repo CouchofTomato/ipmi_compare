@@ -1,5 +1,6 @@
 class BenefitLimitRule < ApplicationRecord
   belongs_to :module_benefit
+  has_one :cost_share, as: :scope, dependent: :destroy
 
   enum :scope, {
     benefit_level: 0,

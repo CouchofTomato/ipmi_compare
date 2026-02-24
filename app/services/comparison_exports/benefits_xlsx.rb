@@ -46,14 +46,14 @@ module ComparisonExports
       benefit_level_rules = entry[:benefit_level_limit_rules].to_a
       lines << entry[:cost_share_text] if benefit_level_rules.empty? && entry[:cost_share_text].present?
 
-      benefit_level_rules.each_with_index do |rule, index|
+      benefit_level_rules.each do |rule|
         formatted_rule = format_rule(rule)
-        formatted_rule = combine_cost_share_and_rule(entry[:cost_share_text], formatted_rule, rule) if index.zero?
+        formatted_rule = combine_cost_share_and_rule(rule[:cost_share_text], formatted_rule, rule)
         lines << formatted_rule
       end
 
       entry[:itemised_limit_rules].to_a.each do |rule|
-        lines << "#{rule[:name]}: #{format_rule(rule)}"
+        lines << "#{rule[:name]}: #{combine_cost_share_and_rule(rule[:cost_share_text], format_rule(rule), rule)}"
       end
 
       if entry[:waiting_period_months].present?
