@@ -5,7 +5,7 @@ RSpec.describe "Plan comparison view", type: :system do
     user = create(:user, email: "comparison@example.com", password: "password123")
     progress = create(:wizard_progress, :plan_comparison, user: user, current_step: "comparison")
 
-    category = create(:coverage_category, name: "Inpatient", position: 1)
+    category = create(:coverage_category, name: "Inpatient #{SecureRandom.hex(4)}", position: 1)
     benefit = create(:benefit, name: "Hospital stay", coverage_category: category)
 
     plan = create(:plan)
@@ -45,7 +45,7 @@ RSpec.describe "Plan comparison view", type: :system do
     user = create(:user, email: "comparison-with-limits@example.com", password: "password123")
     progress = create(:wizard_progress, :plan_comparison, user: user, current_step: "comparison")
 
-    category = create(:coverage_category, name: "Outpatient", position: 1)
+    category = create(:coverage_category, name: "Outpatient #{SecureRandom.hex(4)}", position: 1)
     benefit = create(:benefit, name: "Diagnostics", coverage_category: category)
 
     plan = create(:plan)
@@ -76,7 +76,7 @@ RSpec.describe "Plan comparison view", type: :system do
     user = create(:user, email: "comparison-only-sublimits@example.com", password: "password123")
     progress = create(:wizard_progress, :plan_comparison, user: user, current_step: "comparison")
 
-    category = create(:coverage_category, name: "Outpatient", position: 1)
+    category = create(:coverage_category, name: "Outpatient #{SecureRandom.hex(4)}", position: 1)
     benefit = create(:benefit, name: "Diagnostics", coverage_category: category)
 
     plan = create(:plan)
@@ -105,7 +105,7 @@ RSpec.describe "Plan comparison view", type: :system do
     user = create(:user, email: "comparison-rule-precedence@example.com", password: "password123")
     progress = create(:wizard_progress, :plan_comparison, user: user, current_step: "comparison")
 
-    category = create(:coverage_category, name: "Dental", position: 1)
+    category = create(:coverage_category, name: "Dental #{SecureRandom.hex(4)}", position: 1)
     benefit = create(:benefit, name: "Routine dental treatment", coverage_category: category)
 
     plan = create(:plan)

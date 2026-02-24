@@ -4,7 +4,7 @@ RSpec.describe "Plan wizard", type: :system do
   it "walks through the full plan creation flow with modules, benefits, limits, cost shares, and cost share links" do
     user = create(:user, email: "wizard@example.com", password: "password123", admin: true)
     insurer = create(:insurer, name: "Acme Health")
-    coverage_category = create(:coverage_category, name: "Hospitalisation")
+    coverage_category = create(:coverage_category)
     benefit = create(:benefit, name: "Inpatient care", coverage_category: coverage_category)
     area = create(:geographic_cover_area, name: "Europe", code: "EU")
 
