@@ -729,14 +729,17 @@ class PlanWizardFlow
       end
 
       attributes = permitted.except(:applies_to, :plan_module_id, :module_benefit_id, :benefit_limit_group_id, :benefit_limit_rule_ids)
-      created_cost_share = nil
+      saved_cost_share = nil
       validation_error = nil
 
       CostShare.transaction do
         eligible_rules.each do |rule|
-          created_cost_share = CostShare.new(attributes.merge(scope: rule))
-          unless created_cost_share.save
-            validation_error = created_cost_share
+          # Keep one canonical cost share per benefit limit rule.
+          saved_cost_share = CostShare.find_or_initialize_by(scope: rule)
+          saved_cost_share.assign_attributes(attributes)
+
+          unless saved_cost_share.save
+            validation_error = saved_cost_share
             raise ActiveRecord::Rollback
           end
         end
@@ -747,7 +750,7 @@ class PlanWizardFlow
       end
 
       eligible_rules.each(&:reload)
-      return WizardStepResult.new(success: true, resource: created_cost_share)
+      return WizardStepResult.new(success: true, resource: saved_cost_share)
     end
 
     cost_share = CostShare.new(permitted.except(:applies_to, :plan_module_id, :module_benefit_id, :benefit_limit_group_id, :benefit_limit_rule_ids).merge(scope:))

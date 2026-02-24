@@ -394,6 +394,59 @@ RSpec.describe "WizardProgresses", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "updates existing rule-scoped cost shares instead of creating duplicates on repeated adds" do
+      plan = wizard_progress.subject
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      plan_module = create(:plan_module, plan_version:, module_group:)
+      module_benefit = create(:module_benefit, plan_module:)
+      rule = create(:benefit_limit_rule, module_benefit:, scope: :itemised, name: "Extraction")
+
+      wizard_progress.update!(current_step: "cost_shares", step_order: 8, status: :in_progress)
+
+      expect do
+        patch wizard_progress_path(wizard_progress, format: :turbo_stream),
+              params: {
+                step_action: "add",
+                cost_shares: {
+                  applies_to: "benefit_limit_rule",
+                  plan_module_id: plan_module.id,
+                  module_benefit_id: module_benefit.id,
+                  cost_share_type: "coinsurance",
+                  amount: "80",
+                  unit: "percent",
+                  per: "per_visit",
+                  benefit_limit_rule_ids: [ rule.id ]
+                }
+              }
+      end.to change { CostShare.where(scope_type: "BenefitLimitRule", scope_id: rule.id).count }.by(1)
+
+      existing_cost_share = CostShare.find_by!(scope: rule)
+
+      expect do
+        patch wizard_progress_path(wizard_progress, format: :turbo_stream),
+              params: {
+                step_action: "add",
+                cost_shares: {
+                  applies_to: "benefit_limit_rule",
+                  plan_module_id: plan_module.id,
+                  module_benefit_id: module_benefit.id,
+                  cost_share_type: "coinsurance",
+                  amount: "65",
+                  unit: "percent",
+                  per: "per_year",
+                  benefit_limit_rule_ids: [ rule.id ]
+                }
+              }
+      end.not_to change { CostShare.where(scope_type: "BenefitLimitRule", scope_id: rule.id).count }
+
+      updated_cost_share = CostShare.find_by!(scope: rule)
+      expect(updated_cost_share.id).to eq(existing_cost_share.id)
+      expect(updated_cost_share.amount).to eq(BigDecimal("65.0"))
+      expect(updated_cost_share.per).to eq("per_year")
+      expect(response).to have_http_status(:success)
+    end
+
     it "deletes a cost share link" do
       plan = wizard_progress.subject
       plan_version = plan.current_plan_version
