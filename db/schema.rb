@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_24_171000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_24_213000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -114,6 +114,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_171000) do
     t.integer "unit", null: false
     t.datetime "updated_at", null: false
     t.index ["scope_type", "scope_id"], name: "index_cost_shares_on_scope"
+    t.index ["scope_type", "scope_id"], name: "index_cost_shares_unique_benefit_limit_rule_scope", unique: true, where: "((scope_type)::text = 'BenefitLimitRule'::text)"
   end
 
   create_table "coverage_categories", force: :cascade do |t|
