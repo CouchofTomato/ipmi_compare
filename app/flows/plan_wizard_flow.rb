@@ -292,7 +292,7 @@ class PlanWizardFlow
       plan_module = plan_version.plan_modules.includes(:coverage_categories).find_by(id: module_id)
 
       if plan_module.nil?
-        plan_module = PlanModule.new(plan:)
+        plan_module = PlanModule.new
         plan_module.errors.add(:base, "Plan module not found")
         return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
       end
@@ -306,7 +306,7 @@ class PlanWizardFlow
       plan_module = plan_version.plan_modules.find_by(id: module_id)
 
       if plan_module.nil?
-        plan_module = PlanModule.new(plan:)
+        plan_module = PlanModule.new
         plan_module.errors.add(:base, "Plan module not found")
         return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
       end
@@ -345,7 +345,7 @@ class PlanWizardFlow
       plan_module = plan_version.plan_modules.find_by(id: plan_module_id)
 
       if plan_module.nil?
-        plan_module = PlanModule.new(plan:)
+        plan_module = PlanModule.new
         plan_module.errors.add(:base, "Plan module not found")
         return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
       end
