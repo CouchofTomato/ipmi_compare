@@ -385,19 +385,29 @@ class PlanWizardFlow
       return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
     end
 
-    plan_module.coverage_category_ids = existing_category_ids
-
     # Guard against selecting a module group from another plan
     if plan_module.module_group_id.present? && !plan_version.module_groups.exists?(id: plan_module.module_group_id)
       plan_module.errors.add(:module_group, "must belong to this plan")
       return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
     end
 
-    if plan_module.save
-      plan_version.plan_modules.reload
-      WizardStepResult.new(success: true, resource: plan_module)
+    if plan_module.persisted?
+      if plan_module.save
+        plan_module.coverage_category_ids = existing_category_ids
+        plan_version.plan_modules.reload
+        WizardStepResult.new(success: true, resource: plan_module)
+      else
+        WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      end
     else
-      WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      plan_module.coverage_category_ids = existing_category_ids
+
+      if plan_module.save
+        plan_version.plan_modules.reload
+        WizardStepResult.new(success: true, resource: plan_module)
+      else
+        WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      end
     end
   end
 
