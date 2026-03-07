@@ -179,6 +179,66 @@ RSpec.describe "WizardProgresses", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "updates an existing plan module" do
+      plan = wizard_progress.subject
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:, name: "Core")
+      updated_group = create(:module_group, plan_version:, name: "Optional")
+      category_a = create(:coverage_category, name: "Inpatient")
+      category_b = create(:coverage_category, name: "Outpatient")
+      plan_module = create(:plan_module, plan_version:, module_group:, name: "Hospital")
+      plan_module.coverage_categories << category_a
+      wizard_progress.update!(current_step: "plan_modules", step_order: 4, status: :in_progress)
+
+      expect do
+        patch wizard_progress_path(wizard_progress, format: :turbo_stream),
+              params: {
+                step_action: "add",
+                modules: {
+                  id: plan_module.id,
+                  name: "Hospital and specialist",
+                  module_group_id: updated_group.id,
+                  is_core: "1",
+                  coverage_category_ids: [ category_b.id ]
+                }
+              }
+      end.not_to change { plan.plan_modules.reload.count }
+
+      plan_module.reload
+      expect(plan_module.name).to eq("Hospital and specialist")
+      expect(plan_module.module_group_id).to eq(updated_group.id)
+      expect(plan_module.is_core).to be(true)
+      expect(plan_module.coverage_category_ids).to match_array([ category_b.id ])
+      expect(response).to have_http_status(:success)
+    end
+
+    it "does not persist coverage category changes when module update is invalid" do
+      plan = wizard_progress.subject
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:, name: "Core")
+      original_category = create(:coverage_category, name: "Inpatient")
+      attempted_category = create(:coverage_category, name: "Outpatient")
+      plan_module = create(:plan_module, plan_version:, module_group:, name: "Hospital")
+      plan_module.coverage_categories << original_category
+      wizard_progress.update!(current_step: "plan_modules", step_order: 4, status: :in_progress)
+
+      patch wizard_progress_path(wizard_progress, format: :turbo_stream),
+            params: {
+              step_action: "add",
+              modules: {
+                id: plan_module.id,
+                name: "",
+                module_group_id: module_group.id,
+                coverage_category_ids: [ attempted_category.id ]
+              }
+            }
+
+      plan_module.reload
+      expect(plan_module.name).to eq("Hospital")
+      expect(plan_module.coverage_category_ids).to match_array([ original_category.id ])
+      expect(response).to have_http_status(:success)
+    end
+
     it "deletes a module benefit and cascades linked cost shares" do
       plan = wizard_progress.subject
       plan_version = plan.current_plan_version

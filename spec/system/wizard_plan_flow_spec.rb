@@ -48,6 +48,13 @@ RSpec.describe "Plan wizard", type: :system do
     find(:test_id, "add-module-button").click
     expect(page).to have_content("Hospital module")
     expect(page).to have_content(coverage_category.name)
+    plan_module = PlanModule.order(:created_at).last
+    find(:test_id, "edit-plan-module-#{plan_module.id}-button").click
+    expect(page).to have_content("Update module")
+    find(:test_id, "module-name-field").set("Surgery module")
+    find(:test_id, "add-module-button").click
+    expect(page).to have_content("Surgery module")
+    expect(page).not_to have_content("Hospital module")
     find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 6: Module requirements", wait: 10)
@@ -55,7 +62,7 @@ RSpec.describe "Plan wizard", type: :system do
     find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 7: Module benefits", wait: 10)
-    find(:test_id, "module-field").select "Core – Hospital module"
+    find(:test_id, "module-field").select "Core – Surgery module"
     find(:test_id, "benefit-field").select benefit.name
     find(:test_id, "coverage-description-field").set("Covers inpatient stays and surgery.")
     find(:test_id, "add-benefit-limit-rule-button").click
@@ -91,7 +98,7 @@ RSpec.describe "Plan wizard", type: :system do
     find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 8: Benefit limit groups", wait: 10)
-    find(:test_id, "module-field").select "Core – Hospital module"
+    find(:test_id, "module-field").select "Core – Surgery module"
     find(:test_id, "limit-group-name-field").set("Annual inpatient limit")
     find(:test_id, "limit-usd-field").set(10_000)
     find(:test_id, "limit-unit-field").set("per year")
@@ -105,7 +112,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(per_field).to have_selector("option", text: "Per service")
 
     find(:test_id, "applies-to-field").select "Module benefit"
-    find(:test_id, "module-field").select "Core – Hospital module"
+    find(:test_id, "module-field").select "Core – Surgery module"
     find(:test_id, "cost-share-type-field").select "Coinsurance"
     expect(find(:test_id, "cost-share-per-field").value).to eq("per_event")
 
@@ -118,7 +125,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content(/deductible/i)
 
     find(:test_id, "applies-to-field").select "Module"
-    find(:test_id, "module-field").select "Core – Hospital module"
+    find(:test_id, "module-field").select "Core – Surgery module"
     find(:test_id, "cost-share-type-field").select "Deductible"
     find(:test_id, "cost-share-amount-usd-field").set(100)
     find(:test_id, "cost-share-unit-field").select "Amount"
@@ -127,7 +134,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content(/deductible/i)
 
     find(:test_id, "applies-to-field").select "Benefit limit group"
-    find(:test_id, "benefit-limit-group-field").select "Core · Hospital module — Annual inpatient limit"
+    find(:test_id, "benefit-limit-group-field").select "Core · Surgery module — Annual inpatient limit"
     find(:test_id, "cost-share-type-field").select "Deductible"
     find(:test_id, "cost-share-amount-gbp-field").set(150)
     find(:test_id, "cost-share-unit-field").select "Amount"
@@ -138,18 +145,18 @@ RSpec.describe "Plan wizard", type: :system do
 
     expect(page).to have_content("Step 10: Link cost shares", wait: 10)
     find(:test_id, "primary-cost-share-field").select "Plan — USD 250.00 deductible (per year)"
-    find(:test_id, "linked-cost-share-field").select "Core · Hospital module — USD 100.00 deductible (per visit)"
+    find(:test_id, "linked-cost-share-field").select "Core · Surgery module — USD 100.00 deductible (per visit)"
     find(:test_id, "relationship-type-field").select "Shared pool"
     find(:test_id, "add-cost-share-link-button").click
     expect(page).to have_content("Shared pool")
     expect(page).to have_content("Plan — USD 250.00 deductible (per year)")
-    expect(page).to have_content("Core · Hospital module — USD 100.00 deductible (per visit)")
+    expect(page).to have_content("Core · Surgery module — USD 100.00 deductible (per visit)")
     find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 11: Review & publish", wait: 10)
     expect(page).to have_content("Global Gold")
     expect(page).to have_content("Core")
-    expect(page).to have_content("Hospital module")
+    expect(page).to have_content("Surgery module")
     expect(page).to have_content(benefit.name)
     expect(page).to have_content("Annual inpatient limit")
     expect(page).to have_content(/deductible/i)

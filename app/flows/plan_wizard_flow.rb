@@ -286,13 +286,27 @@ class PlanWizardFlow
         ActionController::Parameters.new
       end
 
+    if step_action == "edit"
+      module_id = params_for_module[:id].presence || params_for_module[:plan_module_id].presence
+      module_id = Integer(module_id, exception: false)
+      plan_module = plan_version.plan_modules.includes(:coverage_categories).find_by(id: module_id)
+
+      if plan_module.nil?
+        plan_module = PlanModule.new
+        plan_module.errors.add(:base, "Plan module not found")
+        return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      end
+
+      return WizardStepResult.new(success: true, resource: plan_module)
+    end
+
     if step_action == "delete"
       module_id = params_for_module[:id].presence || params_for_module[:plan_module_id].presence
-      module_id = Integer(module_id) rescue nil
+      module_id = Integer(module_id, exception: false)
       plan_module = plan_version.plan_modules.find_by(id: module_id)
 
       if plan_module.nil?
-        plan_module = PlanModule.new(plan:)
+        plan_module = PlanModule.new
         plan_module.errors.add(:base, "Plan module not found")
         return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
       end
@@ -306,7 +320,8 @@ class PlanWizardFlow
     # Only create a new module when explicitly requested
     return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
-    permitted = params_for_module.permit(:name,
+    permitted = params_for_module.permit(:id,
+                                         :name,
                                          :module_group_id,
                                          :is_core,
                                          :overall_limit_usd,
@@ -322,8 +337,24 @@ class PlanWizardFlow
                                          coverage_category_ids: [])
     sanitized_values = permitted.to_h
     sanitized_values["is_core"] = ActiveModel::Type::Boolean.new.cast(sanitized_values["is_core"])
+    plan_module_id = sanitized_values.delete("id").presence
+    module_attributes = sanitized_values.except("coverage_category_ids")
 
-    plan_module = plan_version.plan_modules.build(sanitized_values)
+    if plan_module_id.present?
+      plan_module_id = Integer(plan_module_id, exception: false)
+      plan_module = plan_version.plan_modules.find_by(id: plan_module_id)
+
+      if plan_module.nil?
+        plan_module = PlanModule.new
+        plan_module.errors.add(:base, "Plan module not found")
+        return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      end
+
+      plan_module.assign_attributes(module_attributes)
+    else
+      plan_module = plan_version.plan_modules.build(module_attributes)
+    end
+
     raw_category_ids = Array(permitted[:coverage_category_ids])
     category_ids = []
     invalid_category_inputs = []
@@ -354,19 +385,29 @@ class PlanWizardFlow
       return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
     end
 
-    plan_module.coverage_category_ids = existing_category_ids
-
     # Guard against selecting a module group from another plan
     if plan_module.module_group_id.present? && !plan_version.module_groups.exists?(id: plan_module.module_group_id)
       plan_module.errors.add(:module_group, "must belong to this plan")
       return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
     end
 
-    if plan_module.save
-      plan_version.plan_modules.reload
-      WizardStepResult.new(success: true, resource: plan_module)
+    if plan_module.persisted?
+      if plan_module.save
+        plan_module.coverage_category_ids = existing_category_ids
+        plan_version.plan_modules.reload
+        WizardStepResult.new(success: true, resource: plan_module)
+      else
+        WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      end
     else
-      WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      plan_module.coverage_category_ids = existing_category_ids
+
+      if plan_module.save
+        plan_version.plan_modules.reload
+        WizardStepResult.new(success: true, resource: plan_module)
+      else
+        WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      end
     end
   end
 
