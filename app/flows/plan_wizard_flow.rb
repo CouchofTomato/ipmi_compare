@@ -286,6 +286,20 @@ class PlanWizardFlow
         ActionController::Parameters.new
       end
 
+    if step_action == "edit"
+      module_id = params_for_module[:id].presence || params_for_module[:plan_module_id].presence
+      module_id = Integer(module_id) rescue nil
+      plan_module = plan_version.plan_modules.includes(:coverage_categories).find_by(id: module_id)
+
+      if plan_module.nil?
+        plan_module = PlanModule.new(plan:)
+        plan_module.errors.add(:base, "Plan module not found")
+        return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      end
+
+      return WizardStepResult.new(success: true, resource: plan_module)
+    end
+
     if step_action == "delete"
       module_id = params_for_module[:id].presence || params_for_module[:plan_module_id].presence
       module_id = Integer(module_id) rescue nil
@@ -306,7 +320,8 @@ class PlanWizardFlow
     # Only create a new module when explicitly requested
     return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
-    permitted = params_for_module.permit(:name,
+    permitted = params_for_module.permit(:id,
+                                         :name,
                                          :module_group_id,
                                          :is_core,
                                          :overall_limit_usd,
@@ -322,8 +337,23 @@ class PlanWizardFlow
                                          coverage_category_ids: [])
     sanitized_values = permitted.to_h
     sanitized_values["is_core"] = ActiveModel::Type::Boolean.new.cast(sanitized_values["is_core"])
+    plan_module_id = sanitized_values.delete("id").presence
 
-    plan_module = plan_version.plan_modules.build(sanitized_values)
+    if plan_module_id.present?
+      plan_module_id = Integer(plan_module_id) rescue nil
+      plan_module = plan_version.plan_modules.find_by(id: plan_module_id)
+
+      if plan_module.nil?
+        plan_module = PlanModule.new(plan:)
+        plan_module.errors.add(:base, "Plan module not found")
+        return WizardStepResult.new(success: false, resource: plan_module, errors: plan_module.errors.full_messages)
+      end
+
+      plan_module.assign_attributes(sanitized_values.except("coverage_category_ids"))
+    else
+      plan_module = plan_version.plan_modules.build(sanitized_values.except("coverage_category_ids"))
+    end
+
     raw_category_ids = Array(permitted[:coverage_category_ids])
     category_ids = []
     invalid_category_inputs = []
