@@ -381,6 +381,54 @@ RSpec.describe "WizardProgresses", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "loads and updates an existing benefit limit group" do
+      plan = wizard_progress.subject
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      plan_module = create(:plan_module, plan_version:, module_group:)
+      benefit_limit_group = create(:benefit_limit_group, :with_shared_limit_rule, plan_module:, name: "Original shared limit")
+      module_benefit = create(:module_benefit, plan_module:, benefit_limit_group:)
+      wizard_progress.update!(current_step: "benefit_limit_groups", step_order: 7, status: :in_progress)
+
+      patch wizard_progress_path(wizard_progress, format: :turbo_stream),
+            params: { step_action: "edit", benefit_limit_groups: { id: benefit_limit_group.id } }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Update benefit limit group")
+
+      expect do
+        patch wizard_progress_path(wizard_progress, format: :turbo_stream),
+              params: {
+                step_action: "add",
+                benefit_limit_groups: {
+                  id: benefit_limit_group.id,
+                  plan_module_id: plan_module.id,
+                  name: "Updated shared limit",
+                  module_benefit_ids: [ module_benefit.id ],
+                  benefit_limit_group_rules_attributes: {
+                    "0" => {
+                      id: benefit_limit_group.primary_rule.id,
+                      rule_type: "usage",
+                      amount_usd: nil,
+                      amount_gbp: nil,
+                      amount_eur: nil,
+                      quantity_value: "20",
+                      quantity_unit_kind: "session",
+                      period_kind: "policy_year",
+                      notes: "Updated rule text"
+                    }
+                  }
+                }
+              }
+      end.not_to change(BenefitLimitGroup, :count)
+
+      benefit_limit_group.reload
+      expect(benefit_limit_group.name).to eq("Updated shared limit")
+      expect(benefit_limit_group.primary_rule.rule_type).to eq("usage")
+      expect(benefit_limit_group.primary_rule.quantity_value).to eq(BigDecimal("20.0"))
+      expect(response).to have_http_status(:success)
+    end
+
     it "deletes a cost share regardless of scope" do
       plan = wizard_progress.subject
       plan_version = plan.current_plan_version

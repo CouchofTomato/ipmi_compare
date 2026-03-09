@@ -11,4 +11,17 @@ require 'rails_helper'
 #   end
 # end
 RSpec.describe WizardProgressesHelper, type: :helper do
+  describe "#shared_limit_rule_text" do
+    it "renders amount rule text" do
+      rule = build(:benefit_limit_group_rule, amount_gbp: 2500, amount_usd: nil, period_kind: :policy_year)
+
+      expect(helper.shared_limit_rule_text(rule)).to eq("£2,500 per policy year")
+    end
+
+    it "renders usage rule text with rolling period" do
+      rule = build(:benefit_limit_group_rule, :usage_rule, quantity_value: 15, quantity_unit_kind: :consultation, period_kind: :rolling_days, period_value: 30)
+
+      expect(helper.shared_limit_rule_text(rule)).to eq("15 consultations in a 30 day period")
+    end
+  end
 end

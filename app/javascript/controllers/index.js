@@ -18,3 +18,6 @@ application.register("benefit-limit-rules", BenefitLimitRulesController)
 
 import CostShareFormController from "./cost_share_form_controller"
 application.register("cost-share-form", CostShareFormController)
+
+import SharedLimitRuleController from "./shared_limit_rule_controller"
+application.register("shared-limit-rule", SharedLimitRuleController)

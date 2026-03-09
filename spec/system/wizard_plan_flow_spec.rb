@@ -100,11 +100,19 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content("Step 8: Benefit limit groups", wait: 10)
     find(:test_id, "module-field").select "Core – Surgery module"
     find(:test_id, "limit-group-name-field").set("Annual inpatient limit")
-    find(:test_id, "limit-usd-field").set(10_000)
-    find(:test_id, "limit-unit-field").set("per year")
+    find(:test_id, "shared-limit-rule-type-field").select "Amount"
+    find(:test_id, "shared-limit-rule-period-kind-field").select "Policy year"
+    find(:test_id, "shared-limit-rule-amount-usd-field").set(10_000)
     find(:test_id, "module-benefits-field").select benefit.name
     find(:test_id, "add-benefit-limit-group-button").click
     expect(page).to have_content("Annual inpatient limit")
+    benefit_limit_group = BenefitLimitGroup.order(:created_at).last
+    find(:test_id, "edit-benefit-limit-group-#{benefit_limit_group.id}-button").click
+    expect(page).to have_content("Update benefit limit group")
+    find(:test_id, "limit-group-name-field").set("Annual inpatient updated limit")
+    find(:test_id, "add-benefit-limit-group-button").click
+    expect(page).to have_content("Annual inpatient updated limit")
+    expect(page).not_to have_content("Annual inpatient limit")
     find(:test_id, "next-step-button").click
 
     expect(page).to have_content("Step 9: Cost shares", wait: 10)
@@ -134,7 +142,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content(/deductible/i)
 
     find(:test_id, "applies-to-field").select "Benefit limit group"
-    find(:test_id, "benefit-limit-group-field").select "Core · Surgery module — Annual inpatient limit"
+    find(:test_id, "benefit-limit-group-field").select "Core · Surgery module — Annual inpatient updated limit"
     find(:test_id, "cost-share-type-field").select "Deductible"
     find(:test_id, "cost-share-amount-gbp-field").set(150)
     find(:test_id, "cost-share-unit-field").select "Amount"
@@ -158,7 +166,7 @@ RSpec.describe "Plan wizard", type: :system do
     expect(page).to have_content("Core")
     expect(page).to have_content("Surgery module")
     expect(page).to have_content(benefit.name)
-    expect(page).to have_content("Annual inpatient limit")
+    expect(page).to have_content("Annual inpatient updated limit")
     expect(page).to have_content(/deductible/i)
     expect(page).to have_content("SHARED POOL")
 
