@@ -61,7 +61,8 @@ module ComparisonExports
       end
 
       if entry[:benefit_limit_group_name].present?
-        lines << "Shared limit: #{entry[:benefit_limit_group_name]}"
+        shared_limit_text = entry[:benefit_limit_group_rule_text].presence
+        lines << "Shared limit: #{entry[:benefit_limit_group_name]}#{shared_limit_text.present? ? " — #{shared_limit_text}" : ""}"
       end
 
       lines.join("\n")

@@ -612,6 +612,21 @@ class PlanWizardFlow
         ActionController::Parameters.new
       end
 
+    if step_action == "edit"
+      group_id = params_for_group[:id].presence || params_for_group[:benefit_limit_group_id].presence
+      group_id = Integer(group_id) rescue nil
+      benefit_limit_group = BenefitLimitGroup.where(plan_module_id: plan_version.plan_module_ids).includes(:benefit_limit_group_rules).find_by(id: group_id)
+
+      if benefit_limit_group.nil?
+        benefit_limit_group = BenefitLimitGroup.new
+        benefit_limit_group.errors.add(:base, "Benefit limit group not found")
+        return WizardStepResult.new(success: false, resource: benefit_limit_group, errors: benefit_limit_group.errors.full_messages)
+      end
+
+      ensure_default_benefit_limit_group_rule(benefit_limit_group)
+      return WizardStepResult.new(success: true, resource: benefit_limit_group)
+    end
+
     if step_action == "delete"
       group_id = params_for_group[:id].presence || params_for_group[:benefit_limit_group_id].presence
       group_id = Integer(group_id) rescue nil
@@ -631,16 +646,36 @@ class PlanWizardFlow
 
     return WizardStepResult.new(success: true, resource: plan) unless step_action == "add"
 
-    permitted = params_for_group.permit(:plan_module_id,
+    permitted = params_for_group.permit(:id,
+                                        :plan_module_id,
                                         :name,
+                                        :notes,
+                                        :wording_override,
                                         :limit_usd,
                                         :limit_gbp,
                                         :limit_eur,
                                         :limit_unit,
-                                        :notes,
                                         module_benefit_ids: [])
+    rule_attributes = params_for_group
+      .permit(benefit_limit_group_rules_attributes: [
+                :id,
+                :rule_type,
+                :amount_usd,
+                :amount_gbp,
+                :amount_eur,
+                :quantity_value,
+                :quantity_unit_kind,
+                :quantity_unit_custom,
+                :period_kind,
+                :period_value,
+                :position,
+                :notes,
+                :_destroy
+              ])
+      .to_h
 
     sanitized_values = permitted.to_h
+    benefit_limit_group_id = sanitized_values.delete("id").presence
     module_benefit_ids =
       Array(permitted[:module_benefit_ids])
         .map { |id| id.presence }
@@ -652,17 +687,36 @@ class PlanWizardFlow
     unless plan_module
       benefit_limit_group = BenefitLimitGroup.new
       benefit_limit_group.module_benefit_ids = module_benefit_ids
+      benefit_limit_group.assign_attributes(rule_attributes)
+      ensure_default_benefit_limit_group_rule(benefit_limit_group)
       benefit_limit_group.errors.add(:plan_module, "must belong to this plan")
       return WizardStepResult.new(success: false, resource: benefit_limit_group, errors: benefit_limit_group.errors.full_messages)
     end
 
+    benefit_limit_group =
+      if benefit_limit_group_id
+        BenefitLimitGroup.where(plan_module_id: plan_version.plan_module_ids).find_by(id: benefit_limit_group_id)
+      else
+        BenefitLimitGroup.new
+      end
+
+    unless benefit_limit_group
+      missing_group = BenefitLimitGroup.new
+      missing_group.errors.add(:base, "Benefit limit group not found")
+      return WizardStepResult.new(success: false, resource: missing_group, errors: missing_group.errors.full_messages)
+    end
+
     selected_module_benefit_ids = plan_module.module_benefits.where(id: module_benefit_ids).pluck(:id)
-    benefit_limit_group = plan_module.benefit_limit_groups.new(sanitized_values.except("module_benefit_ids"))
-    benefit_limit_group.module_benefit_ids = selected_module_benefit_ids
+    benefit_limit_group.plan_module = plan_module
+    benefit_limit_group.assign_attributes(sanitized_values.except("module_benefit_ids"))
+    benefit_limit_group.assign_attributes(rule_attributes)
+    ensure_default_benefit_limit_group_rule(benefit_limit_group)
+    apply_legacy_limit_fields_from_primary_rule(benefit_limit_group)
 
     if benefit_limit_group.save
+      ModuleBenefit.where(benefit_limit_group_id: benefit_limit_group.id).where.not(id: selected_module_benefit_ids).update_all(benefit_limit_group_id: nil)
       ModuleBenefit.where(id: selected_module_benefit_ids).update_all(benefit_limit_group_id: benefit_limit_group.id) if selected_module_benefit_ids.any?
-      plan_module.module_benefits.reload
+      plan_version.plan_modules.includes(:module_benefits).each { |pm| pm.module_benefits.reset }
       WizardStepResult.new(success: true, resource: benefit_limit_group)
     else
       WizardStepResult.new(success: false, resource: benefit_limit_group, errors: benefit_limit_group.errors.full_messages)
@@ -978,5 +1032,44 @@ class PlanWizardFlow
     return if version_id.blank?
 
     plan.plan_versions.find_by(id: version_id)
+  end
+
+  def ensure_default_benefit_limit_group_rule(benefit_limit_group)
+    return if benefit_limit_group.benefit_limit_group_rules.any?
+
+    benefit_limit_group.benefit_limit_group_rules.build(
+      rule_type: :amount,
+      period_kind: :policy_year,
+      position: 0
+    )
+  end
+
+  def apply_legacy_limit_fields_from_primary_rule(benefit_limit_group)
+    rule = benefit_limit_group.primary_rule
+    return unless rule
+
+    benefit_limit_group.limit_usd = nil
+    benefit_limit_group.limit_gbp = nil
+    benefit_limit_group.limit_eur = nil
+
+    if rule.amount?
+      benefit_limit_group.limit_usd = rule.amount_usd
+      benefit_limit_group.limit_gbp = rule.amount_gbp
+      benefit_limit_group.limit_eur = rule.amount_eur
+    end
+
+    benefit_limit_group.limit_unit = legacy_limit_unit_for(rule)
+  end
+
+  def legacy_limit_unit_for(rule)
+    case rule.period_kind
+    when "policy_year" then "per_policy_year"
+    when "calendar_year" then "per_calendar_year"
+    when "rolling_days" then "in_#{rule.period_value.presence || 0}_days"
+    when "rolling_months" then "in_#{rule.period_value.presence || 0}_months"
+    when "lifetime" then "per_lifetime"
+    else
+      "structured"
+    end
   end
 end

@@ -8,6 +8,7 @@ CostShareLink.delete_all
 CostShare.delete_all
 BenefitLimitRule.delete_all
 ModuleBenefit.delete_all
+BenefitLimitGroupRule.delete_all
 BenefitLimitGroup.delete_all
 PlanModuleRequirement.delete_all
 PlanGeographicCoverArea.delete_all
@@ -272,6 +273,13 @@ def build_modules_for_plan!(plan:, benefits:, coverage_categories:)
     name: "Inpatient annual limit",
     limit_unit: "per_policy_year",
     limit_usd: 1_000_000
+  )
+
+  inpatient_limit_group.benefit_limit_group_rules.create!(
+    rule_type: :amount,
+    amount_usd: 1_000_000,
+    period_kind: :policy_year,
+    position: 0
   )
 
   ModuleBenefit.create!(

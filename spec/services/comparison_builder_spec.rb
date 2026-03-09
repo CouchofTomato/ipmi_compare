@@ -38,7 +38,18 @@ RSpec.describe ComparisonBuilder do
   end
 
   before do
-    module_benefit_one = create(:module_benefit, plan_module: module_one, benefit: benefit_a, coverage_description: "Covered")
+    shared_group = create(:benefit_limit_group, :with_shared_limit_rule, plan_module: module_one, name: "Outpatient therapies shared limit")
+    shared_group.benefit_limit_group_rules.first.update!(
+      rule_type: :usage,
+      amount_usd: nil,
+      amount_gbp: nil,
+      amount_eur: nil,
+      quantity_value: 15,
+      quantity_unit_kind: :consultation,
+      period_kind: :rolling_days,
+      period_value: 30
+    )
+    module_benefit_one = create(:module_benefit, plan_module: module_one, benefit: benefit_a, coverage_description: "Covered", benefit_limit_group: shared_group)
     create(:benefit_limit_rule, module_benefit: module_benefit_one, scope: :itemised, name: "MRI", limit_type: :amount, insurer_amount_gbp: 750, unit: "per examination", position: 0)
     create(:module_benefit, plan_module: module_two, benefit: benefit_b, coverage_description: "Included")
     create(:module_benefit, plan_module: module_other, benefit: benefit_a, coverage_description: "Not selected")
@@ -58,6 +69,8 @@ RSpec.describe ComparisonBuilder do
       per_selection = inpatient[:benefits].find { |b| b[:id] == benefit_a.id }[:per_selection]
       expect(per_selection["sel-one"].first[:coverage_description]).to eq("Covered")
       expect(per_selection["sel-one"].first[:itemised_limit_rules].map { |rule| rule[:name] }).to eq([ "MRI" ])
+      expect(per_selection["sel-one"].first[:benefit_limit_group_name]).to eq("Outpatient therapies shared limit")
+      expect(per_selection["sel-one"].first[:benefit_limit_group_rule_text]).to eq("15 consultations in a 30 day period")
       expect(per_selection["sel-two"]).to eq([])
     end
 

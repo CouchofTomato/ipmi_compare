@@ -12,6 +12,7 @@ RSpec.describe PlanVersionDuplicator do
       required_module = create(:plan_module, plan_version: source_version, module_group: module_group, name: "Optional module")
       create(:plan_module_requirement, plan_version: source_version, dependent_module: plan_module, required_module: required_module)
       benefit_limit_group = create(:benefit_limit_group, plan_module: plan_module)
+      create(:benefit_limit_group_rule, benefit_limit_group:, rule_type: :usage, amount_usd: nil, quantity_value: 20, quantity_unit_kind: :session, period_kind: :policy_year)
       module_benefit = create(:module_benefit, plan_module: plan_module, benefit_limit_group: benefit_limit_group)
       benefit_limit_rule = create(:benefit_limit_rule, module_benefit: module_benefit, scope: :itemised, name: "MRI", limit_type: :amount, insurer_amount_usd: 1000, unit: "per examination", position: 0)
 
@@ -43,6 +44,7 @@ RSpec.describe PlanVersionDuplicator do
       new_module = new_version.plan_modules.find_by(name: "Hospital module")
       expect(new_module.coverage_category_ids).to contain_exactly(coverage_category.id)
       expect(new_module.benefit_limit_groups.count).to eq(1)
+      expect(new_module.benefit_limit_groups.first.benefit_limit_group_rules.count).to eq(1)
       expect(new_module.module_benefits.count).to eq(1)
       expect(new_module.module_benefits.first.benefit_limit_group).to eq(new_module.benefit_limit_groups.first)
       expect(new_module.module_benefits.first.benefit_limit_rules.pluck(:name)).to eq([ "MRI" ])
