@@ -22,6 +22,7 @@ RSpec.describe ComparisonBuilder do
   let(:module_one) { create(:plan_module, plan_version: version_one, module_group: group_one, name: "Core") }
   let(:module_two) { create(:plan_module, plan_version: version_two, module_group: group_two, name: "Premium") }
   let(:module_other) { create(:plan_module, plan_version: version_one, module_group: group_one, name: "Optional") }
+  let(:module_enhancer) { create(:plan_module, plan_version: version_one, module_group: group_one, name: "Non-hospitalisation Benefits") }
 
   let(:progress) do
     create(
@@ -109,6 +110,117 @@ RSpec.describe ComparisonBuilder do
 
       expect(per_selection["sel-one"].size).to eq(1)
       expect(per_selection["sel-one"].first[:coverage_description]).to eq("Replace high")
+    end
+
+    it "keeps base module ownership while applying enhanced limits and notes" do
+      base = create(
+        :module_benefit,
+        plan_module: module_one,
+        benefit: benefit_a,
+        coverage_description: "Covered in hospital plan",
+        waiting_period_months: 10,
+        interaction_type: :append,
+        weighting: 1
+      )
+      create(
+        :benefit_limit_rule,
+        module_benefit: base,
+        scope: :benefit_level,
+        limit_type: :amount,
+        insurer_amount_usd: 5_000,
+        unit: "per policy year"
+      )
+      create(:cost_share, scope: base, cost_share_type: :coinsurance, amount: 80, unit: :percent, per: :per_year)
+
+      enhancement = create(
+        :module_benefit,
+        plan_module: module_enhancer,
+        benefit: benefit_a,
+        interaction_type: :enhance,
+        base_module_benefit: base,
+        coverage_description: "Enhanced for selected outpatient option",
+        waiting_period_months: 8,
+        weighting: 20
+      )
+      create(
+        :benefit_limit_rule,
+        module_benefit: enhancement,
+        scope: :benefit_level,
+        limit_type: :amount,
+        insurer_amount_usd: 8_000,
+        unit: "per policy year"
+      )
+      create(:cost_share, scope: enhancement, cost_share_type: :coinsurance, amount: 90, unit: :percent, per: :per_year)
+
+      progress.update!(
+        state: {
+          "plan_selections" => [
+            {
+              "id" => "sel-one",
+              "plan_id" => plan_one.id,
+              "module_groups" => { group_one.id.to_s => module_one.id, "#{group_one.id}-enhancer" => module_enhancer.id }
+            }
+          ]
+        }
+      )
+
+      result = described_class.new(progress).build
+      inpatient = result[:categories].find { |cat| cat[:id] == category_a.id }
+      per_selection = inpatient[:benefits].find { |b| b[:id] == benefit_a.id }[:per_selection]
+      entry = per_selection["sel-one"].find { |e| e[:module_benefit_id] == base.id }
+
+      expect(entry[:plan_module_name]).to eq("Core")
+      expect(entry[:coverage_description]).to eq("Covered in hospital plan")
+      expect(entry[:waiting_period_months]).to eq(8)
+      expect(entry[:benefit_level_limit_rules].map { |rule| rule[:insurer_amount_usd] }).to eq([ 8_000 ])
+      expect(entry[:cost_share_text]).to include("90%")
+      expect(entry[:enhanced_by_module_names]).to eq([ "Non-hospitalisation Benefits" ])
+      expect(entry[:enhancement_notes]).to include("Enhanced for selected outpatient option")
+    end
+
+    it "uses weighting between enhancements for overrides but never for ownership" do
+      base = create(:module_benefit, plan_module: module_one, benefit: benefit_a, coverage_description: "Base coverage", weighting: 1)
+      low = create(
+        :module_benefit,
+        plan_module: module_enhancer,
+        benefit: benefit_a,
+        interaction_type: :enhance,
+        base_module_benefit: base,
+        waiting_period_months: 9,
+        coverage_description: "Low enhancement",
+        weighting: 2
+      )
+      high = create(
+        :module_benefit,
+        plan_module: module_enhancer,
+        benefit: benefit_a,
+        interaction_type: :enhance,
+        base_module_benefit: base,
+        waiting_period_months: 6,
+        coverage_description: "High enhancement",
+        weighting: 12
+      )
+
+      progress.update!(
+        state: {
+          "plan_selections" => [
+            {
+              "id" => "sel-one",
+              "plan_id" => plan_one.id,
+              "module_groups" => { group_one.id.to_s => module_one.id, "#{group_one.id}-enhancer" => module_enhancer.id }
+            }
+          ]
+        }
+      )
+
+      result = described_class.new(progress).build
+      inpatient = result[:categories].find { |cat| cat[:id] == category_a.id }
+      per_selection = inpatient[:benefits].find { |b| b[:id] == benefit_a.id }[:per_selection]
+      entry = per_selection["sel-one"].find { |e| e[:module_benefit_id] == base.id }
+
+      expect([ low.id, high.id ]).not_to include(entry[:module_benefit_id])
+      expect(entry[:plan_module_name]).to eq("Core")
+      expect(entry[:waiting_period_months]).to eq(6)
     end
   end
 end

@@ -147,4 +147,49 @@ RSpec.describe "Plan comparison view", type: :system do
     expect(page).to have_content("Extraction: 70% coinsurance (per visit), USD 200.00 per tooth")
     expect(page).not_to have_content("Deductible")
   end
+
+  it "keeps childbirth ownership on hospital plan while applying enhancement terms" do
+    user = create(:user, email: "comparison-enhance@example.com", password: "password123")
+    progress = create(:wizard_progress, :plan_comparison, user: user, current_step: "comparison")
+
+    category = create(:coverage_category, name: "Maternity #{SecureRandom.hex(4)}", position: 1)
+    childbirth = create(:benefit, name: "Childbirth", coverage_category: category)
+
+    plan = create(:plan)
+    plan_version = plan.current_plan_version
+    group = create(:module_group, plan_version:, name: "Core")
+    hospital_module = create(:plan_module, plan_version:, module_group: group, name: "Hospital Plan")
+    enhancer_module = create(:plan_module, plan_version:, module_group: group, name: "Non-hospitalisation Benefits")
+
+    base = create(:module_benefit, plan_module: hospital_module, benefit: childbirth, coverage_description: "Hospital childbirth cover", waiting_period_months: 10)
+    create(:benefit_limit_rule, module_benefit: base, scope: :benefit_level, limit_type: :amount, insurer_amount_usd: 5_000, unit: "per policy year")
+
+    enhancement = create(
+      :module_benefit,
+      plan_module: enhancer_module,
+      benefit: childbirth,
+      interaction_type: :enhance,
+      base_module_benefit: base,
+      coverage_description: "Additional childbirth limit applies",
+      waiting_period_months: 8,
+      weighting: 20
+    )
+    create(:benefit_limit_rule, module_benefit: enhancement, scope: :benefit_level, limit_type: :amount, insurer_amount_usd: 10_000, unit: "per policy year")
+
+    progress.update!(
+      state: {
+        "plan_selections" => [
+          { "plan_id" => plan.id, "module_groups" => { group.id.to_s => hospital_module.id, "#{group.id}-enhancer" => enhancer_module.id } }
+        ]
+      }
+    )
+
+    login_as(user, scope: :user)
+    visit wizard_progress_path(progress)
+
+    expect(page).to have_content("Hospital Plan")
+    expect(page).to have_content("Hospital childbirth cover")
+    expect(page).to have_content("Enhanced by Non-hospitalisation Benefits")
+    expect(page).to have_content("USD 10000.00 per policy year")
+  end
 end
