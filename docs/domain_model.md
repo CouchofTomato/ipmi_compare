@@ -171,6 +171,7 @@ In this case:
 To support this behaviour:
 
 - A ModuleBenefit may optionally reference a **base ModuleBenefit**.
+- This link is stored in `base_module_benefit_id` on `module_benefits`.
 - Base ModuleBenefits represent the **owning source of coverage**.
 - Enhancing ModuleBenefits modify specific attributes of the base benefit.
 
@@ -230,8 +231,9 @@ These fields define benefit identity.
 
 - benefit
 - owning module
-- base_module_benefit_id
+- `base_module_benefit_id` (ownership link anchor)
 - benefit section/category
+- coverage_description (unless an explicit safe override is added later)
 
 ---
 
