@@ -28,6 +28,7 @@ class PlanVersionDuplicator
     module_group_map = copy_module_groups(new_version)
     plan_module_map = copy_plan_modules(new_version, module_group_map)
     benefit_limit_group_map = copy_benefit_limit_groups(plan_module_map)
+    copy_benefit_limit_group_rules(benefit_limit_group_map)
     module_benefit_map = copy_module_benefits(plan_module_map, benefit_limit_group_map)
     benefit_limit_rule_map = copy_benefit_limit_rules(module_benefit_map)
     cost_share_map = copy_cost_shares(new_version, plan_module_map, module_benefit_map, benefit_limit_group_map, benefit_limit_rule_map)
@@ -93,6 +94,17 @@ class PlanVersionDuplicator
           sanitized_attributes(benefit, %w[benefit_limit_group_id]).merge(benefit_limit_group: new_group)
         )
         map[benefit.id] = new_benefit
+      end
+    end
+  end
+
+  def copy_benefit_limit_group_rules(benefit_limit_group_map)
+    plan_version.plan_modules.each do |plan_module|
+      plan_module.benefit_limit_groups.each do |group|
+        new_group = benefit_limit_group_map[group.id]
+        group.benefit_limit_group_rules.each do |rule|
+          new_group.benefit_limit_group_rules.create!(sanitized_attributes(rule))
+        end
       end
     end
   end

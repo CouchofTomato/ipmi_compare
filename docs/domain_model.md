@@ -260,9 +260,30 @@ Represents a shared limit that applies across multiple benefits.
 
 Key characteristics:
 
-- Defines a monetary limit (multi-currency)
+- Acts as a shared pool/container for related ModuleBenefits
 - Can be referenced by multiple ModuleBenefits
-- Used where insurers apply combined caps across related benefits
+- Has many BenefitLimitGroupRules describing the shared rule(s)
+- Supports optional wording override for insurer-specific phrasing
+
+### BenefitLimitGroupRule
+
+Represents a structured shared-limit rule attached to a BenefitLimitGroup.
+
+Key characteristics:
+
+- Belongs to a BenefitLimitGroup
+- Supports rule types:
+  - `amount` (multi-currency insurer amounts)
+  - `usage` (quantity + unit)
+  - `as_charged`
+  - `not_stated`
+- Supports period semantics:
+  - `policy_year`
+  - `calendar_year`
+  - `rolling_days`
+  - `rolling_months`
+  - `lifetime`
+- Ordered by `position`, then `created_at`
 
 ---
 

@@ -274,6 +274,13 @@ def build_modules_for_plan!(plan:, benefits:, coverage_categories:)
     limit_usd: 1_000_000
   )
 
+  inpatient_limit_group.benefit_limit_group_rules.create!(
+    rule_type: :amount,
+    amount_usd: 1_000_000,
+    period_kind: :policy_year,
+    position: 0
+  )
+
   ModuleBenefit.create!(
     plan_module: inpatient_module,
     benefit: benefits[:inpatient],

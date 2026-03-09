@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_24_213000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_07_190100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -42,6 +42,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_213000) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "benefit_limit_group_rules", force: :cascade do |t|
+    t.decimal "amount_eur", precision: 12, scale: 2
+    t.decimal "amount_gbp", precision: 12, scale: 2
+    t.decimal "amount_usd", precision: 12, scale: 2
+    t.bigint "benefit_limit_group_id", null: false
+    t.datetime "created_at", null: false
+    t.text "notes"
+    t.integer "period_kind", default: 0, null: false
+    t.integer "period_value"
+    t.integer "position", default: 0, null: false
+    t.string "quantity_unit_custom"
+    t.integer "quantity_unit_kind"
+    t.decimal "quantity_value", precision: 12, scale: 2
+    t.integer "rule_type", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["benefit_limit_group_id", "position"], name: "idx_blgr_on_group_and_position"
+    t.index ["benefit_limit_group_id"], name: "index_benefit_limit_group_rules_on_benefit_limit_group_id"
+    t.index ["period_kind"], name: "index_benefit_limit_group_rules_on_period_kind"
+    t.index ["rule_type"], name: "index_benefit_limit_group_rules_on_rule_type"
+  end
+
   create_table "benefit_limit_groups", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.decimal "limit_eur", precision: 12, scale: 2
@@ -52,6 +73,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_213000) do
     t.text "notes"
     t.bigint "plan_module_id", null: false
     t.datetime "updated_at", null: false
+    t.text "wording_override"
     t.index ["plan_module_id"], name: "index_benefit_limit_groups_on_plan_module_id"
   end
 
@@ -301,6 +323,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_213000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "benefit_limit_group_rules", "benefit_limit_groups"
   add_foreign_key "benefit_limit_groups", "plan_modules"
   add_foreign_key "benefit_limit_rules", "module_benefits"
   add_foreign_key "benefits", "coverage_categories"
