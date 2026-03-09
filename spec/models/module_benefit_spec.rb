@@ -6,14 +6,58 @@ RSpec.describe ModuleBenefit, type: :model do
   it { expect(module_benefit).to belong_to(:plan_module) }
   it { expect(module_benefit).to belong_to(:benefit) }
   it { expect(module_benefit).to belong_to(:benefit_limit_group).optional(true) }
+  it { expect(module_benefit).to belong_to(:base_module_benefit).class_name("ModuleBenefit").optional(true) }
+  it { expect(module_benefit).to have_many(:enhancing_module_benefits).class_name("ModuleBenefit").with_foreign_key("base_module_benefit_id").dependent(:nullify) }
   it { expect(module_benefit).to have_many(:benefit_limit_rules).dependent(:destroy) }
   it { expect(module_benefit).to have_many(:cost_shares).dependent(:destroy) }
 
-  it { should define_enum_for(:interaction_type).with_values(replace: 0, append: 1) }
+  it { should define_enum_for(:interaction_type).with_values(replace: 0, append: 1, enhance: 2) }
 
   it { expect(module_benefit).to validate_presence_of(:benefit) }
   it { expect(module_benefit).to validate_presence_of(:plan_module) }
   it { expect(module_benefit).to validate_numericality_of(:weighting).only_integer }
+
+  describe "enhancement validations" do
+    it "requires base module benefit when interaction type is enhance" do
+      enhancement = build(:module_benefit, interaction_type: :enhance, base_module_benefit: nil)
+
+      expect(enhancement).not_to be_valid
+      expect(enhancement.errors[:base_module_benefit]).to include("can't be blank")
+    end
+
+    it "does not allow a module benefit to enhance itself" do
+      module_benefit = create(:module_benefit)
+      module_benefit.base_module_benefit = module_benefit
+      module_benefit.interaction_type = :enhance
+
+      expect(module_benefit).not_to be_valid
+      expect(module_benefit.errors[:base_module_benefit]).to include("cannot reference itself")
+    end
+
+    it "requires enhancement base to have the same benefit" do
+      base = create(:module_benefit)
+      other_benefit = create(:benefit)
+      enhancement = build(:module_benefit, interaction_type: :enhance, benefit: other_benefit, base_module_benefit: base)
+
+      expect(enhancement).not_to be_valid
+      expect(enhancement.errors[:base_module_benefit]).to include("must reference the same benefit")
+    end
+
+    it "requires enhancement base to be in the same plan version" do
+      base = create(:module_benefit)
+      other_plan_module = create(:plan_module)
+      enhancement = build(
+        :module_benefit,
+        interaction_type: :enhance,
+        plan_module: other_plan_module,
+        benefit: base.benefit,
+        base_module_benefit: base
+      )
+
+      expect(enhancement).not_to be_valid
+      expect(enhancement.errors[:base_module_benefit]).to include("must belong to the same plan version")
+    end
+  end
 
   describe "coverage_or_limit_must_be_present" do
     it "is invalid without coverage description and without limit rules" do

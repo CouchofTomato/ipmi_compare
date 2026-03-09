@@ -86,16 +86,27 @@ class PlanVersionDuplicator
   end
 
   def copy_module_benefits(plan_module_map, benefit_limit_group_map)
-    plan_version.plan_modules.each_with_object({}) do |plan_module, map|
+    old_to_old_base_map = {}
+
+    module_benefit_map = plan_version.plan_modules.each_with_object({}) do |plan_module, map|
       new_module = plan_module_map[plan_module.id]
       plan_module.module_benefits.each do |benefit|
         new_group = benefit_limit_group_map[benefit.benefit_limit_group_id]
         new_benefit = new_module.module_benefits.create!(
-          sanitized_attributes(benefit, %w[benefit_limit_group_id]).merge(benefit_limit_group: new_group)
+          sanitized_attributes(benefit, %w[benefit_limit_group_id base_module_benefit_id]).merge(benefit_limit_group: new_group)
         )
         map[benefit.id] = new_benefit
+        old_to_old_base_map[benefit.id] = benefit.base_module_benefit_id
       end
     end
+
+    old_to_old_base_map.each do |old_benefit_id, old_base_benefit_id|
+      next if old_base_benefit_id.blank?
+
+      module_benefit_map[old_benefit_id].update!(base_module_benefit: module_benefit_map[old_base_benefit_id])
+    end
+
+    module_benefit_map
   end
 
   def copy_benefit_limit_group_rules(benefit_limit_group_map)

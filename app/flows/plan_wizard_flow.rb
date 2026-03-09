@@ -535,6 +535,7 @@ class PlanWizardFlow
       :coverage_description,
       :waiting_period_months,
       :interaction_type,
+      :base_module_benefit_id,
       :weighting,
       benefit_limit_rules_attributes: [
         :id,

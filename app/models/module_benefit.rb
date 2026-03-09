@@ -3,6 +3,11 @@ class ModuleBenefit < ApplicationRecord
   belongs_to :plan_module
   belongs_to :benefit
   belongs_to :benefit_limit_group, optional: true
+  belongs_to :base_module_benefit, class_name: "ModuleBenefit", optional: true
+  has_many :enhancing_module_benefits,
+           class_name: "ModuleBenefit",
+           foreign_key: :base_module_benefit_id,
+           dependent: :nullify
 
   # ModuleBenefit does not store numeric limits.
   # All numeric limits are represented via BenefitLimitRule.
@@ -21,12 +26,16 @@ class ModuleBenefit < ApplicationRecord
   validates :benefit, presence: true
   validates :plan_module, presence: true
   validates :weighting, numericality: { only_integer: true }
+  validates :base_module_benefit, presence: true, if: :enhance?
   validate :coverage_or_limit_must_be_present
+  validate :base_module_benefit_cannot_reference_self
+  validate :base_module_benefit_must_be_compatible
 
   #== Enums ======================================================
   enum :interaction_type, {
     replace: 0,
-    append: 1
+    append: 1,
+    enhance: 2
   }
 
   delegate :coverage_category, to: :benefit
@@ -52,6 +61,29 @@ class ModuleBenefit < ApplicationRecord
   def coverage_or_limit_must_be_present
     if coverage_description.blank? && benefit_limit_rules.reject(&:marked_for_destruction?).blank?
       errors.add(:base, "Either a coverage description or at least one benefit limit rule must be present")
+    end
+  end
+
+  def base_module_benefit_cannot_reference_self
+    return if base_module_benefit_id.blank?
+    return unless id.present? && base_module_benefit_id == id
+
+    errors.add(:base_module_benefit, "cannot reference itself")
+  end
+
+  def base_module_benefit_must_be_compatible
+    return if base_module_benefit.blank?
+
+    if base_module_benefit.base_module_benefit_id.present?
+      errors.add(:base_module_benefit, "must reference a base module benefit")
+    end
+
+    if benefit_id.present? && base_module_benefit.benefit_id != benefit_id
+      errors.add(:base_module_benefit, "must reference the same benefit")
+    end
+
+    if plan_module.present? && base_module_benefit.plan_module.plan_version_id != plan_module.plan_version_id
+      errors.add(:base_module_benefit, "must belong to the same plan version")
     end
   end
 end
