@@ -86,5 +86,29 @@ RSpec.describe ComparisonBuilder do
       expect(per_selection["sel-one"]).to eq([])
       expect(per_selection["sel-two"]).to eq([])
     end
+
+    it "appends all entries when all matching module benefits are append" do
+      create(:module_benefit, plan_module: module_one, benefit: benefit_a, coverage_description: "Append low", interaction_type: :append, weighting: 1)
+      create(:module_benefit, plan_module: module_one, benefit: benefit_a, coverage_description: "Append high", interaction_type: :append, weighting: 10)
+
+      result = described_class.new(progress).build
+      inpatient = result[:categories].find { |cat| cat[:id] == category_a.id }
+      per_selection = inpatient[:benefits].find { |b| b[:id] == benefit_a.id }[:per_selection]
+
+      expect(per_selection["sel-one"].map { |entry| entry[:coverage_description] }).to include("Append low", "Append high")
+    end
+
+    it "uses only the highest-weighted replace entry when replace module benefits exist" do
+      create(:module_benefit, plan_module: module_one, benefit: benefit_a, coverage_description: "Append text", interaction_type: :append, weighting: 3)
+      create(:module_benefit, plan_module: module_one, benefit: benefit_a, coverage_description: "Replace low", interaction_type: :replace, weighting: 5)
+      create(:module_benefit, plan_module: module_one, benefit: benefit_a, coverage_description: "Replace high", interaction_type: :replace, weighting: 15)
+
+      result = described_class.new(progress).build
+      inpatient = result[:categories].find { |cat| cat[:id] == category_a.id }
+      per_selection = inpatient[:benefits].find { |b| b[:id] == benefit_a.id }[:per_selection]
+
+      expect(per_selection["sel-one"].size).to eq(1)
+      expect(per_selection["sel-one"].first[:coverage_description]).to eq("Replace high")
+    end
   end
 end
