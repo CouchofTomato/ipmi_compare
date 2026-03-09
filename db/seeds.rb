@@ -8,6 +8,7 @@ CostShareLink.delete_all
 CostShare.delete_all
 BenefitLimitRule.delete_all
 ModuleBenefit.delete_all
+BenefitLimitGroupRule.delete_all
 BenefitLimitGroup.delete_all
 PlanModuleRequirement.delete_all
 PlanGeographicCoverArea.delete_all
