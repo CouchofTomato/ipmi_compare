@@ -77,6 +77,7 @@ benefits = {
   outpatient_mental_health: Benefit.create!(name: "Outpatient mental health", coverage_category: coverage_categories[1]),
   outpatient_prescriptions: Benefit.create!(name: "Outpatient prescription drugs", coverage_category: coverage_categories[1]),
   maternity: Benefit.create!(name: "Maternity care", coverage_category: coverage_categories[2]),
+  childbirth: Benefit.create!(name: "Childbirth", coverage_category: coverage_categories[2]),
   prenatal: Benefit.create!(name: "Prenatal care", coverage_category: coverage_categories[2]),
   newborn: Benefit.create!(name: "Newborn care", coverage_category: coverage_categories[2]),
   fertility: Benefit.create!(name: "Fertility treatment", coverage_category: coverage_categories[2]),
@@ -225,6 +226,15 @@ def build_modules_for_plan!(plan:, benefits:, coverage_categories:)
     overall_limit_unit: "per_policy_year"
   )
 
+  non_hospitalisation_module = PlanModule.create!(
+    plan_version: plan_version,
+    module_group: outpatient_group,
+    name: "Non-hospitalisation Benefits",
+    is_core: false,
+    overall_limit_usd: 25_000,
+    overall_limit_unit: "per_policy_year"
+  )
+
   emergency_module = PlanModule.create!(
     plan_version: plan_version,
     module_group: emergency_group,
@@ -263,6 +273,7 @@ def build_modules_for_plan!(plan:, benefits:, coverage_categories:)
 
   inpatient_module.coverage_categories << coverage_categories[0]
   outpatient_module.coverage_categories << coverage_categories[1]
+  non_hospitalisation_module.coverage_categories << coverage_categories[2]
   emergency_module.coverage_categories << coverage_categories[5]
   maternity_module.coverage_categories << coverage_categories[2]
   dental_module.coverage_categories << coverage_categories[3]
@@ -558,6 +569,39 @@ def build_modules_for_plan!(plan:, benefits:, coverage_categories:)
     benefit: benefits[:maternity],
     coverage_description: "Prenatal, delivery, and postnatal care",
     waiting_period_months: 10
+  )
+
+  childbirth_base = ModuleBenefit.create!(
+    plan_module: maternity_module,
+    benefit: benefits[:childbirth],
+    coverage_description: "Hospital childbirth cover",
+    waiting_period_months: 10,
+    interaction_type: :append,
+    weighting: 1
+  )
+  BenefitLimitRule.create!(
+    module_benefit: childbirth_base,
+    scope: :benefit_level,
+    limit_type: :amount,
+    insurer_amount_usd: 8_000,
+    unit: "per policy year"
+  )
+
+  childbirth_enhancement = ModuleBenefit.create!(
+    plan_module: non_hospitalisation_module,
+    benefit: benefits[:childbirth],
+    coverage_description: "Additional childbirth limit applies when Non-hospitalisation Benefits is selected",
+    waiting_period_months: 8,
+    interaction_type: :enhance,
+    base_module_benefit: childbirth_base,
+    weighting: 20
+  )
+  BenefitLimitRule.create!(
+    module_benefit: childbirth_enhancement,
+    scope: :benefit_level,
+    limit_type: :amount,
+    insurer_amount_usd: 12_000,
+    unit: "per policy year"
   )
 
   ModuleBenefit.create!(

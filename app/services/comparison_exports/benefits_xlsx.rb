@@ -42,6 +42,12 @@ module ComparisonExports
       lines = []
       lines << entry[:plan_module_name].to_s if entry[:plan_module_name].present?
       lines << entry[:coverage_description].to_s if entry[:coverage_description].present?
+      if entry[:enhanced_by_module_names].present?
+        lines << "Enhanced by #{Array(entry[:enhanced_by_module_names]).to_sentence}"
+      end
+      Array(entry[:enhancement_notes]).each do |note|
+        lines << note
+      end
 
       benefit_level_rules = entry[:benefit_level_limit_rules].to_a
       lines << entry[:cost_share_text] if benefit_level_rules.empty? && entry[:cost_share_text].present?

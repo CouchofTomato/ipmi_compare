@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_07_190100) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_09_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -169,6 +169,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_190100) do
   end
 
   create_table "module_benefits", force: :cascade do |t|
+    t.bigint "base_module_benefit_id"
     t.bigint "benefit_id", null: false
     t.bigint "benefit_limit_group_id"
     t.string "coverage_description"
@@ -178,6 +179,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_190100) do
     t.datetime "updated_at", null: false
     t.integer "waiting_period_months"
     t.integer "weighting", default: 0, null: false
+    t.index ["base_module_benefit_id"], name: "index_module_benefits_on_base_module_benefit_id"
     t.index ["benefit_id"], name: "index_module_benefits_on_benefit_id"
     t.index ["benefit_limit_group_id"], name: "index_module_benefits_on_benefit_limit_group_id"
     t.index ["interaction_type"], name: "index_module_benefits_on_interaction_type"
@@ -333,6 +335,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_07_190100) do
   add_foreign_key "coverage_categories_plan_modules", "plan_modules"
   add_foreign_key "module_benefits", "benefit_limit_groups"
   add_foreign_key "module_benefits", "benefits"
+  add_foreign_key "module_benefits", "module_benefits", column: "base_module_benefit_id"
   add_foreign_key "module_benefits", "plan_modules"
   add_foreign_key "module_groups", "plan_versions"
   add_foreign_key "plan_geographic_cover_areas", "geographic_cover_areas"

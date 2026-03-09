@@ -361,6 +361,36 @@ RSpec.describe "WizardProgresses", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "creates an enhancing module benefit linked to a base module benefit" do
+      plan = wizard_progress.subject
+      plan_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version:)
+      hospital_module = create(:plan_module, plan_version:, module_group:, name: "Hospital Plan")
+      enhancer_module = create(:plan_module, plan_version:, module_group:, name: "Non-hospitalisation Benefits")
+      benefit = create(:benefit)
+      base_module_benefit = create(:module_benefit, plan_module: hospital_module, benefit:, coverage_description: "Base childbirth cover")
+      wizard_progress.update!(current_step: "module_benefits", step_order: 6, status: :in_progress)
+
+      expect do
+        patch wizard_progress_path(wizard_progress, format: :turbo_stream),
+              params: {
+                step_action: "add",
+                benefits: {
+                  plan_module_id: enhancer_module.id,
+                  benefit_id: benefit.id,
+                  interaction_type: "enhance",
+                  base_module_benefit_id: base_module_benefit.id,
+                  coverage_description: "Enhances childbirth limits"
+                }
+              }
+      end.to change(ModuleBenefit, :count).by(1)
+
+      created = ModuleBenefit.order(:created_at).last
+      expect(created.interaction_type).to eq("enhance")
+      expect(created.base_module_benefit).to eq(base_module_benefit)
+      expect(response).to have_http_status(:success)
+    end
+
     it "deletes a benefit limit group and cascades its module benefits" do
       plan = wizard_progress.subject
       plan_version = plan.current_plan_version

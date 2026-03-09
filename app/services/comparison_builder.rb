@@ -10,7 +10,27 @@ class ComparisonBuilder
     return empty_payload if selections.empty?
 
     plans_by_id =
-      Plan.includes(:insurer, current_plan_version: { plan_modules: { module_benefits: [ :benefit, { benefit_limit_group: :benefit_limit_group_rules }, :cost_shares, { benefit_limit_rules: :cost_share } ] } })
+      Plan.includes(
+        :insurer,
+        current_plan_version: {
+          plan_modules: {
+            module_benefits: [
+              :benefit,
+              { benefit_limit_group: :benefit_limit_group_rules },
+              :cost_shares,
+              { benefit_limit_rules: :cost_share },
+              {
+                enhancing_module_benefits: [
+                  :plan_module,
+                  :cost_shares,
+                  { benefit_limit_group: :benefit_limit_group_rules },
+                  { benefit_limit_rules: :cost_share }
+                ]
+              }
+            ]
+          }
+        }
+      )
         .where(id: selections.map { |selection| selection["plan_id"] }.compact)
         .index_by(&:id)
 
@@ -79,16 +99,21 @@ class ComparisonBuilder
     selected_module_benefits = selected_module_benefits_for(benefit_id, module_benefits)
 
     selected_module_benefits.map do |module_benefit|
+      enhancements = applicable_enhancements_for(module_benefit, module_benefits)
+      effective_benefit_limit_rules = effective_benefit_limit_rules_for(module_benefit, enhancements)
+      benefit_level_rules, itemised_rules = effective_benefit_limit_rules.partition(&:benefit_level?)
+      effective_cost_share_owner = effective_cost_share_owner_for(module_benefit, enhancements)
+
         {
           module_benefit_id: module_benefit.id,
           plan_module_id: module_benefit.plan_module_id,
           plan_module_name: module_benefit.plan_module.name,
           coverage_description: module_benefit.coverage_description,
-          cost_share_text: cost_share_text(module_benefit),
-          benefit_level_limit_rules: module_benefit.benefit_limit_rules.benefit_level.map do |rule|
+          cost_share_text: cost_share_text(effective_cost_share_owner),
+          benefit_level_limit_rules: benefit_level_rules.map do |rule|
             {
               name: rule.name,
-              cost_share_text: rule_cost_share_text(rule, module_benefit),
+              cost_share_text: rule_cost_share_text(rule, effective_cost_share_owner),
               limit_type: rule.limit_type,
               insurer_amount_usd: rule.insurer_amount_usd,
               insurer_amount_gbp: rule.insurer_amount_gbp,
@@ -102,10 +127,10 @@ class ComparisonBuilder
               position: rule.position
             }
           end,
-          itemised_limit_rules: module_benefit.benefit_limit_rules.itemised.map do |rule|
+          itemised_limit_rules: itemised_rules.map do |rule|
             {
               name: rule.name,
-              cost_share_text: rule_cost_share_text(rule, module_benefit),
+              cost_share_text: rule_cost_share_text(rule, effective_cost_share_owner),
               limit_type: rule.limit_type,
               insurer_amount_usd: rule.insurer_amount_usd,
               insurer_amount_gbp: rule.insurer_amount_gbp,
@@ -119,24 +144,58 @@ class ComparisonBuilder
               position: rule.position
             }
           end,
-          waiting_period_months: module_benefit.waiting_period_months,
+          waiting_period_months: effective_waiting_period_months_for(module_benefit, enhancements),
           interaction_type: module_benefit.interaction_type,
-          benefit_limit_group_name: module_benefit.benefit_limit_group&.name,
-          benefit_limit_group_rule_text: shared_limit_group_rule_text(module_benefit.benefit_limit_group)
+          benefit_limit_group_name: effective_benefit_limit_group_for(module_benefit, enhancements)&.name,
+          benefit_limit_group_rule_text: shared_limit_group_rule_text(effective_benefit_limit_group_for(module_benefit, enhancements)),
+          enhancement_notes: enhancement_notes_for(enhancements),
+          enhanced_by_module_names: enhancements.map { |enhancement| enhancement.plan_module.name }.uniq
         }
-      end
+    end
   end
 
   def selected_module_benefits_for(benefit_id, module_benefits)
     matching_module_benefits =
       Array(module_benefits)
-        .select { |module_benefit| module_benefit.benefit_id == benefit_id }
+        .select { |module_benefit| module_benefit.benefit_id == benefit_id && !module_benefit.enhance? }
         .sort_by { |module_benefit| [ module_benefit.weighting, module_benefit.created_at ] }
 
     replace_module_benefits = matching_module_benefits.select(&:replace?)
     return matching_module_benefits if replace_module_benefits.empty?
 
     [ replace_module_benefits.max_by { |module_benefit| [ module_benefit.weighting, module_benefit.created_at ] } ]
+  end
+
+  def applicable_enhancements_for(base_module_benefit, module_benefits)
+    Array(module_benefits)
+      .select { |module_benefit| module_benefit.enhance? && module_benefit.base_module_benefit_id == base_module_benefit.id }
+      .sort_by { |module_benefit| [ module_benefit.weighting, module_benefit.created_at ] }
+  end
+
+  def effective_waiting_period_months_for(base_module_benefit, enhancements)
+    override = enhancements.reverse.find { |enhancement| enhancement.waiting_period_months.present? }
+    override&.waiting_period_months || base_module_benefit.waiting_period_months
+  end
+
+  def effective_benefit_limit_rules_for(base_module_benefit, enhancements)
+    override = enhancements.reverse.find { |enhancement| enhancement.benefit_limit_rules.any? }
+    return base_module_benefit.benefit_limit_rules unless override
+
+    override.benefit_limit_rules
+  end
+
+  def effective_cost_share_owner_for(base_module_benefit, enhancements)
+    override = enhancements.reverse.find { |enhancement| enhancement.cost_shares.any? }
+    override || base_module_benefit
+  end
+
+  def effective_benefit_limit_group_for(base_module_benefit, enhancements)
+    override = enhancements.reverse.find { |enhancement| enhancement.benefit_limit_group.present? }
+    override&.benefit_limit_group || base_module_benefit.benefit_limit_group
+  end
+
+  def enhancement_notes_for(enhancements)
+    enhancements.filter_map(&:coverage_description)
   end
 
   def empty_payload
