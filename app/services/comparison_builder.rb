@@ -76,10 +76,9 @@ class ComparisonBuilder
   end
 
   def module_benefit_entries(benefit_id, module_benefits)
-    Array(module_benefits)
-      .select { |module_benefit| module_benefit.benefit_id == benefit_id }
-      .sort_by { |module_benefit| [ module_benefit.weighting, module_benefit.created_at ] }
-      .map do |module_benefit|
+    selected_module_benefits = selected_module_benefits_for(benefit_id, module_benefits)
+
+    selected_module_benefits.map do |module_benefit|
         {
           module_benefit_id: module_benefit.id,
           plan_module_id: module_benefit.plan_module_id,
@@ -126,6 +125,18 @@ class ComparisonBuilder
           benefit_limit_group_rule_text: shared_limit_group_rule_text(module_benefit.benefit_limit_group)
         }
       end
+  end
+
+  def selected_module_benefits_for(benefit_id, module_benefits)
+    matching_module_benefits =
+      Array(module_benefits)
+        .select { |module_benefit| module_benefit.benefit_id == benefit_id }
+        .sort_by { |module_benefit| [ module_benefit.weighting, module_benefit.created_at ] }
+
+    replace_module_benefits = matching_module_benefits.select(&:replace?)
+    return matching_module_benefits if replace_module_benefits.empty?
+
+    [ replace_module_benefits.max_by { |module_benefit| [ module_benefit.weighting, module_benefit.created_at ] } ]
   end
 
   def empty_payload

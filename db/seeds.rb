@@ -334,8 +334,28 @@ def build_modules_for_plan!(plan:, benefits:, coverage_categories:)
   ModuleBenefit.create!(
     plan_module: outpatient_module,
     benefit: benefits[:outpatient],
-    coverage_description: "Specialist and outpatient visits",
-    waiting_period_months: 0
+    coverage_description: "Specialist and outpatient visits (append baseline)",
+    waiting_period_months: 0,
+    interaction_type: :append,
+    weighting: 0
+  )
+
+  # Demonstrates replace behavior for duplicate benefits across selected modules.
+  ModuleBenefit.create!(
+    plan_module: outpatient_module,
+    benefit: benefits[:outpatient],
+    coverage_description: "Replace candidate with lower weighting",
+    waiting_period_months: 0,
+    interaction_type: :replace,
+    weighting: 5
+  )
+
+  ModuleBenefit.create!(
+    plan_module: emergency_module,
+    benefit: benefits[:outpatient],
+    coverage_description: "Replace candidate with higher weighting",
+    interaction_type: :replace,
+    weighting: 20
   )
 
   ModuleBenefit.create!(
