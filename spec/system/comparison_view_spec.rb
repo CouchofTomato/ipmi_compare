@@ -12,8 +12,17 @@ RSpec.describe "Plan comparison view", type: :system do
     plan_version = plan.current_plan_version
     group = create(:module_group, plan_version: plan_version)
     plan_module = create(:plan_module, plan_version: plan_version, module_group: group, name: "Core")
-
-    create(:module_benefit, plan_module: plan_module, benefit: benefit, coverage_description: "Covered")
+    limit_group = create(:benefit_limit_group, :with_shared_limit_rule, plan_module: plan_module, name: "Outpatient therapies limit")
+    limit_group.benefit_limit_group_rules.first.update!(
+      rule_type: :usage,
+      amount_usd: nil,
+      amount_gbp: nil,
+      amount_eur: nil,
+      quantity_value: 20,
+      quantity_unit_kind: :session,
+      period_kind: :policy_year
+    )
+    create(:module_benefit, plan_module: plan_module, benefit: benefit, coverage_description: "Covered", benefit_limit_group: limit_group)
 
     progress.update!(
       state: {
@@ -29,6 +38,7 @@ RSpec.describe "Plan comparison view", type: :system do
     expect(page).to have_text(/inpatient/i)
     expect(page).to have_content("Hospital stay")
     expect(page).to have_content("Covered")
+    expect(page).to have_content("Shared limit: Outpatient therapies limit — 20 sessions per policy year")
   end
 
   it "shows empty state when no plans are selected" do

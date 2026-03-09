@@ -166,7 +166,10 @@
                                   <p class="text-slate-600 dark:text-slate-300">Waiting: <%= entry[:waiting_period_months] %> months</p>
                                 <% end %>
                                 <% if entry[:benefit_limit_group_name].present? %>
-                                  <p class="text-slate-600 dark:text-slate-300">Shared limit: <%= entry[:benefit_limit_group_name] %></p>
+                                  <% shared_limit_text = entry[:benefit_limit_group_rule_text].presence %>
+                                  <p class="text-slate-600 dark:text-slate-300">
+                                    Shared limit: <%= entry[:benefit_limit_group_name] %><%= shared_limit_text.present? ? " — #{shared_limit_text}" : "" %>
+                                  </p>
                                 <% end %>
                               </div>
                             <% end %>

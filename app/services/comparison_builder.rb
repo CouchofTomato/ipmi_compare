@@ -10,7 +10,7 @@ class ComparisonBuilder
     return empty_payload if selections.empty?
 
     plans_by_id =
-      Plan.includes(:insurer, current_plan_version: { plan_modules: { module_benefits: [ :benefit, :benefit_limit_group, :cost_shares, { benefit_limit_rules: :cost_share } ] } })
+      Plan.includes(:insurer, current_plan_version: { plan_modules: { module_benefits: [ :benefit, { benefit_limit_group: :benefit_limit_group_rules }, :cost_shares, { benefit_limit_rules: :cost_share } ] } })
         .where(id: selections.map { |selection| selection["plan_id"] }.compact)
         .index_by(&:id)
 
@@ -122,7 +122,8 @@ class ComparisonBuilder
           end,
           waiting_period_months: module_benefit.waiting_period_months,
           interaction_type: module_benefit.interaction_type,
-          benefit_limit_group_name: module_benefit.benefit_limit_group&.name
+          benefit_limit_group_name: module_benefit.benefit_limit_group&.name,
+          benefit_limit_group_rule_text: shared_limit_group_rule_text(module_benefit.benefit_limit_group)
         }
       end
   end
@@ -145,5 +146,48 @@ class ComparisonBuilder
     return nil unless selected_cost_share
 
     selected_cost_share.specification_text
+  end
+
+  def shared_limit_group_rule_text(group)
+    return nil unless group
+    return group.wording_override if group.wording_override.present?
+
+    rule = group.primary_rule
+    return nil unless rule
+
+    case rule.rule_type
+    when "amount"
+      amount_text = shared_limit_amount_text(rule)
+      return amount_text if amount_text.blank?
+
+      [ amount_text, period_text_for(rule) ].compact.join(" ")
+    when "usage"
+      quantity_text = rule.quantity_value.to_s.sub(/\.0\z/, "")
+      unit_text = rule.quantity_unit_label.to_s
+      unit_text = unit_text.pluralize unless rule.quantity_value.to_d == 1
+      [ [ quantity_text, unit_text ].join(" "), period_text_for(rule) ].compact.join(" ")
+    when "as_charged"
+      "As charged"
+    when "not_stated"
+      "Not stated"
+    end
+  end
+
+  def shared_limit_amount_text(rule)
+    parts = []
+    parts << "GBP #{format('%.2f', rule.amount_gbp)}" if rule.amount_gbp.present?
+    parts << "USD #{format('%.2f', rule.amount_usd)}" if rule.amount_usd.present?
+    parts << "EUR #{format('%.2f', rule.amount_eur)}" if rule.amount_eur.present?
+    parts.join(" / ")
+  end
+
+  def period_text_for(rule)
+    case rule.period_kind
+    when "policy_year" then "per policy year"
+    when "calendar_year" then "per calendar year"
+    when "rolling_days" then "in a #{rule.period_value} day period"
+    when "rolling_months" then "in a #{rule.period_value} month period"
+    when "lifetime" then "per lifetime"
+    end
   end
 end
