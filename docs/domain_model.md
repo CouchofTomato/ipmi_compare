@@ -1,6 +1,6 @@
 # Domain Model
 
-This document describes the core domain concepts used in the IPMI comparison application.
+This document describes the core domain concepts used in the IPMI comparison application.  
 It is intended as a shared reference for contributors and agents to ensure consistent naming,
 relationships, and behaviour.
 
@@ -9,9 +9,10 @@ assumptions the system relies on.
 
 ---
 
-## High-level overview
+# High-level overview
 
 The application models international health insurance products offered by insurers.
+
 At a high level:
 
 - An **Insurer** offers one or more **Plans**
@@ -21,6 +22,7 @@ At a high level:
 - **PlanModules** define coverage through **ModuleBenefits**
 - **ModuleBenefits** reference reusable **Benefits**
 - Cost-sharing (deductibles, co-payments, excesses) is modelled using **CostShares**
+- Numeric limits are modelled using **BenefitLimitRules**
 
 The system supports both:
 
@@ -29,9 +31,9 @@ The system supports both:
 
 ---
 
-## Core entities
+# Core entities
 
-### Insurer
+## Insurer
 
 Represents an insurance provider.
 
@@ -45,7 +47,7 @@ Insurers are primarily an organisational and filtering construct.
 
 ---
 
-### Plan
+## Plan
 
 Represents a named insurance product offered by an insurer.
 
@@ -59,7 +61,7 @@ A Plan acts as a stable product identity over time.
 
 ---
 
-### PlanVersion
+## PlanVersion
 
 Represents a specific version of a Plan at a given point in time.
 
@@ -79,7 +81,7 @@ across time.
 
 ---
 
-### PlanModule
+## PlanModule
 
 Represents a unit of coverage within a specific PlanVersion.
 
@@ -88,7 +90,6 @@ Key characteristics:
 - Belongs to a PlanVersion
 - Belongs to a ModuleGroup
 - Can be marked as core or optional
-- May define overall limits at the module level
 - Can be associated with multiple CoverageCategories
 - Links to Benefits via ModuleBenefits
 
@@ -97,9 +98,12 @@ A PlanModule may represent:
 - a focused area (e.g. “Outpatient”), or
 - broad coverage (e.g. a single module covering many benefit areas).
 
+PlanModules represent **where coverage originates**, but individual benefit behaviour
+is defined through ModuleBenefits.
+
 ---
 
-### ModuleGroup
+## ModuleGroup
 
 Used to group related PlanModules.
 
@@ -114,9 +118,9 @@ ModuleGroups do not define coverage themselves.
 
 ---
 
-### Benefit
+## Benefit
 
-Represents a specific insurable service or treatment type
+Represents a specific insurable service or treatment type  
 (e.g. inpatient surgery, outpatient consultations, evacuation).
 
 Key characteristics:
@@ -127,7 +131,7 @@ Key characteristics:
 
 ---
 
-### ModuleBenefit
+# ModuleBenefit
 
 Defines how a specific PlanModule covers a specific Benefit.
 
@@ -136,18 +140,138 @@ Key characteristics:
 - Belongs to a PlanModule
 - Belongs to a Benefit
 - Has many BenefitLimitRules
+- May have a CostShare
 - Stores coverage detail such as:
   - waiting periods
+  - coverage description
   - interaction type
-  - weighting / importance
-- This is where “what is actually covered” is expressed
+  - weighting / precedence
 
-ModuleBenefit is the primary source of truth for benefit-level coverage.
+ModuleBenefit is the primary source of truth for **benefit-level coverage**.
 
-**ModuleBenefit does not store numeric limits.**
+**ModuleBenefit does not store numeric limits.**  
 All numeric limits are represented via `BenefitLimitRule`.
 
-### BenefitLimitRule
+---
+
+# Base vs modifying ModuleBenefits
+
+Some modules **modify or enhance** benefits defined by another module.
+
+Example:
+
+- The **Hospital Plan** module defines a base *Childbirth* benefit.
+- The **Non-hospitalisation Benefits** module increases the childbirth limit.
+
+In this case:
+
+- the Hospital Plan ModuleBenefit is the **base benefit**
+- the Non-hospitalisation ModuleBenefit is an **enhancement**
+
+To support this behaviour:
+
+- A ModuleBenefit may optionally reference a **base ModuleBenefit**.
+- Base ModuleBenefits represent the **owning source of coverage**.
+- Enhancing ModuleBenefits modify specific attributes of the base benefit.
+
+Ownership rules:
+
+- The **owning module is always the module of the base ModuleBenefit**
+- Enhancing modules **never become the benefit owner**
+
+This distinction ensures:
+
+- correct coverage attribution
+- consistent UI behaviour
+- accurate AI analysis of plan structures.
+
+---
+
+# Interaction types
+
+ModuleBenefits may interact with other ModuleBenefits.
+
+Supported interaction types include:
+
+| Interaction | Meaning |
+|---|---|
+| append | adds additional coverage |
+| replace | replaces another benefit definition entirely |
+| enhance | modifies or improves the terms of another benefit |
+
+Enhance interactions typically change:
+
+- numeric limits
+- waiting periods
+- cost sharing
+- wording notes
+
+but do **not** change the owning module.
+
+---
+
+# Effective benefit resolution
+
+When displaying the effective coverage for a benefit:
+
+1. Locate the **base ModuleBenefit**
+2. Locate any **enhancing ModuleBenefits**
+3. Combine attributes using the override rules below.
+
+---
+
+# Field override behaviour
+
+When an enhancement exists, fields are resolved as follows.
+
+### Never overridden (always from base)
+
+These fields define benefit identity.
+
+- benefit
+- owning module
+- base_module_benefit_id
+- benefit section/category
+
+---
+
+### Inherited unless overridden
+
+These fields may be replaced by enhancements.
+
+- waiting_period_months
+- benefit_limit_rules
+- cost_share
+- inclusion / exclusion state
+- display flags
+
+---
+
+### Additive / merged
+
+These fields may combine base and enhancement information.
+
+- notes
+- explanation text
+- enhancement labels
+
+---
+
+### Coverage description rule
+
+By default:
+
+- `coverage_description` is inherited from the **base ModuleBenefit**
+
+Enhancements should not normally replace this text.
+
+Enhancements may instead provide additional explanatory notes.
+
+This prevents enhancements from incorrectly changing the perceived source of coverage.
+
+---
+
+# BenefitLimitRule
 
 Represents a numeric limit rule attached to a ModuleBenefit.
 
@@ -158,193 +282,235 @@ Key characteristics:
   - `benefit_level` for rules that apply to the whole benefit
   - `itemised` for rules that apply to a specific component (e.g. X-ray, ECG, scan)
 - Supports multiple limit types:
-  - `amount` (insurer amount in one or more of USD/GBP/EUR)
+  - `amount`
   - `as_charged`
   - `not_stated`
-- Uses insurer amount fields (`insurer_amount_*`) plus `unit` for per-use/per-period expression
-- Supports aggregate caps (`cap_insurer_amount_*` + `cap_unit`) for “up to X per year” style rules
-- Includes optional `notes` and `position` for ordering
-- Ordered by `position`, then `created_at`
 
-Worked example: Physiotherapy
+Insurer payment amounts are represented using:
+
+- `insurer_amount_usd`
+- `insurer_amount_gbp`
+- `insurer_amount_eur`
+
+Units describe how the amount applies (e.g. per session).
+
+Rules may also define aggregate caps:
+
+- `cap_insurer_amount_*`
+- `cap_unit`
+
+Rules are ordered by:
+
+1. `position`
+2. `created_at`
+
+---
+
+# Worked examples
+
+## Physiotherapy
 
 - CostShare:
   - 100% covered
-- BenefitLimitRule (`scope: benefit_level`, `limit_type: amount`):
+- BenefitLimitRule:
   - USD 50 per session, up to USD 500 per policy year
-
-Worked example: Diagnostics with itemised caps
-
-- ModuleBenefit:
-  - Benefit: Outpatient Diagnostics
-  - Coverage description: Covered
-- BenefitLimitRules (`scope: itemised`):
-  - X-ray: GBP 305 per examination
-  - ECG: USD 450 per examination
-  - Scan: USD 1,200 per examination, up to USD 2,500 per policy year
-
-Warning:
-
-- Do not add numeric limit fields outside `BenefitLimitRule`.
-- Do not add percent fields to `BenefitLimitRule`; percentages belong to `CostShare`.
 
 ---
 
-## Cost sharing (deductibles, excesses, co-payments)
+## Diagnostics with itemised caps
+
+ModuleBenefit: Outpatient diagnostics
+
+BenefitLimitRules:
+
+- X-ray: GBP 305 per examination
+- ECG: USD 450 per examination
+- Scan: USD 1,200 per examination, up to USD 2,500 per policy year
+
+---
+
+# Cost sharing
 
 Cost sharing is modelled using **CostShare** and **CostShareLink**.
 
-### CostShare
+---
 
-Represents a single cost-sharing rule.
+# CostShare
+
+Represents a cost-sharing rule.
 
 Key characteristics:
 
-- Defines amount, type (deductible, co-pay, etc.), unit, currency, and scope
-- Defines `kind`:
-  - `deductible` for plan-level and module-level cost shares
-  - `coinsurance` for benefit-level and rule-level cost shares
-- Reimbursement percentages (for example `80%` or `100% covered`) are stored here, not in `BenefitLimitRule`
-- Belongs to a polymorphic scope:
-  - a PlanVersion,
-  - a PlanModule,
-  - a ModuleBenefit, or
-  - a BenefitLimitGroup, or
-  - a BenefitLimitRule
+- Polymorphic association
+- Defines amount, percentage, unit, and application scope
 
-Display semantics:
+CostShare defines a `kind`:
 
-- PlanVersion and PlanModule cost shares are deductibles only and are not rendered inline for each benefit rule.
-- ModuleBenefit and BenefitLimitRule cost shares are rendered inline with benefit/rule output.
-- Precedence is:
-  1. BenefitLimitRule cost share (if present)
-  2. ModuleBenefit cost share (fallback)
-  3. no inline cost share
+- `deductible`
+- `coinsurance`
 
-### CostShareLink
+Percentages such as **80% coinsurance** are stored here.
+
+CostShares may attach to:
+
+- PlanVersion
+- PlanModule
+- ModuleBenefit
+- BenefitLimitGroup
+- BenefitLimitRule
+
+---
+
+# Display semantics
+
+PlanVersion and PlanModule cost shares represent **deductibles** and are **not displayed inline with each benefit**.
+
+Inline benefit display uses:
+
+1. BenefitLimitRule cost share (highest precedence)
+2. ModuleBenefit cost share
+3. no inline cost share
+
+---
+
+# CostShareLink
 
 Links one CostShare to another CostShare.
 
-Key characteristics:
+Used to model:
 
-- Connects a CostShare to another CostShare
-- Defines the relationship type (e.g. shared pool, override, dependent)
+- shared pools
+- override relationships
+- dependent cost share rules.
 
-Only one relevant CostShare should apply for a given claim context.
-
-Worked dental example:
-
-- ModuleBenefit: `Routine dental treatment`
-- BenefitLimitRules:
-  - Root treatment (cap per tooth)
-  - Extraction (cap per tooth)
-  - Surgery (cap per tooth)
-  - X-ray (cap per policy year)
-  - Anaesthesia (cap per policy year)
-- CostShare:
-  - `kind: coinsurance`
-  - `amount: 80`
-  - `unit: percent`
-  - attached per `BenefitLimitRule`
-- Result:
-  - each itemised dental rule displays `80% covered ...`
-  - a rule-level value overrides any ModuleBenefit-level coinsurance
+Only one relevant cost share should apply in a given claim context.
 
 ---
 
-## Benefit limit groups
+# Worked dental example
 
-### BenefitLimitGroup
+ModuleBenefit: Routine dental treatment
 
-Represents a shared limit that applies across multiple benefits.
+BenefitLimitRules:
+
+- Root treatment (cap per tooth)
+- Extraction (cap per tooth)
+- Surgery (cap per tooth)
+- X-ray
+- Anaesthesia
+
+CostShare:
+
+- kind: coinsurance
+- amount: 80
+- unit: percent
+
+Attached to each BenefitLimitRule.
+
+Result:
+
+Each rule displays **80% covered up to the relevant cap**.
+
+Rule-level coinsurance overrides any ModuleBenefit-level coinsurance.
+
+---
+
+# Benefit limit groups
+
+## BenefitLimitGroup
+
+Represents a shared limit across multiple benefits.
 
 Key characteristics:
 
-- Acts as a shared pool/container for related ModuleBenefits
+- Acts as a shared pool/container
 - Can be referenced by multiple ModuleBenefits
-- Has many BenefitLimitGroupRules describing the shared rule(s)
-- Supports optional wording override for insurer-specific phrasing
-
-### BenefitLimitGroupRule
-
-Represents a structured shared-limit rule attached to a BenefitLimitGroup.
-
-Key characteristics:
-
-- Belongs to a BenefitLimitGroup
-- Supports rule types:
-  - `amount` (multi-currency insurer amounts)
-  - `usage` (quantity + unit)
-  - `as_charged`
-  - `not_stated`
-- Supports period semantics:
-  - `policy_year`
-  - `calendar_year`
-  - `rolling_days`
-  - `rolling_months`
-  - `lifetime`
-- Ordered by `position`, then `created_at`
+- Has many BenefitLimitGroupRules
+- Supports optional wording overrides.
 
 ---
 
-## Plan module dependencies
+## BenefitLimitGroupRule
 
-### PlanModuleRequirement
+Defines the shared limit logic.
 
-Represents a dependency between PlanModules within a PlanVersion.
+Supported rule types:
 
-Key characteristics:
+- `amount`
+- `usage`
+- `as_charged`
+- `not_stated`
 
-- Belongs to a PlanVersion
-- Links a dependent PlanModule to a required PlanModule
-- Used to model cases where selecting one module requires another
+Supports period semantics:
+
+- policy_year
+- calendar_year
+- rolling_days
+- rolling_months
+- lifetime
+
+Ordered by `position` then `created_at`.
 
 ---
 
-## Coverage categories
+# Plan module dependencies
+
+## PlanModuleRequirement
+
+Represents a dependency between PlanModules.
+
+Used when selecting one module requires another.
+
+---
+
+# Coverage categories
 
 CoverageCategories are used as a tagging system.
 
 Key characteristics:
 
-- A PlanModule can have many CoverageCategories
-- A CoverageCategory can apply to many PlanModules
-- A Benefit belongs to a CoverageCategory
-- Categories are used for:
-  - high-level summaries
-  - filtering
-  - comparison UI
+- PlanModules may have many categories
+- Categories may apply to many modules
+- Benefits belong to a category
+
+Used for:
+
+- summaries
+- filtering
+- comparison UI.
 
 They are not a substitute for benefits or modules.
 
 ---
 
-## Geographic and residency rules
+# Geographic and residency rules
 
-### GeographicCoverArea
+## GeographicCoverArea
 
 Represents an area of cover (e.g. Worldwide, Excluding USA).
 
-Plans link to areas of cover via join models.
-
-### PlanResidencyEligibility
-
-Defines residency-based eligibility rules for a PlanVersion.
+Plans link to areas via join models.
 
 ---
 
-## Important invariants and assumptions
+## PlanResidencyEligibility
 
-- Coverage logic lives in PlanModules and ModuleBenefits, not Plans
-- PlanVersions are the unit of comparison and eligibility
-- Benefits are generic; coverage rules are contextual
-- Cost sharing must not stack implicitly
-- Naming should remain consistent with existing models
-- New domain concepts should not be introduced without revisiting this document
+Defines residency eligibility rules for a PlanVersion.
 
 ---
 
-## Explicitly out of scope
+# Important invariants
+
+- Coverage logic lives in **PlanModules and ModuleBenefits**
+- **PlanVersions** are the unit of comparison
+- Benefits are reusable and generic
+- Numeric limits must only be stored in **BenefitLimitRule**
+- Cost sharing must only be stored in **CostShare**
+- ModuleBenefit ownership must not change due to enhancements
+
+---
+
+# Explicitly out of scope
 
 The following models are not part of the insurance domain:
 
@@ -352,17 +518,15 @@ The following models are not part of the insurance domain:
 - WizardProgress
 - ActiveStorage models
 
-They should not be used to infer business or coverage logic.
+They must not be used to infer coverage logic.
 
 ---
 
-## Guidance for contributors and agents
+# Guidance for contributors and agents
 
 - Do not rename domain concepts without updating this document
-- Do not introduce parallel models that duplicate responsibility
-- When unsure where logic belongs:
-  - prefer existing models,
-  - then module–benefit relationships,
-  - and avoid introducing new abstraction layers
+- Avoid introducing duplicate models for limits or cost sharing
+- Prefer extending existing relationships rather than creating new abstractions
+- Maintain consistent terminology across plans and benefits
 
-When in doubt, simplicity and consistency take priority.
+When in doubt, **simplicity and consistency take priority**.
