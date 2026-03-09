@@ -157,7 +157,7 @@ class ComparisonBuilder
   def selected_module_benefits_for(benefit_id, module_benefits)
     matching_module_benefits =
       Array(module_benefits)
-        .select { |module_benefit| module_benefit.benefit_id == benefit_id && !module_benefit.enhance? && module_benefit.base_module_benefit_id.blank? }
+        .select { |module_benefit| module_benefit.benefit_id == benefit_id && !module_benefit.enhance? }
         .sort_by { |module_benefit| [ module_benefit.weighting, module_benefit.created_at ] }
 
     replace_module_benefits = matching_module_benefits.select(&:replace?)

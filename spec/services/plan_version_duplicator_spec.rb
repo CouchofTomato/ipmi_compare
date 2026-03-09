@@ -65,5 +65,33 @@ RSpec.describe PlanVersionDuplicator do
       links = CostShareLink.where(cost_share_id: all_new_cost_share_ids, linked_cost_share_id: all_new_cost_share_ids)
       expect(links.count).to eq(1)
     end
+
+    it "duplicates enhancement benefits with valid base references" do
+      plan = create(:plan)
+      source_version = plan.current_plan_version
+      module_group = create(:module_group, plan_version: source_version, name: "Core", position: 1)
+      hospital_module = create(:plan_module, plan_version: source_version, module_group:, name: "Hospital")
+      enhancer_module = create(:plan_module, plan_version: source_version, module_group:, name: "Non-hospitalisation")
+      benefit = create(:benefit)
+      base = create(:module_benefit, plan_module: hospital_module, benefit:, interaction_type: :append, coverage_description: "Base")
+      create(
+        :module_benefit,
+        plan_module: enhancer_module,
+        benefit:,
+        interaction_type: :enhance,
+        base_module_benefit: base,
+        coverage_description: "Enhancement"
+      )
+
+      new_version = described_class.call(source_version)
+
+      duplicated_base = new_version.plan_modules.find_by(name: "Hospital").module_benefits.find_by(benefit:)
+      duplicated_enhancement = new_version.plan_modules.find_by(name: "Non-hospitalisation").module_benefits.find_by(benefit:)
+
+      expect(duplicated_base).to be_present
+      expect(duplicated_enhancement).to be_present
+      expect(duplicated_enhancement.interaction_type).to eq("enhance")
+      expect(duplicated_enhancement.base_module_benefit).to eq(duplicated_base)
+    end
   end
 end

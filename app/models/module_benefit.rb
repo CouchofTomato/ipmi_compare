@@ -27,6 +27,7 @@ class ModuleBenefit < ApplicationRecord
   validates :plan_module, presence: true
   validates :weighting, numericality: { only_integer: true }
   validates :base_module_benefit, presence: true, if: :enhance?
+  validates :base_module_benefit, absence: true, unless: :enhance?
   validate :coverage_or_limit_must_be_present
   validate :base_module_benefit_cannot_reference_self
   validate :base_module_benefit_must_be_compatible

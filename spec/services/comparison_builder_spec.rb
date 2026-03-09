@@ -222,5 +222,17 @@ RSpec.describe ComparisonBuilder do
       expect(entry[:plan_module_name]).to eq("Core")
       expect(entry[:waiting_period_months]).to eq(6)
     end
+
+    it "does not drop non-enhance records with a legacy base reference" do
+      entry = create(:module_benefit, plan_module: module_one, benefit: benefit_a, interaction_type: :append, coverage_description: "Legacy append")
+      legacy_base = create(:module_benefit, plan_module: module_other, benefit: benefit_a, interaction_type: :append, coverage_description: "Legacy base")
+      entry.update_column(:base_module_benefit_id, legacy_base.id)
+
+      result = described_class.new(progress).build
+      inpatient = result[:categories].find { |cat| cat[:id] == category_a.id }
+      per_selection = inpatient[:benefits].find { |b| b[:id] == benefit_a.id }[:per_selection]
+
+      expect(per_selection["sel-one"].map { |benefit_entry| benefit_entry[:module_benefit_id] }).to include(entry.id)
+    end
   end
 end

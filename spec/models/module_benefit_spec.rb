@@ -57,6 +57,14 @@ RSpec.describe ModuleBenefit, type: :model do
       expect(enhancement).not_to be_valid
       expect(enhancement.errors[:base_module_benefit]).to include("must belong to the same plan version")
     end
+
+    it "does not allow base module benefit on non-enhance interaction types" do
+      base = create(:module_benefit)
+      non_enhance = build(:module_benefit, interaction_type: :append, benefit: base.benefit, plan_module: base.plan_module, base_module_benefit: base)
+
+      expect(non_enhance).not_to be_valid
+      expect(non_enhance.errors[:base_module_benefit]).to include("must be blank")
+    end
   end
 
   describe "coverage_or_limit_must_be_present" do
