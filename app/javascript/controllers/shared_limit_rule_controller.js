@@ -12,7 +12,14 @@ export default class extends Controller {
   ]
 
   connect() {
+    this.submitHandler = this.prepareHiddenFieldsForSubmission.bind(this)
+    this.form = this.element.closest("form")
+    this.form?.addEventListener("submit", this.submitHandler)
     this.sync()
+  }
+
+  disconnect() {
+    this.form?.removeEventListener("submit", this.submitHandler)
   }
 
   sync() {
@@ -48,5 +55,30 @@ export default class extends Controller {
     element.querySelectorAll("input, select, textarea").forEach((input) => {
       input.disabled = !visible
     })
+  }
+
+  prepareHiddenFieldsForSubmission() {
+    ;[
+      this.hasAmountFieldsTarget ? this.amountFieldsTarget : null,
+      this.hasUsageFieldsTarget ? this.usageFieldsTarget : null,
+      this.hasPeriodValueFieldTarget ? this.periodValueFieldTarget : null,
+      this.hasQuantityUnitCustomFieldTarget ? this.quantityUnitCustomFieldTarget : null
+    ].filter(Boolean).forEach((element) => {
+      const isHidden = element.classList.contains("hidden")
+
+      element.querySelectorAll("input, select, textarea").forEach((input) => {
+        if (isHidden) this.clearInputValue(input)
+        input.disabled = false
+      })
+    })
+  }
+
+  clearInputValue(input) {
+    if (input.type === "checkbox" || input.type === "radio") {
+      input.checked = false
+      return
+    }
+
+    input.value = ""
   }
 }
